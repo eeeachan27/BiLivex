@@ -409,6 +409,18 @@
     return null;
   }
 
+  // 弹幕即将滚出活动区域（playerRect）左侧时返回 true：
+  // v1.0.4 的「视口绝对左边 < 30」在特殊直播间（playerRect.left=40+）失效，弹幕即使在播放器左边缘 rect.right 仍 > 30，
+  // 导致 clone 被冻结后继续滚出 playerRect → keepAliveCheck 克隆到左边缘卡死。改用 playerRect 相对坐标。
+  function isDmNearLeft(rect) {
+    try {
+      const pr = getPlayerRect();
+      if (pr) return rect.left < pr.left + 30;
+      // 退化（无 playerRect，罕见）：保留 v1.0.4 行为——弹幕基本完全滚出视口时才拦截
+      return rect.right < 30;
+    } catch (e) { return false; }
+  }
+
   function extractFloatingDmText(item) {
     if (!item) return '';
     const textSpan = item.querySelector('.bili-danmaku-x-text');
@@ -561,8 +573,8 @@
           progress = (item._bilivexAnimProgress || 0) + progress;
         }
         const rect = item.getBoundingClientRect();
-        // 弹幕即将滚出左侧视口（rect.right < 30）时不冻结，让其自然消失，避免 clone 卡在左边缘
-        if (rect.right < 30) return null;
+        // 弹幕即将滚出活动区域左侧时不冻结（基于 playerRect 坐标，特殊直播间 playerRect.left=40+ 时也能正确拦截）
+        if (isDmNearLeft(rect)) return null;
         try {
           const prectG = getPlayerRect();
           if (prectG && isDmPartiallyOutside(rect, prectG)) {
@@ -914,7 +926,7 @@
         if (item && !item.classList.contains('bili-danmaku-x-disable') && !isBilivexReleasingDm(item)) {
           // 弹幕即将滚出左侧视口时不选为候选，避免冻结后 clone 卡在左边缘
           const ir = item.getBoundingClientRect();
-          if (ir.right < 30) return null;
+          if (isDmNearLeft(ir)) return null;
           if (!item.dataset.bilivexFloatInited) ensureFloatingDmOverlay(item);
           if (typeof item._bilivexFloatOnEnter === 'function') return item;
         }
@@ -931,7 +943,7 @@
             r = d.getBoundingClientRect();
           }
           if (r.width === 0 || r.height === 0) continue;
-          if (r.right < 30) continue;  // 即将滚出左侧，跳过
+          if (isDmNearLeft(r)) continue;  // 即将滚出活动区域左侧，跳过
           if (d.dataset.bilivexFloatInited === '1') {
             try { if (getComputedStyle(d).pointerEvents !== 'none') continue; } catch (e) { continue; }
           }
@@ -1034,8 +1046,8 @@
         try {
           const r = item.getBoundingClientRect();
           if (r.width > 0 && r.height > 0) {
-            // 弹幕滚到左侧即将消失时不保活，直接释放（避免 clone 卡在左边缘）
-            if (r.right < 30) {
+            // 弹幕滚到活动区域左侧即将消失时不保活，直接释放（避免 clone 卡在左边缘）
+            if (isDmNearLeft(r)) {
               if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave();
               this.hovered = null;
               this.stopKeepAlive();
