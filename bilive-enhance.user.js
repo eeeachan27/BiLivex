@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.0.5
+// @version      1.0.6
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停冻结驻留，可快捷 +1 回复；② 评论区——聊天区弹幕悬停显示 +1/复制按钮；③ 小尾巴——发送弹幕自动追加自定义文字；④ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -453,41 +453,6 @@
     setTimeout(() => { if (fb.parentNode) fb.parentNode.removeChild(fb); }, 1100);
   }
 
-  function isDmPartiallyOutside(rect, prect) {
-    if (!prect) return false;
-    return (rect.right > prect.right + 20);
-  }
-
-  function createEdgePlusBtn(item, rect, prect) {
-    try {
-      const btn = document.createElement('button');
-      btn.className = 'bilivex-float-plus-btn bilivex-float-edge-btn';
-      btn.type = 'button';
-      btn.textContent = '+1';
-      btn.dataset.bilivexAction = 'plus1';
-      const btnW = 48, btnH = 28, gap = 8;
-      const left = prect.right - btnW - gap;
-      const top = Math.min(Math.max(rect.top, prect.top), Math.max(prect.top, prect.bottom - btnH - 4));
-      btn.style.cssText = 'position:fixed;left:' + left + 'px;top:' + top + 'px;' +
-        `background:${currentTheme.primary};color:#fff;border:none;border-radius:12px;` +
-        'padding:5px 14px;font-size:14px;line-height:18px;font-weight:600;' +
-        'cursor:pointer;z-index:2147483001;pointer-events:auto;' +
-        'box-shadow:0 1px 4px rgba(0,0,0,0.25);user-select:none;white-space:nowrap;';
-      btn.addEventListener('mousedown', (e) => { e.stopPropagation(); });
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation(); e.preventDefault();
-        const t = extractFloatingDmText(item);
-        if (!t) { showToast('该弹幕无文本内容'); return; }
-        const rr = fillAndSend(t);
-        showFloatingPlusFeedback(btn);
-        showToast(rr.message || (rr.status === 'sent' ? '已发送' : '已填入，请按回车'));
-      });
-      btn._bilivexFloatOnLeave = () => { try { if (btn.isConnected) btn.remove(); } catch (e) {} };
-      getResidentLayer().appendChild(btn);
-      return btn;
-    } catch (e) { return null; }
-  }
-
   // 增强单条漂浮弹幕：添加悬停 +1 按钮
   function ensureFloatingDmOverlay(item) {
     if (!item) return;
@@ -498,13 +463,6 @@
     item.dataset.bilivexFloatInited = '1';
 
     item.style.pointerEvents = 'auto';
-
-    const r0 = item.getBoundingClientRect();
-    if (r0.width === 0 || r0.height === 0) {
-      item.style.minWidth = '60px';
-      item.style.minHeight = '30px';
-    }
-
 
     const btn = document.createElement('button');
     btn.className = 'bilivex-float-plus-btn';
@@ -557,32 +515,7 @@
           const anims = item.getAnimations();
           if (anims.length && anims[0].currentTime != null) progress = anims[0].currentTime;
         } catch (e) {}
-        if (item.dataset && item.dataset.bilivexContinued === '1' && item._bilivexAnimProgress) {
-          progress = (item._bilivexAnimProgress || 0) + progress;
-        }
         const rect = item.getBoundingClientRect();
-        // 生命周期即将/已经结束的弹幕不冻结（自然消失，避免 clone 卡在播放器左上角被鼠标热区困住无法消除）：
-        // ① 弹幕左边缘已滚出播放器左侧（已部分/完全滚出，冻结后 clone 会被钳制到播放器左边缘显示）
-        // ② 动画已结束（finished）或剩余 < 400ms
-        try {
-          const pr = getPlayerRect();
-          const leftEdge = pr ? pr.left : 0;
-          if (rect.left < leftEdge) return null;
-          const fAnims = item.getAnimations();
-          if (fAnims.length) {
-            if (fAnims.every((a) => a.playState === 'finished')) return null;
-            let fDur = 0, fCur = null;
-            try { fDur = fAnims[0].effect.getComputedTiming().duration; } catch (e2) {}
-            try { fCur = fAnims[0].currentTime; } catch (e2) {}
-            if (fDur > 0 && fCur != null && (fDur - fCur) < 400) return null;
-          }
-        } catch (e2) {}
-        try {
-          const prectG = getPlayerRect();
-          if (prectG && isDmPartiallyOutside(rect, prectG)) {
-            return createEdgePlusBtn(item, rect, prectG);
-          }
-        } catch (e) {}
         const origParent = item.parentNode;
         const hoverId = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8);
         item.dataset.bilivexHoverPaused = hoverId;
@@ -614,16 +547,9 @@
         item.style.visibility = 'hidden';
         clone.style.animation = 'none';
         clone.style.animationDelay = '';
-        let cloneLeft = rect.left;
-        let cloneTop = rect.top;
-        try {
-          const prect = getPlayerRect();
-          if (prect) {
-            const cw = rect.width || 0, ch = rect.height || 0;
-            cloneLeft = Math.min(Math.max(rect.left, prect.left), Math.max(prect.left, prect.right - cw));
-            cloneTop = Math.min(Math.max(rect.top, prect.top), Math.max(prect.top, prect.bottom - ch));
-          }
-        } catch (e) {}
+        // 保留弹幕当下的真实坐标；不得向播放器边界钳制，否则左缘弹幕会被搬到左上角并持续命中鼠标。
+        const cloneLeft = rect.left;
+        const cloneTop = rect.top;
         clone.style.position = 'fixed';
         clone.style.left = cloneLeft + 'px';
         clone.style.top = cloneTop + 'px';
@@ -678,123 +604,15 @@
         } catch (e2) {}
         clone._bilivexFloatOnLeave = () => {
           try {
-            const isContOriginal = !!(item && item.dataset && item.dataset.bilivexContinued === '1');
             cBtn.style.display = 'none';
-            clone.style.backgroundColor = '';
-            clone.style.boxShadow = '';
-            clone.style.zIndex = '';
-            if (!isContOriginal) {
-              try {
-                if (item && item.isConnected && item.dataset.bilivexHoverPaused === (clone._bilivexHoverId || '')) {
-                  let dMs = 0;
-                  try { dMs = (parseFloat(getComputedStyle(item).animationDuration) || 0) * 1000; } catch (e2) {}
-                  const delay = Math.max(0, dMs - (clone._bilivexAnimProgress || 0)) + 1500;
-                  const earlyTimer = setInterval(() => {
-                    try {
-                      if (!item || !item.isConnected) { clearInterval(earlyTimer); return; }
-                      if (item.dataset.bilivexHoverPaused !== (clone._bilivexHoverId || '')) { clearInterval(earlyTimer); return; }
-                      const stillPaused = item.classList.contains('bili-danmaku-x-paused');
-                      const stillHidden = getComputedStyle(item).visibility === 'hidden';
-                      if (!stillPaused || !stillHidden) {
-                        delete item.dataset.bilivexHoverPaused;
-                        clearInterval(earlyTimer);
-                      }
-                    } catch (e3) { clearInterval(earlyTimer); }
-                  }, 250);
-                  setTimeout(() => {
-                    clearInterval(earlyTimer);
-                    try {
-                      if (item && item.isConnected && item.dataset.bilivexHoverPaused === (clone._bilivexHoverId || '')) {
-                        if (item.classList.contains('bili-danmaku-x-roll')) {
-                          item.classList.remove('bili-danmaku-x-paused');
-                          item.style.visibility = '';
-                        }
-                        delete item.dataset.bilivexHoverPaused;
-                      }
-                    } catch (e3) {}
-                  }, delay);
-                }
-              } catch (e2) {}
+            // 原节点负责继续 B 站自己的生命周期；clone 只负责悬停期间的视觉展示。
+            if (item && item.isConnected && item.dataset.bilivexHoverPaused === (clone._bilivexHoverId || '')) {
+              item.classList.remove('bili-danmaku-x-paused');
+              item.style.visibility = '';
+              delete item.dataset.bilivexHoverPaused;
             }
-            clone.classList.remove('bili-danmaku-x-paused');
-            clone.dataset.bilivexResident = '';
-            let op = clone._bilivexOrigParent;
-            if (!op || !op.isConnected) {
-              try { op = findFloatingDmContainer(); } catch (e2) {}
-            }
-            if (op && op.isConnected) {
-              const cloneRect = clone.getBoundingClientRect();
-              const opRect = op.getBoundingClientRect();
-              const progress = clone._bilivexAnimProgress || 0;
-              clone.style.animation = '';
-              clone.style.animationDelay = '';
-              let durMs = 0, txVal = 0;
-              try {
-                const cs = getComputedStyle(clone);
-                durMs = parseFloat(cs.animationDuration) * 1000 || 0;
-                const tx = cs.getPropertyValue('--translateX');
-                const m = tx && tx.match(/(-?[\d.]+)/);
-                if (m) txVal = Math.abs(parseFloat(m[1]));
-              } catch (e2) {}
-              clone.style.position = 'absolute';
-              clone.style.left = (cloneRect.left - opRect.left) + 'px';
-              clone.style.top = (cloneRect.top - opRect.top) + 'px';
-              clone.style.margin = '0';
-              clone.dataset.bilivexContinued = '1';
-              op.appendChild(clone);
-              if (durMs > 0 && txVal > 0 && progress > 0 && progress < durMs) {
-                const remainingMs = durMs - progress;
-                const remainingDist = txVal * (remainingMs / durMs);
-                try {
-                  clone.style.animation = 'none';
-                  const wa = clone.animate(
-                    [{ transform: 'translateX(0)' }, { transform: 'translateX(-' + remainingDist + 'px)' }],
-                    { duration: remainingMs, fill: 'forwards', easing: 'linear' },
-                  );
-                  const fin = () => { try { if (clone.isConnected) clone.remove(); } catch (e2) {} };
-                  wa.onfinish = fin;
-                  wa.oncancel = fin;
-                  setTimeout(fin, remainingMs + 1000);
-                } catch (e2) {
-                  clone.style.animation = 'none';
-                  void clone.offsetWidth;
-                  clone.style.animation = '';
-                  if (progress > 0 && durMs > 0) {
-                    clone.style.animationDelay = '-' + Math.min(progress, durMs) + 'ms';
-                    const anims = clone.getAnimations();
-                    if (anims.length) { try { anims[0].currentTime = progress; } catch (e3) {} }
-                  }
-                  const fin = () => { try { if (clone.isConnected) clone.remove(); } catch (e3) {} };
-                  clone.addEventListener('animationend', fin, { once: true });
-                  setTimeout(fin, 15000);
-                }
-              } else {
-                clone.style.animation = 'none';
-                void clone.offsetWidth;
-                clone.style.animation = '';
-                if (progress > 0 && durMs > 0) {
-                  clone.style.animationDelay = '-' + Math.min(progress, durMs) + 'ms';
-                  const anims = clone.getAnimations();
-                  if (anims.length) { try { anims[0].currentTime = progress; } catch (e2) {} }
-                }
-                const fin = () => { try { if (clone.isConnected) clone.remove(); } catch (e3) {} };
-                clone.addEventListener('animationend', fin, { once: true });
-                setTimeout(fin, 15000);
-              }
-            } else {
-              // 原弹幕容器已不存在：直接移除冻结 clone，防止 residentLayer 累积孤儿节点（弹幕越多越卡）
-              try { clone.remove(); } catch (e2) {}
-            }
-            clone._bilivexFloatOnLeave = null;
-            try {
-              delete clone.dataset.bilivexHoverPaused;
-              delete clone.dataset.bilivexFloatInited;
-              ensureFloatingDmOverlay(clone);
-            } catch (e2) {}
-            if (isContOriginal) {
-              try { if (item && item.isConnected) item.remove(); } catch (e2) {}
-            }
-          } catch (e5) {}
+            if (clone.isConnected) clone.remove();
+          } catch (e) {}
         };
         return clone;
       } catch (e) { return null; }
@@ -909,11 +727,6 @@
       const r = item.getBoundingClientRect();
       return { l: r.left - 6, r: r.right + 6, t: r.top - 6, b: r.bottom + 6 };
     },
-    getHotRect(item) {
-      const r = item.getBoundingClientRect();
-      return { l: r.left - 6, r: r.right + 20, t: r.top - 6, b: r.bottom + 60 };
-    },
-
     // 向上找最近的弹幕节点
     findDm(el) {
       let n = el;
@@ -948,7 +761,7 @@
           if (d.dataset.bilivexFloatInited === '1') {
             try { if (getComputedStyle(d).pointerEvents !== 'none') continue; } catch (e) { continue; }
           }
-          if (px >= r.left - 6 && px <= r.right + 6 && py >= r.top - 6 && py <= r.bottom + 6) {
+          if (px >= r.left && px <= r.right && py >= r.top && py <= r.bottom) {
             if (!d.dataset.bilivexFloatInited) ensureFloatingDmOverlay(d);
             if (typeof d._bilivexFloatOnEnter !== 'function') continue;
             return d;
@@ -961,7 +774,6 @@
     check() {
       const { px, py } = this;
       const cur = this.hovered;
-      const fastMove = (this._lastVelocity || 0) > 2.5;
       if (px >= 0 && py >= 0) {
         try {
           const topEl = document.elementFromPoint(px, py);
@@ -975,17 +787,14 @@
         } catch (e) {}
       }
       if (cur && cur.isConnected) {
-        // 快速滑移时强制释放已冻结弹幕：鼠标在角落滑移（如播放器左上角）时，
-        // 冻结 clone 的热区会持续困住光标导致弹幕卡死无法消除；滑移（fastMove）说明用户非悬停意图
-        if (fastMove && cur.dataset && cur.dataset.bilivexResident === '1') {
-          this.leave(cur);
-          return;
-        }
-        const hr = this.getHotRect(cur);
-        if (px >= hr.l && px <= hr.r && py >= hr.t && py <= hr.b) return;
+        // 只认真实命中的弹幕或其 +1 按钮，不再扩展任何“热区”。
+        // 这样左缘弹幕可正常 +1，鼠标离开可立即恢复，不会被隐形区域困住。
+        try {
+          const topEl = document.elementFromPoint(px, py);
+          if (topEl && (topEl === cur || cur.contains(topEl))) return;
+        } catch (e) {}
       }
       if (cur) this.leave(cur);
-      if (fastMove) { this._cand = null; this._candHits = 0; this._candMiss = 0; return; }
       const cand = this._computeCandidate(px, py);
       if (!cand) {
         if (this._cand) {
@@ -1050,21 +859,6 @@
       const item = this.hovered;
       if (!item) { this.stopKeepAlive(); return; }
       if (item.isConnected) {
-        // 兜底：冻结 clone 被钳制在播放器左边缘（原弹幕已滚出播放器左侧，生命周期结束）
-        // → 自动释放，避免卡在左上角被鼠标热区困住无法消除
-        if (item.dataset && item.dataset.bilivexResident === '1') {
-          try {
-            const cr = item.getBoundingClientRect();
-            const pr = getPlayerRect();
-            const leftEdge = pr ? pr.left : 0;
-            if (cr.width > 0 && cr.left <= leftEdge + 2) {
-              try { if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave(); } catch (e2) {}
-              this.hovered = null;
-              this.stopKeepAlive();
-              return;
-            }
-          } catch (e2) {}
-        }
         try {
           const r = item.getBoundingClientRect();
           if (r.width > 0 && r.height > 0) {
@@ -1073,151 +867,11 @@
         } catch (e) {}
         return;
       }
-      if (!(item.classList && item.classList.contains('bili-danmaku-x-dm'))) {
-        try { if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave(); } catch (e) {}
-        this.hovered = null;
-        this.stopKeepAlive();
-        return;
-      }
-      // 生命周期结束的弹幕（已被 B 站移除）不再保活：
-      // 若最后一次记录的位置显示弹幕已滚出播放器左侧（即将/已消失），克隆只会停在左端卡死 → 直接清理
-      const kEnd = this._keepRect;
-      if (kEnd && kEnd.width > 0) {
-        try {
-          const pr = getPlayerRect();
-          const leftEdge = pr ? pr.left : 0;
-          if (kEnd.left + kEnd.width < leftEdge + 30) {
-            try { if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave(); } catch (e2) {}
-            this.hovered = null;
-            this.stopKeepAlive();
-            return;
-          }
-        } catch (e2) {}
-      }
-      const isResident = item.dataset && item.dataset.bilivexResident === '1';
-      const container = isResident ? getResidentLayer() : findFloatingDmContainer();
-      if (!container) { this.stopKeepAlive(); return; }
-      const clone = item.cloneNode(true);
-      delete clone.dataset.bilivexFloatInited;
-      const oldBtn = clone.querySelector('.bilivex-float-plus-btn');
-      if (oldBtn) oldBtn.remove();
-      clone.classList.remove('bili-danmaku-x-paused');
-      clone.style.backgroundColor = '';
-      clone.style.boxShadow = '';
-      clone.style.zIndex = '9999';
-      clone.style.position = isResident ? 'fixed' : 'absolute';
-      // 重挂载到记录的原位置（找不到记录则用鼠标附近位置兜底）
-      const k = this._keepRect;
-      if (k && k.width > 0) {
-        clone.style.left = k.left + 'px';
-        clone.style.top = k.top + 'px';
-        clone.style.width = k.width + 'px';
-        clone.style.height = k.height + 'px';
-        clone.style.margin = '0';
-      } else if (this.px >= 0 && this.py >= 0) {
-        clone.style.left = (this.px - 100) + 'px';
-        clone.style.top = (this.py - 15) + 'px';
-      } else {
-        clone.style.left = '200px';
-        clone.style.top = '100px';
-      }
-      clone.style.pointerEvents = 'auto';
-      clone.style.visibility = '';
-      try {
-        clone.style.opacity = item.style.opacity || getComputedStyle(item).opacity || '1';
-      } catch (e3) { clone.style.opacity = '1'; }
-      container.appendChild(clone);
-      if (isResident) {
-        clone.dataset.bilivexResident = '1';
-        clone._bilivexOrigParent = item._bilivexOrigParent;
-        clone._bilivexAnimProgress = item._bilivexAnimProgress || 0;
-        clone._bilivexFloatOnLeave = () => {
-          try {
-            clone.classList.remove('bili-danmaku-x-paused');
-            clone.style.backgroundColor = '';
-            clone.style.boxShadow = '';
-            clone.style.zIndex = '';
-            clone.dataset.bilivexResident = '';
-            let op = clone._bilivexOrigParent;
-            if (!op || !op.isConnected) {
-              try { op = findFloatingDmContainer(); } catch (e2) {}
-            }
-            if (op && op.isConnected) {
-              const cloneRect = clone.getBoundingClientRect();
-              const opRect = op.getBoundingClientRect();
-              const progress = clone._bilivexAnimProgress || 0;
-              clone.style.animation = '';
-              clone.style.animationDelay = '';
-              let durMs = 0, txVal = 0;
-              try {
-                const cs = getComputedStyle(clone);
-                durMs = parseFloat(cs.animationDuration) * 1000 || 0;
-                const tx = cs.getPropertyValue('--translateX');
-                const m = tx && tx.match(/(-?[\d.]+)/);
-                if (m) txVal = Math.abs(parseFloat(m[1]));
-              } catch (e2) {}
-              clone.style.position = 'absolute';
-              clone.style.left = (cloneRect.left - opRect.left) + 'px';
-              clone.style.top = (cloneRect.top - opRect.top) + 'px';
-              clone.style.margin = '0';
-              clone.dataset.bilivexContinued = '1';
-              op.appendChild(clone);
-              if (durMs > 0 && txVal > 0 && progress > 0 && progress < durMs) {
-                const remainingMs = durMs - progress;
-                const remainingDist = txVal * (remainingMs / durMs);
-                try {
-                  clone.style.animation = 'none';
-                  const wa = clone.animate(
-                    [{ transform: 'translateX(0)' }, { transform: 'translateX(-' + remainingDist + 'px)' }],
-                    { duration: remainingMs, fill: 'forwards', easing: 'linear' },
-                  );
-                  const fin = () => { try { if (clone.isConnected) clone.remove(); } catch (e2) {} };
-                  wa.onfinish = fin;
-                  wa.oncancel = fin;
-                  setTimeout(fin, remainingMs + 1000);
-                } catch (e2) {
-                  clone.style.animation = 'none';
-                  void clone.offsetWidth;
-                  clone.style.animation = '';
-                  if (progress > 0 && durMs > 0) {
-                    clone.style.animationDelay = '-' + Math.min(progress, durMs) + 'ms';
-                    const anims = clone.getAnimations();
-                    if (anims.length) { try { anims[0].currentTime = progress; } catch (e3) {} }
-                  }
-                  const fin = () => { try { if (clone.isConnected) clone.remove(); } catch (e3) {} };
-                  clone.addEventListener('animationend', fin, { once: true });
-                  setTimeout(fin, 15000);
-                }
-              } else if (progress > 0 && durMs > 0) {
-                clone.style.animation = 'none';
-                void clone.offsetWidth;
-                clone.style.animation = '';
-                clone.style.animationDelay = '-' + Math.min(progress, durMs) + 'ms';
-                const anims = clone.getAnimations();
-                if (anims.length) { try { anims[0].currentTime = progress; } catch (e2) {} }
-                const fin = () => { try { if (clone.isConnected) clone.remove(); } catch (e3) {} };
-                clone.addEventListener('animationend', fin, { once: true });
-                setTimeout(fin, 15000);
-              }
-            } else {
-              // 原弹幕容器已不存在：直接移除冻结 clone，防止 residentLayer 累积孤儿节点（弹幕越多越卡）
-              try { clone.remove(); } catch (e2) {}
-            }
-            clone._bilivexFloatOnLeave = null;
-            try {
-              delete clone.dataset.bilivexHoverPaused;
-              delete clone.dataset.bilivexFloatInited;
-              ensureFloatingDmOverlay(clone);
-            } catch (e2) {}
-          } catch (e2) {}
-        };
-      } else {
-        ensureFloatingDmOverlay(clone);
-        if (clone._bilivexFloatOnEnter) clone._bilivexFloatOnEnter();
-      }
-      this.hovered = clone;
-      this._keepRect = k;
-      showToast('弹幕保活：已防止消失');
+      // B 站回收原节点后，不再复制节点或把 clone 回插轨道。
+      // clone 只负责悬停期间的视觉展示，直接释放可避免历史节点和轨道状态累积。
+      try { if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave(); } catch (e) {}
+      this.hovered = null;
+      this.stopKeepAlive();
     }
   };
 
@@ -2099,28 +1753,6 @@
             if (r.right < -50 || r.left > window.innerWidth + 50 || r.bottom < -50 || r.top > window.innerHeight + 50) {
               try { el.remove(); } catch (e3) {}
             }
-          });
-        }
-      } catch (e2) {}
-      // 清理生命周期结束的历史弹幕：CSS 动画已 finished、或无动画且已滚出播放器左侧的残留弹幕
-      // （B 站正常会在动画结束即移除；残留说明曾被冻结恢复后未清理，鼠标滑移会反复命中导致卡死左上角）
-      try {
-        const ctr = findFloatingDmContainer();
-        if (ctr) {
-          const hov = FloatingDmEngine.hovered;
-          const pr = getPlayerRect();
-          const leftEdge = pr ? pr.left : 0;
-          $$('.bili-danmaku-x-dm', ctr).forEach((dm) => {
-            if (dm === hov) return;
-            try {
-              const anims = dm.getAnimations();
-              const r = dm.getBoundingClientRect();
-              const allFinished = anims.length > 0 && anims.every((a) => a.playState === 'finished');
-              const noAnimAtLeft = anims.length === 0 && r.right < leftEdge + 30;
-              if (allFinished || noAnimAtLeft) {
-                try { dm.remove(); } catch (e3) {}
-              }
-            } catch (e3) {}
           });
         }
       } catch (e2) {}
