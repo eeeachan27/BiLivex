@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.0.3
+// @version      1.0.4
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停冻结驻留，可快捷 +1 回复；② 评论区——聊天区弹幕悬停显示 +1/复制按钮；③ 小尾巴——发送弹幕自动追加自定义文字；④ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -561,6 +561,8 @@
           progress = (item._bilivexAnimProgress || 0) + progress;
         }
         const rect = item.getBoundingClientRect();
+        // 弹幕即将滚出左侧视口（rect.right < 30）时不冻结，让其自然消失，避免 clone 卡在左边缘
+        if (rect.right < 30) return null;
         try {
           const prectG = getPlayerRect();
           if (prectG && isDmPartiallyOutside(rect, prectG)) {
@@ -910,6 +912,9 @@
         const el = document.elementFromPoint(px, py);
         const item = el ? this.findDm(el) : null;
         if (item && !item.classList.contains('bili-danmaku-x-disable') && !isBilivexReleasingDm(item)) {
+          // 弹幕即将滚出左侧视口时不选为候选，避免冻结后 clone 卡在左边缘
+          const ir = item.getBoundingClientRect();
+          if (ir.right < 30) return null;
           if (!item.dataset.bilivexFloatInited) ensureFloatingDmOverlay(item);
           if (typeof item._bilivexFloatOnEnter === 'function') return item;
         }
@@ -926,6 +931,7 @@
             r = d.getBoundingClientRect();
           }
           if (r.width === 0 || r.height === 0) continue;
+          if (r.right < 30) continue;  // 即将滚出左侧，跳过
           if (d.dataset.bilivexFloatInited === '1') {
             try { if (getComputedStyle(d).pointerEvents !== 'none') continue; } catch (e) { continue; }
           }
@@ -1028,6 +1034,13 @@
         try {
           const r = item.getBoundingClientRect();
           if (r.width > 0 && r.height > 0) {
+            // 弹幕滚到左侧即将消失时不保活，直接释放（避免 clone 卡在左边缘）
+            if (r.right < 30) {
+              if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave();
+              this.hovered = null;
+              this.stopKeepAlive();
+              return;
+            }
             this._keepRect = { left: r.left, top: r.top, width: r.width, height: r.height };
           }
         } catch (e) {}
@@ -1803,6 +1816,8 @@
 
   function avoidChatCollision(panel) {
     try {
+      // 用户已拖拽/吸附定位后不强制避让（尊重用户意图，避免展开时菜单被推到另一侧）
+      if (cfg.panelPos && cfg.panelPos.left != null) return;
       const list = document.querySelector('.chat-history-list');
       if (!list || !panel || !panel.isConnected) return;
       const pr = panel.getBoundingClientRect();
