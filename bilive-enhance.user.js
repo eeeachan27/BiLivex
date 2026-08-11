@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.0.4
+// @version      1.0.5
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停冻结驻留，可快捷 +1 回复；② 评论区——聊天区弹幕悬停显示 +1/复制按钮；③ 小尾巴——发送弹幕自动追加自定义文字；④ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -561,6 +561,22 @@
           progress = (item._bilivexAnimProgress || 0) + progress;
         }
         const rect = item.getBoundingClientRect();
+        // 生命周期即将/已经结束的弹幕不冻结（自然消失，避免 clone 卡在播放器左上角被鼠标热区困住无法消除）：
+        // ① 弹幕左边缘已滚出播放器左侧（已部分/完全滚出，冻结后 clone 会被钳制到播放器左边缘显示）
+        // ② 动画已结束（finished）或剩余 < 400ms
+        try {
+          const pr = getPlayerRect();
+          const leftEdge = pr ? pr.left : 0;
+          if (rect.left < leftEdge) return null;
+          const fAnims = item.getAnimations();
+          if (fAnims.length) {
+            if (fAnims.every((a) => a.playState === 'finished')) return null;
+            let fDur = 0, fCur = null;
+            try { fDur = fAnims[0].effect.getComputedTiming().duration; } catch (e2) {}
+            try { fCur = fAnims[0].currentTime; } catch (e2) {}
+            if (fDur > 0 && fCur != null && (fDur - fCur) < 400) return null;
+          }
+        } catch (e2) {}
         try {
           const prectG = getPlayerRect();
           if (prectG && isDmPartiallyOutside(rect, prectG)) {
@@ -959,6 +975,12 @@
         } catch (e) {}
       }
       if (cur && cur.isConnected) {
+        // 快速滑移时强制释放已冻结弹幕：鼠标在角落滑移（如播放器左上角）时，
+        // 冻结 clone 的热区会持续困住光标导致弹幕卡死无法消除；滑移（fastMove）说明用户非悬停意图
+        if (fastMove && cur.dataset && cur.dataset.bilivexResident === '1') {
+          this.leave(cur);
+          return;
+        }
         const hr = this.getHotRect(cur);
         if (px >= hr.l && px <= hr.r && py >= hr.t && py <= hr.b) return;
       }
@@ -1028,6 +1050,21 @@
       const item = this.hovered;
       if (!item) { this.stopKeepAlive(); return; }
       if (item.isConnected) {
+        // 兜底：冻结 clone 被钳制在播放器左边缘（原弹幕已滚出播放器左侧，生命周期结束）
+        // → 自动释放，避免卡在左上角被鼠标热区困住无法消除
+        if (item.dataset && item.dataset.bilivexResident === '1') {
+          try {
+            const cr = item.getBoundingClientRect();
+            const pr = getPlayerRect();
+            const leftEdge = pr ? pr.left : 0;
+            if (cr.width > 0 && cr.left <= leftEdge + 2) {
+              try { if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave(); } catch (e2) {}
+              this.hovered = null;
+              this.stopKeepAlive();
+              return;
+            }
+          } catch (e2) {}
+        }
         try {
           const r = item.getBoundingClientRect();
           if (r.width > 0 && r.height > 0) {
@@ -2065,17 +2102,22 @@
           });
         }
       } catch (e2) {}
-      // 清理生命周期结束的历史弹幕：CSS 动画已 finished 但仍残留在容器内的弹幕
+      // 清理生命周期结束的历史弹幕：CSS 动画已 finished、或无动画且已滚出播放器左侧的残留弹幕
       // （B 站正常会在动画结束即移除；残留说明曾被冻结恢复后未清理，鼠标滑移会反复命中导致卡死左上角）
       try {
         const ctr = findFloatingDmContainer();
         if (ctr) {
           const hov = FloatingDmEngine.hovered;
+          const pr = getPlayerRect();
+          const leftEdge = pr ? pr.left : 0;
           $$('.bili-danmaku-x-dm', ctr).forEach((dm) => {
             if (dm === hov) return;
             try {
               const anims = dm.getAnimations();
-              if (anims.length && anims.every((a) => a.playState === 'finished')) {
+              const r = dm.getBoundingClientRect();
+              const allFinished = anims.length > 0 && anims.every((a) => a.playState === 'finished');
+              const noAnimAtLeft = anims.length === 0 && r.right < leftEdge + 30;
+              if (allFinished || noAnimAtLeft) {
                 try { dm.remove(); } catch (e3) {}
               }
             } catch (e3) {}
