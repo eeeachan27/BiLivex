@@ -409,18 +409,6 @@
     return null;
   }
 
-  // 弹幕即将滚出活动区域（playerRect）左侧时返回 true：
-  // v1.0.4 的「视口绝对左边 < 30」在特殊直播间（playerRect.left=40+）失效，弹幕即使在播放器左边缘 rect.right 仍 > 30，
-  // 导致 clone 被冻结后继续滚出 playerRect → keepAliveCheck 克隆到左边缘卡死。改用 playerRect 相对坐标。
-  function isDmNearLeft(rect) {
-    try {
-      const pr = getPlayerRect();
-      if (pr) return rect.left < pr.left + 30;
-      // 退化（无 playerRect，罕见）：保留 v1.0.4 行为——弹幕基本完全滚出视口时才拦截
-      return rect.right < 30;
-    } catch (e) { return false; }
-  }
-
   function extractFloatingDmText(item) {
     if (!item) return '';
     const textSpan = item.querySelector('.bili-danmaku-x-text');
@@ -573,8 +561,6 @@
           progress = (item._bilivexAnimProgress || 0) + progress;
         }
         const rect = item.getBoundingClientRect();
-        // 弹幕即将滚出活动区域左侧时不冻结（基于 playerRect 坐标，特殊直播间 playerRect.left=40+ 时也能正确拦截）
-        if (isDmNearLeft(rect)) return null;
         try {
           const prectG = getPlayerRect();
           if (prectG && isDmPartiallyOutside(rect, prectG)) {
@@ -779,6 +765,9 @@
                 clone.addEventListener('animationend', fin, { once: true });
                 setTimeout(fin, 15000);
               }
+            } else {
+              // 原弹幕容器已不存在：直接移除冻结 clone，防止 residentLayer 累积孤儿节点（弹幕越多越卡）
+              try { clone.remove(); } catch (e2) {}
             }
             clone._bilivexFloatOnLeave = null;
             try {
@@ -924,9 +913,6 @@
         const el = document.elementFromPoint(px, py);
         const item = el ? this.findDm(el) : null;
         if (item && !item.classList.contains('bili-danmaku-x-disable') && !isBilivexReleasingDm(item)) {
-          // 弹幕即将滚出左侧视口时不选为候选，避免冻结后 clone 卡在左边缘
-          const ir = item.getBoundingClientRect();
-          if (isDmNearLeft(ir)) return null;
           if (!item.dataset.bilivexFloatInited) ensureFloatingDmOverlay(item);
           if (typeof item._bilivexFloatOnEnter === 'function') return item;
         }
@@ -943,7 +929,6 @@
             r = d.getBoundingClientRect();
           }
           if (r.width === 0 || r.height === 0) continue;
-          if (isDmNearLeft(r)) continue;  // 即将滚出活动区域左侧，跳过
           if (d.dataset.bilivexFloatInited === '1') {
             try { if (getComputedStyle(d).pointerEvents !== 'none') continue; } catch (e) { continue; }
           }
@@ -1046,13 +1031,6 @@
         try {
           const r = item.getBoundingClientRect();
           if (r.width > 0 && r.height > 0) {
-            // 弹幕滚到活动区域左侧即将消失时不保活，直接释放（避免 clone 卡在左边缘）
-            if (isDmNearLeft(r)) {
-              if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave();
-              this.hovered = null;
-              this.stopKeepAlive();
-              return;
-            }
             this._keepRect = { left: r.left, top: r.top, width: r.width, height: r.height };
           }
         } catch (e) {}
@@ -1063,6 +1041,21 @@
         this.hovered = null;
         this.stopKeepAlive();
         return;
+      }
+      // 生命周期结束的弹幕（已被 B 站移除）不再保活：
+      // 若最后一次记录的位置显示弹幕已滚出播放器左侧（即将/已消失），克隆只会停在左端卡死 → 直接清理
+      const kEnd = this._keepRect;
+      if (kEnd && kEnd.width > 0) {
+        try {
+          const pr = getPlayerRect();
+          const leftEdge = pr ? pr.left : 0;
+          if (kEnd.left + kEnd.width < leftEdge + 30) {
+            try { if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave(); } catch (e2) {}
+            this.hovered = null;
+            this.stopKeepAlive();
+            return;
+          }
+        } catch (e2) {}
       }
       const isResident = item.dataset && item.dataset.bilivexResident === '1';
       const container = isResident ? getResidentLayer() : findFloatingDmContainer();
@@ -1169,6 +1162,9 @@
                 clone.addEventListener('animationend', fin, { once: true });
                 setTimeout(fin, 15000);
               }
+            } else {
+              // 原弹幕容器已不存在：直接移除冻结 clone，防止 residentLayer 累积孤儿节点（弹幕越多越卡）
+              try { clone.remove(); } catch (e2) {}
             }
             clone._bilivexFloatOnLeave = null;
             try {
@@ -2053,6 +2049,39 @@
         }
         rebindInputTailHandler();
       }
+      // 兜底清理：residentLayer 中已滚出视口且非当前悬停的冻结弹幕/边缘按钮
+      // （防历史弹幕残留累积导致页面越来越卡；正常悬停的 clone 由 onLeave/keepAliveCheck 各自清理）
+      try {
+        const layer = document.getElementById('bilivex-dm-resident');
+        if (layer) {
+          const hov = FloatingDmEngine.hovered;
+          $$('.bili-danmaku-x-dm, .bilivex-float-edge-btn', layer).forEach((el) => {
+            if (el === hov) return;
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 && r.height === 0) { try { el.remove(); } catch (e3) {} return; }
+            if (r.right < -50 || r.left > window.innerWidth + 50 || r.bottom < -50 || r.top > window.innerHeight + 50) {
+              try { el.remove(); } catch (e3) {}
+            }
+          });
+        }
+      } catch (e2) {}
+      // 清理生命周期结束的历史弹幕：CSS 动画已 finished 但仍残留在容器内的弹幕
+      // （B 站正常会在动画结束即移除；残留说明曾被冻结恢复后未清理，鼠标滑移会反复命中导致卡死左上角）
+      try {
+        const ctr = findFloatingDmContainer();
+        if (ctr) {
+          const hov = FloatingDmEngine.hovered;
+          $$('.bili-danmaku-x-dm', ctr).forEach((dm) => {
+            if (dm === hov) return;
+            try {
+              const anims = dm.getAnimations();
+              if (anims.length && anims.every((a) => a.playState === 'finished')) {
+                try { dm.remove(); } catch (e3) {}
+              }
+            } catch (e3) {}
+          });
+        }
+      } catch (e2) {}
     } catch (e) {}
   }
 
