@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.0.6
+// @version      1.0.7
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停冻结驻留，可快捷 +1 回复；② 评论区——聊天区弹幕悬停显示 +1/复制按钮；③ 小尾巴——发送弹幕自动追加自定义文字；④ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -462,8 +462,6 @@
     if (item.classList.contains('bili-danmaku-x-disable')) return;
     item.dataset.bilivexFloatInited = '1';
 
-    item.style.pointerEvents = 'auto';
-
     const btn = document.createElement('button');
     btn.className = 'bilivex-float-plus-btn';
     btn.type = 'button';
@@ -516,6 +514,7 @@
           if (anims.length && anims[0].currentTime != null) progress = anims[0].currentTime;
         } catch (e) {}
         const rect = item.getBoundingClientRect();
+        const playerRect = getPlayerRect();
         const origParent = item.parentNode;
         const hoverId = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8);
         item.dataset.bilivexHoverPaused = hoverId;
@@ -527,6 +526,7 @@
         if (oldBtn) oldBtn.remove();
         clone.dataset.bilivexResident = '1';
         clone._bilivexHoverId = hoverId;
+        clone._bilivexSource = item;
         clone._bilivexAnimProgress = progress;
         clone._bilivexOrigParent = origParent;
         try {
@@ -558,6 +558,13 @@
         clone.style.pointerEvents = 'auto';
         clone.style.visibility = '';
         clone.style.opacity = origOpacity;
+        if (playerRect) {
+          const clipTop = Math.max(0, playerRect.top - rect.top);
+          const clipRight = Math.max(0, rect.right - playerRect.right);
+          const clipBottom = Math.max(0, rect.bottom - playerRect.bottom);
+          const clipLeft = Math.max(0, playerRect.left - rect.left);
+          clone.style.clipPath = `inset(${clipTop}px ${clipRight}px ${clipBottom}px ${clipLeft}px)`;
+        }
         // 冻结 + 高亮 + 细边框
         clone.classList.add('bili-danmaku-x-paused');
         clone.style.backgroundColor = currentTheme.highlight;
@@ -568,10 +575,11 @@
         cBtn.type = 'button';
         cBtn.textContent = '+1';
         cBtn.dataset.bilivexAction = 'plus1';
-        cBtn.style.cssText = 'position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;' +
+        cBtn.style.cssText = 'position:fixed;left:' + (rect.left + rect.width / 2) + 'px;top:' + (rect.bottom + 6) + 'px;' +
+          'transform:translateX(-50%);margin:0;' +
           `background:${currentTheme.primary};color:#fff;border:none;border-radius:12px;` +
           'padding:5px 14px;font-size:14px;line-height:18px;font-weight:600;' +
-          'cursor:pointer;z-index:10;pointer-events:auto;' +
+          'cursor:pointer;z-index:10000;pointer-events:auto;' +
           'box-shadow:0 1px 4px rgba(0,0,0,0.25);display:inline-block;user-select:none;white-space:nowrap;';
         cBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); });
         cBtn.addEventListener('click', (e) => {
@@ -582,8 +590,22 @@
           showFloatingPlusFeedback(clone);
           showToast(rr.message || (rr.status === 'sent' ? '已发送' : '已填入，请按回车'));
         });
-        clone.appendChild(cBtn);
+        clone._bilivexFloatBtn = cBtn;
         getResidentLayer().appendChild(clone);
+        getResidentLayer().appendChild(cBtn);
+        // 弹幕动画结束后自动释放悬停状态
+        const sourceListenerStartedAt = performance.now();
+        const releaseEndedSource = (event) => {
+          if (event.target !== item) return;
+          if (typeof event.timeStamp === 'number' && event.timeStamp < sourceListenerStartedAt) return;
+          if (item.dataset.bilivexHoverPaused !== hoverId) return;
+          clone._bilivexSourceEnded = true;
+          if (FloatingDmEngine.hovered !== clone) return;
+          FloatingDmEngine.leave(clone);
+        };
+        clone._bilivexSourceRelease = releaseEndedSource;
+        item.addEventListener('animationend', releaseEndedSource);
+        item.addEventListener('animationcancel', releaseEndedSource);
         // +1 按钮置于弹幕正下方（水平居中、不遮挡弹幕文字）
         try {
           const prect = getPlayerRect();
@@ -594,9 +616,8 @@
                 const br = cBtn.getBoundingClientRect();
                 if (br.width === 0 || br.height === 0) return;
                 if (br.bottom > prect.bottom - 2) {
-                  const cr = clone.getBoundingClientRect();
                   const targetTop = prect.bottom - br.height - 4;
-                  cBtn.style.top = (targetTop - cr.top) + 'px';
+                  cBtn.style.top = targetTop + 'px';
                 }
               } catch (e2) {}
             });
@@ -605,12 +626,25 @@
         clone._bilivexFloatOnLeave = () => {
           try {
             cBtn.style.display = 'none';
-            // 原节点负责继续 B 站自己的生命周期；clone 只负责悬停期间的视觉展示。
-            if (item && item.isConnected && item.dataset.bilivexHoverPaused === (clone._bilivexHoverId || '')) {
-              item.classList.remove('bili-danmaku-x-paused');
-              item.style.visibility = '';
-              delete item.dataset.bilivexHoverPaused;
+            if (cBtn.isConnected) cBtn.remove();
+            clone._bilivexFloatBtn = null;
+            const source = clone._bilivexSource;
+            const activeSource = source === item && source && source.isConnected &&
+              source.dataset.bilivexHoverPaused === (clone._bilivexHoverId || '') &&
+              !source.classList.contains('bili-danmaku-x-disable') && !clone._bilivexSourceEnded;
+            if (source && clone._bilivexSourceRelease) {
+              source.removeEventListener('animationend', clone._bilivexSourceRelease);
+              source.removeEventListener('animationcancel', clone._bilivexSourceRelease);
             }
+            // 仅弹幕仍活跃时恢复显示；已结束的弹幕直接清理悬停效果
+            if (activeSource) {
+              source.classList.remove('bili-danmaku-x-paused');
+              source.style.visibility = '';
+              delete source.dataset.bilivexHoverPaused;
+            }
+            clone._bilivexSourceRelease = null;
+            clone._bilivexSourceEnded = false;
+            clone._bilivexSource = null;
             if (clone.isConnected) clone.remove();
           } catch (e) {}
         };
@@ -670,7 +704,18 @@
     return false;
   }
 
-  // ==================== 全局几何悬停引擎 ====================
+  // 仅对正在播放的弹幕启用悬停（已结束的弹幕不响应）
+  function hasActiveFloatingDmAnimation(item) {
+    if (!item || typeof item.getAnimations !== 'function') return false;
+    try {
+      return item.getAnimations().some((animation) =>
+        animation.playState === 'running' || animation.playState === 'pending');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ==================== 漂浮弹幕悬停检测 ====================
   const FloatingDmEngine = {
     hovered: null,       // 当前悬停弹幕
     px: -1, py: -1,      // 最近指针坐标
@@ -741,7 +786,8 @@
       try {
         const el = document.elementFromPoint(px, py);
         const item = el ? this.findDm(el) : null;
-        if (item && !item.classList.contains('bili-danmaku-x-disable') && !isBilivexReleasingDm(item)) {
+        if (item && !item.classList.contains('bili-danmaku-x-disable') &&
+            !isBilivexReleasingDm(item) && hasActiveFloatingDmAnimation(item)) {
           if (!item.dataset.bilivexFloatInited) ensureFloatingDmOverlay(item);
           if (typeof item._bilivexFloatOnEnter === 'function') return item;
         }
@@ -752,6 +798,7 @@
         for (const d of dms) {
           if (d.classList.contains('bili-danmaku-x-disable')) continue;
           if (isBilivexReleasingDm(d)) continue;
+          if (!hasActiveFloatingDmAnimation(d)) continue;
           let r = d.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) {
             if (!d.dataset.bilivexFloatInited) ensureFloatingDmOverlay(d);
@@ -787,11 +834,17 @@
         } catch (e) {}
       }
       if (cur && cur.isConnected) {
-        // 只认真实命中的弹幕或其 +1 按钮，不再扩展任何“热区”。
-        // 这样左缘弹幕可正常 +1，鼠标离开可立即恢复，不会被隐形区域困住。
         try {
           const topEl = document.elementFromPoint(px, py);
-          if (topEl && (topEl === cur || cur.contains(topEl))) return;
+          const btn = cur._bilivexFloatBtn || cur.querySelector('.bilivex-float-plus-btn');
+          if (topEl && (topEl === cur || cur.contains(topEl) || topEl === btn || (btn && btn.contains(topEl)))) return;
+          // 已冻结弹幕与其下方 +1 按钮之间保持连续悬停区域
+          if (btn) {
+            const itemRect = cur.getBoundingClientRect();
+            const buttonRect = btn.getBoundingClientRect();
+            if (px >= itemRect.left && px <= itemRect.right &&
+                py >= itemRect.top && py <= buttonRect.bottom) return;
+          }
         } catch (e) {}
       }
       if (cur) this.leave(cur);
@@ -858,7 +911,11 @@
     keepAliveCheck() {
       const item = this.hovered;
       if (!item) { this.stopKeepAlive(); return; }
-      if (item.isConnected) {
+      const source = item.dataset && item.dataset.bilivexResident === '1' ? item._bilivexSource : null;
+      const sourceIsActive = !source || (source.isConnected &&
+        source.dataset.bilivexHoverPaused === (item._bilivexHoverId || '') &&
+        !source.classList.contains('bili-danmaku-x-disable') && !item._bilivexSourceEnded);
+      if (item.isConnected && sourceIsActive) {
         try {
           const r = item.getBoundingClientRect();
           if (r.width > 0 && r.height > 0) {
@@ -867,8 +924,7 @@
         } catch (e) {}
         return;
       }
-      // B 站回收原节点后，不再复制节点或把 clone 回插轨道。
-      // clone 只负责悬停期间的视觉展示，直接释放可避免历史节点和轨道状态累积。
+      // 弹幕动画结束后直接释放悬停效果，不恢复已结束的弹幕
       try { if (item._bilivexFloatOnLeave) item._bilivexFloatOnLeave(); } catch (e) {}
       this.hovered = null;
       this.stopKeepAlive();
@@ -1409,6 +1465,11 @@
     const seq = ++collapseAnimSeq;
 
     if (collapsed) {
+      const preRect = panel.getBoundingClientRect();
+      const isRightSide = preRect.right > window.innerWidth / 2;
+      // 收起前以原先靠近的视口侧为锚；右侧不能保留展开菜单的左边缘。
+      panel.style.left = (isRightSide ? preRect.right - COLLAPSED_BTN_SIZE : preRect.left) + 'px';
+      panel.style.right = 'auto';
       if (body) body.style.display = 'none';
       const fromH = panel.offsetHeight;
       panel.style.height = fromH + 'px';
@@ -1418,6 +1479,12 @@
         panel.style.height = COLLAPSED_BTN_SIZE + 'px';
         attachCollapsedHover(head, panel);
         avoidChatCollision(panel);
+        setTimeout(() => {
+          if (seq !== collapseAnimSeq || !panel.isConnected) return;
+          const collapsedRect = panel.getBoundingClientRect();
+          cfg.panelPos = { left: Math.round(collapsedRect.left), top: Math.round(collapsedRect.top) };
+          saveCfg(cfg);
+        }, 300);
       });
       return;
     }
@@ -1740,18 +1807,28 @@
         }
         rebindInputTailHandler();
       }
-      // 兜底清理：residentLayer 中已滚出视口且非当前悬停的冻结弹幕/边缘按钮
-      // （防历史弹幕残留累积导致页面越来越卡；正常悬停的 clone 由 onLeave/keepAliveCheck 各自清理）
+      // 兜底清理：已滚出视口且非当前悬停的冻结弹幕/按钮（防止残留累积）
       try {
         const layer = document.getElementById('bilivex-dm-resident');
         if (layer) {
           const hov = FloatingDmEngine.hovered;
-          $$('.bili-danmaku-x-dm, .bilivex-float-edge-btn', layer).forEach((el) => {
-            if (el === hov) return;
+          $$('.bili-danmaku-x-dm, .bilivex-float-plus-btn', layer).forEach((el) => {
+            if (el === hov || el === (hov && hov._bilivexFloatBtn)) return;
             const r = el.getBoundingClientRect();
-            if (r.width === 0 && r.height === 0) { try { el.remove(); } catch (e3) {} return; }
+            if (r.width === 0 && r.height === 0) {
+              try {
+                const pairedButton = el._bilivexFloatBtn;
+                if (pairedButton && pairedButton.isConnected) pairedButton.remove();
+                el.remove();
+              } catch (e3) {}
+              return;
+            }
             if (r.right < -50 || r.left > window.innerWidth + 50 || r.bottom < -50 || r.top > window.innerHeight + 50) {
-              try { el.remove(); } catch (e3) {}
+              try {
+                const pairedButton = el._bilivexFloatBtn;
+                if (pairedButton && pairedButton.isConnected) pairedButton.remove();
+                el.remove();
+              } catch (e3) {}
             }
           });
         }
