@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.0.7
+// @version      1.0.8
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停冻结驻留，可快捷 +1 回复；② 评论区——聊天区弹幕悬停显示 +1/复制按钮；③ 小尾巴——发送弹幕自动追加自定义文字；④ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -164,7 +164,7 @@
     currentTheme = THEMES[cfg.theme] || THEMES.blue;
 
     // 1. 面板标题渐变 + 阴影（折叠态固定 logo 圆形按钮，不随主题切换）
-    const panel = document.getElementById('bilivex-panel');
+    const panel = panelDocument.getElementById('bilivex-panel');
     if (panel) {
       const head = panel.firstElementChild;
       if (cfg.panelCollapsed) {
@@ -178,7 +178,7 @@
     }
 
     // 2. 面板内所有开关（label/span 结构）按当前 checked 状态重染
-    $$('#bilivex-panel label').forEach((lab) => {
+    Array.from(panelDocument.querySelectorAll('#bilivex-panel label')).forEach((lab) => {
       const inp = lab.querySelector('input[type=checkbox]');
       const slider = lab.querySelector('span');
       if (inp && slider) {
@@ -187,7 +187,7 @@
     });
 
     // 3. 主题选择按钮组的高亮
-    $$('[data-bilivex-theme]').forEach((b) => {
+    Array.from(panelDocument.querySelectorAll('[data-bilivex-theme]')).forEach((b) => {
       const isActive = b.dataset.bilivexTheme === cfg.theme;
       b.style.background = isActive ? currentTheme.primary : '#fff';
       b.style.color = isActive ? '#fff' : '#666';
@@ -195,7 +195,7 @@
     });
 
     // 4. 30连击按钮（accent 互补色）
-    $$('#bilivex-panel button[data-bilivex-like="1"]').forEach((b) => {
+    Array.from(panelDocument.querySelectorAll('#bilivex-panel button[data-bilivex-like="1"]')).forEach((b) => {
       b.style.background = currentTheme.accentGradient;
     });
 
@@ -207,7 +207,7 @@
     });
 
     // 6. 漂浮弹幕已绑定的 +1 按钮（ensureFloatingDmOverlay 创建）
-    $$('.bilivex-float-plus-btn').forEach((b) => {
+    Array.from(uiDocument.querySelectorAll('.bilivex-float-plus-btn')).forEach((b) => {
       b.style.background = currentTheme.primary;
       b.style.boxShadow = '0 2px 6px ' + currentTheme.primaryShadow;
     });
@@ -368,10 +368,22 @@
     return rots[0] || ctrs[0] || document.querySelector('body .web-player-danmaku');
   }
 
-  let residentLayer = null;
+  let panelWindow = window;
+  let panelDocument = document;
+  try {
+    if (window.top && window.top.document) {
+      panelWindow = window.top;
+      panelDocument = window.top.document;
+    }
+  } catch (e) {}
+  const uiDocument = document;
+  function toUiRect(rect) { return rect; }
+  function getFrameOffset() { return { left: 0, top: 0 }; }
   function getUiHost() {
     return (document.fullscreenElement && document.fullscreenElement.nodeType === 1) ? document.fullscreenElement : document.body;
   }
+
+  let residentLayer = null;
   function getResidentLayer() {
     if (residentLayer && document.body.contains(residentLayer)) return residentLayer;
     residentLayer = document.createElement('div');
@@ -385,7 +397,7 @@
   function syncFullscreenUi() {
     try {
       const host = getUiHost();
-      ['bilivex-panel', 'bilivex-dm-resident', 'bilivex-toast'].forEach((id) => {
+      ['bilivex-dm-resident', 'bilivex-toast'].forEach((id) => {
         const el = document.getElementById(id);
         if (el && el.parentNode !== host) host.appendChild(el);
       });
@@ -398,12 +410,12 @@
       const ctr = document.querySelector('.danmaku-item-container') || document.querySelector('.web-player-danmaku');
       if (ctr) {
         const r = ctr.getBoundingClientRect();
-        if (r.width > 0 && r.height > 0) return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+        if (r.width > 0 && r.height > 0) return toUiRect(r);
       }
       const p = document.getElementById('live-player');
       if (p) {
         const r = p.getBoundingClientRect();
-        if (r.width > 0 && r.height > 0) return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+        if (r.width > 0 && r.height > 0) return toUiRect(r);
       }
     } catch (e) {}
     return null;
@@ -433,9 +445,11 @@
   // 视觉反馈动画：点击 +1 后在弹幕位置弹出 "✓ 已 +1" 浮字动画
   function showFloatingPlusFeedback(item) {
     if (!item || !item.isConnected) return;
-    const rect = item.getBoundingClientRect();
+    const rect = item.ownerDocument === uiDocument
+      ? item.getBoundingClientRect()
+      : toUiRect(item.getBoundingClientRect());
     if (rect.width === 0 && rect.height === 0) return;
-    const fb = document.createElement('div');
+    const fb = uiDocument.createElement('div');
     fb.className = 'bilivex-float-plus-fb';
     fb.textContent = '✓ +1';
     fb.style.cssText = 'position:fixed;' +
@@ -513,7 +527,7 @@
           const anims = item.getAnimations();
           if (anims.length && anims[0].currentTime != null) progress = anims[0].currentTime;
         } catch (e) {}
-        const rect = item.getBoundingClientRect();
+        const rect = toUiRect(item.getBoundingClientRect());
         const playerRect = getPlayerRect();
         const origParent = item.parentNode;
         const hoverId = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8);
@@ -521,7 +535,7 @@
         item._bilivexHoverId = hoverId;
         item._bilivexOrigParent = origParent;
         item._bilivexAnimProgress = progress;
-        const clone = item.cloneNode(true);
+        const clone = uiDocument.importNode(item, true);
         const oldBtn = clone.querySelector('.bilivex-float-plus-btn');
         if (oldBtn) oldBtn.remove();
         clone.dataset.bilivexResident = '1';
@@ -570,7 +584,7 @@
         clone.style.backgroundColor = currentTheme.highlight;
         clone.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
         // 3) +1 按钮
-        const cBtn = document.createElement('button');
+        const cBtn = uiDocument.createElement('button');
         cBtn.className = 'bilivex-float-plus-btn';
         cBtn.type = 'button';
         cBtn.textContent = '+1';
@@ -747,12 +761,12 @@
         if (this.rafId) return;
         this.rafId = requestAnimationFrame(() => { this.rafId = 0; this.check(); });
       };
-      document.addEventListener('pointermove', onMove, { passive: true });
-      document.addEventListener('mousemove', onMove, { passive: true });
+      uiDocument.addEventListener('pointermove', onMove, { passive: true });
+      uiDocument.addEventListener('mousemove', onMove, { passive: true });
       // 兜底：鼠标离开窗口时清除悬停
       const onLeaveWin = () => { if (this.hovered) this.leave(this.hovered); };
-      document.addEventListener('pointerleave', onLeaveWin);
-      document.addEventListener('mouseleave', onLeaveWin);
+      uiDocument.addEventListener('pointerleave', onLeaveWin);
+      uiDocument.addEventListener('mouseleave', onLeaveWin);
 
       const onAnimEndBlock = (e) => {
         const cur = this.hovered;
@@ -769,8 +783,13 @@
     },
 
     getBodyRect(item) {
-      const r = item.getBoundingClientRect();
+      const r = toUiRect(item.getBoundingClientRect());
       return { l: r.left - 6, r: r.right + 6, t: r.top - 6, b: r.bottom + 6 };
+    },
+
+    getLocalPoint(px, py) {
+      const offset = getFrameOffset();
+      return { x: px - offset.left, y: py - offset.top };
     },
     // 向上找最近的弹幕节点
     findDm(el) {
@@ -783,8 +802,9 @@
     },
 
     _computeCandidate(px, py) {
+      const local = this.getLocalPoint(px, py);
       try {
-        const el = document.elementFromPoint(px, py);
+        const el = document.elementFromPoint(local.x, local.y);
         const item = el ? this.findDm(el) : null;
         if (item && !item.classList.contains('bili-danmaku-x-disable') &&
             !isBilivexReleasingDm(item) && hasActiveFloatingDmAnimation(item)) {
@@ -799,10 +819,10 @@
           if (d.classList.contains('bili-danmaku-x-disable')) continue;
           if (isBilivexReleasingDm(d)) continue;
           if (!hasActiveFloatingDmAnimation(d)) continue;
-          let r = d.getBoundingClientRect();
+          let r = toUiRect(d.getBoundingClientRect());
           if (r.width === 0 || r.height === 0) {
             if (!d.dataset.bilivexFloatInited) ensureFloatingDmOverlay(d);
-            r = d.getBoundingClientRect();
+            r = toUiRect(d.getBoundingClientRect());
           }
           if (r.width === 0 || r.height === 0) continue;
           if (d.dataset.bilivexFloatInited === '1') {
@@ -823,7 +843,8 @@
       const cur = this.hovered;
       if (px >= 0 && py >= 0) {
         try {
-          const topEl = document.elementFromPoint(px, py);
+          const local = this.getLocalPoint(px, py);
+          const topEl = uiDocument.elementFromPoint(px, py) || document.elementFromPoint(local.x, local.y);
           if (topEl && topEl.closest && topEl.closest('#bilivex-panel, .bilivex-dm-bar')) {
             if (cur) this.leave(cur);
             this._cand = null;
@@ -835,7 +856,8 @@
       }
       if (cur && cur.isConnected) {
         try {
-          const topEl = document.elementFromPoint(px, py);
+          const local = this.getLocalPoint(px, py);
+          const topEl = uiDocument.elementFromPoint(px, py) || document.elementFromPoint(local.x, local.y);
           const btn = cur._bilivexFloatBtn || cur.querySelector('.bilivex-float-plus-btn');
           if (topEl && (topEl === cur || cur.contains(topEl) || topEl === btn || (btn && btn.contains(topEl)))) return;
           // 已冻结弹幕与其下方 +1 按钮之间保持连续悬停区域
@@ -980,7 +1002,7 @@
         item.dataset.bilivexFloatInited = '';
       });
       rotate.dataset.bilivexFloatBound = '';
-      if (residentLayer && document.body.contains(residentLayer)) {
+      if (residentLayer && residentLayer.ownerDocument.body.contains(residentLayer)) {
         $$('.bili-danmaku-x-dm', residentLayer).forEach(item => {
           if (typeof item._bilivexFloatCleanup === 'function') {
             try { item._bilivexFloatCleanup(); } catch (e) {}
@@ -1143,11 +1165,10 @@
 
   // ---------- 悬浮主菜单 ----------
   function buildPanel() {
-    // 如果已存在则重建
-    const old = document.getElementById('bilivex-panel');
-    if (old) old.remove();
+    // 面板在页面顶层，多个同源页面共用同一份，已存在则不重复创建。
+    if (panelDocument.getElementById('bilivex-panel')) return;
 
-    const panel = document.createElement('div');
+    const panel = panelDocument.createElement('div');
     panel.id = 'bilivex-panel';
     const collapsed = !!cfg.panelCollapsed;
     panel.style.cssText = [
@@ -1403,7 +1424,7 @@
     currentSection.appendChild(likeHint);
 
 
-    currentPanel = panel;
+    setCurrentPanel(panel);
     head.addEventListener('pointerdown', (e) => {
       // 仅响应左键；指针 capture 后鼠标跨越 iframe 也不会丢事件
       if (e.button !== 0 && e.pointerType !== 'touch') return;
@@ -1420,8 +1441,9 @@
         if (pressState.down && !pressState.moved && pressState.panelRef) {
           pressState.longPressed = true;
           dragState.dragging = true;
-          dragState.ox = pressState.x - pressState.panelRef.offsetLeft;
-          dragState.oy = pressState.y - pressState.panelRef.offsetTop;
+          const panelRect = pressState.panelRef.getBoundingClientRect();
+          dragState.ox = pressState.x - panelRect.left;
+          dragState.oy = pressState.y - panelRect.top;
           pressState.panelRef.style.cursor = 'grabbing';
         }
       }, 220);
@@ -1429,7 +1451,7 @@
     });
     bindDragHandlers();
 
-    getUiHost().appendChild(panel);
+    panelDocument.body.appendChild(panel);
 
     if (collapsed) attachCollapsedHover(head, panel);
 
@@ -1456,7 +1478,7 @@
   // 原位切换面板的折叠/展开视觉；展开时根据小球位置智能选边，并最终吸附到视口边缘
   let collapseAnimSeq = 0;   // 动画序号，防止快速连续点击时旧回调覆盖新状态
   function setPanelCollapsed(collapsed) {
-    const panel = document.getElementById('bilivex-panel');
+    const panel = panelDocument.getElementById('bilivex-panel');
     if (!panel) return;
     const head = panel.firstElementChild;
     const body = head ? head.nextElementSibling : null;
@@ -1466,7 +1488,7 @@
 
     if (collapsed) {
       const preRect = panel.getBoundingClientRect();
-      const isRightSide = preRect.right > window.innerWidth / 2;
+      const isRightSide = preRect.right > panelWindow.innerWidth / 2;
       // 收起前以原先靠近的视口侧为锚；右侧不能保留展开菜单的左边缘。
       panel.style.left = (isRightSide ? preRect.right - COLLAPSED_BTN_SIZE : preRect.left) + 'px';
       panel.style.right = 'auto';
@@ -1490,24 +1512,22 @@
     }
 
     if (body) body.style.display = '';
-    // 展开时智能选边：记录小球当前视口右侧距离，决定菜单展开后保留哪一侧贴近视口
+    // 展开只保留当前左上角位置，必要时钳制到视口内；边缘吸附仅发生在拖动结束。
     const preRect = panel.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const preferRight = (preRect.right > vw / 2);   // 小球靠右 → 展开后靠右贴边（避免菜单溢出右边）
+    const vw = panelWindow.innerWidth;
+    const vh = panelWindow.innerHeight;
     const savedTransition = panel.style.transition;
     panel.style.transition = 'none';
-    if (preferRight) {
-      // 锚定右边缘：菜单从右往左生长
-      panel.style.right = (vw - preRect.right) + 'px';
-      panel.style.left = 'auto';
-    } else {
-      panel.style.left = preRect.left + 'px';
-      panel.style.right = 'auto';
-    }
+    panel.style.left = preRect.left + 'px';
+    panel.style.top = preRect.top + 'px';
+    panel.style.right = 'auto';
     applyPanelCollapsedStyles(panel, head, title, tog, false);
     panel.style.width = '220px';
     panel.style.height = 'auto';
+    const targetW = panel.offsetWidth;
     const targetH = panel.offsetHeight;
+    const nx = Math.max(8, Math.min(preRect.left, vw - targetW - 8));
+    const ny = Math.max(8, Math.min(preRect.top, vh - targetH - 8));
     applyPanelCollapsedStyles(panel, head, title, tog, true);
     panel.style.width = COLLAPSED_BTN_SIZE + 'px';
     panel.style.height = COLLAPSED_BTN_SIZE + 'px';
@@ -1515,14 +1535,15 @@
     requestAnimationFrame(() => {
       if (seq !== collapseAnimSeq) return;
       applyPanelCollapsedStyles(panel, head, title, tog, false);
+      panel.style.left = nx + 'px';
+      panel.style.top = ny + 'px';
+      panel.style.right = 'auto';
       panel.style.width = '220px';
       panel.style.height = targetH + 'px';
       setTimeout(() => {
         if (seq === collapseAnimSeq) panel.style.height = 'auto';
       }, 300);
       avoidChatCollision(panel);
-      // 展开动画启动后立即吸附到视口边缘，避免菜单超出网页（Bug5）+ 与球靠同侧（Bug4）
-      snapPanelToEdge(panel);
     });
   }
 
@@ -1582,6 +1603,8 @@
 
   function avoidChatCollision(panel) {
     try {
+      // 活动页聊天区在直播画面中，与顶层面板坐标系不同，不做本地避让判断。
+      if (panelDocument !== document) return;
       // 用户已拖拽/吸附定位后不强制避让（尊重用户意图，避免展开时菜单被推到另一侧）
       if (cfg.panelPos && cfg.panelPos.left != null) return;
       const list = document.querySelector('.chat-history-list');
@@ -1611,25 +1634,32 @@
   }
 
   // ---------- 面板交互（点击整个区域弹菜单 + 长按/快速拖动 + 边缘吸附） ----------
-  let currentPanel = null;                       // 当前面板 DOM，供拖拽处理器引用
-  const dragState = { dragging: false, ox: 0, oy: 0, moved: false };
-  // 按压状态：区分「点击（toggle 菜单）」与「长按/快速拖动」
-  const pressState = { down: false, x: 0, y: 0, moved: false, longPressed: false, longTimer: null, panelRef: null, pointerId: -1 };
-  let dragBound = false;
+  // 页面顶层的面板拖拽状态全局共享，保证同一页面上只有一个控制器在工作。
+  const panelController = panelWindow._bilivexPanelController || (panelWindow._bilivexPanelController = {
+    currentPanel: null,
+    dragState: { dragging: false, ox: 0, oy: 0, moved: false },
+    pressState: { down: false, x: 0, y: 0, moved: false, longPressed: false, longTimer: null, panelRef: null, pointerId: -1 },
+    dragBound: false,
+  });
+  const dragState = panelController.dragState;
+  const pressState = panelController.pressState;
   // 吸附阈值（px）：面板中心距左/右视口边缘小于该值即吸附到侧边
   const SNAP_THRESHOLD = 120;
+  function setCurrentPanel(panel) {
+    panelController.currentPanel = panel;
+  }
   function bindDragHandlers() {
-    if (dragBound) return;                       // 全局监听器只绑定一次
-    dragBound = true;
+    if (panelController.dragBound) return;       // 全局监听只绑定一次
+    panelController.dragBound = true;
     // 使用 pointermove/pointerup 配合 head 上的 setPointerCapture，
     // 即使鼠标越过 iframe 边界也不会丢事件（事件跟随捕获指针到达 head，再冒泡到 document）。
-    document.addEventListener('pointermove', (e) => {
+    panelDocument.addEventListener('pointermove', (e) => {
       // 拖动中：实时跟随
-      if (dragState.dragging && currentPanel) {
+      if (dragState.dragging && panelController.currentPanel) {
         dragState.moved = true;
-        currentPanel.style.left = (e.clientX - dragState.ox) + 'px';
-        currentPanel.style.top = (e.clientY - dragState.oy) + 'px';
-        currentPanel.style.right = 'auto';
+        panelController.currentPanel.style.left = (e.clientX - dragState.ox) + 'px';
+        panelController.currentPanel.style.top = (e.clientY - dragState.oy) + 'px';
+        panelController.currentPanel.style.right = 'auto';
         return;
       }
       // 按压未拖动：位移超过阈值 → 转为快速拖动
@@ -1639,15 +1669,20 @@
         if (Math.hypot(dx, dy) > 6) {
           pressState.moved = true;
           dragState.dragging = true;
-          dragState.ox = e.clientX - pressState.panelRef.offsetLeft;
-          dragState.oy = e.clientY - pressState.panelRef.offsetTop;
+          dragState.moved = true;
+          const panelRect = pressState.panelRef.getBoundingClientRect();
+          dragState.ox = pressState.x - panelRect.left;
+          dragState.oy = pressState.y - panelRect.top;
+          pressState.panelRef.style.left = (e.clientX - dragState.ox) + 'px';
+          pressState.panelRef.style.top = (e.clientY - dragState.oy) + 'px';
+          pressState.panelRef.style.right = 'auto';
           pressState.panelRef.style.cursor = 'grabbing';
         }
       }
     }, { passive: true });
     const finishDrag = (e) => {
       if (!pressState.down && !dragState.dragging) return;
-      const panel = pressState.panelRef || currentPanel;
+      const panel = pressState.panelRef || panelController.currentPanel;
       clearTimeout(pressState.longTimer);
       pressState.down = false;
       const wasDrag = dragState.moved || pressState.longPressed;
@@ -1667,15 +1702,15 @@
       pressState.longPressed = false;
       pressState.panelRef = null;
     };
-    document.addEventListener('pointerup', finishDrag);
-    document.addEventListener('pointercancel', finishDrag);
+    panelDocument.addEventListener('pointerup', finishDrag);
+    panelDocument.addEventListener('pointercancel', finishDrag);
   }
 
   function snapPanelToEdge(panel) {
     try {
       const r = panel.getBoundingClientRect();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
+    const vw = panelWindow.innerWidth;
+    const vh = panelWindow.innerHeight;
       let nx = r.left, ny = r.top;
       // 先确保完全在视口内（Bug5：菜单不要溢出；展开后即使靠右也不超右边）
       if (nx + r.width > vw - 4) nx = Math.max(8, vw - r.width - 8);   // 右侧溢出
@@ -1700,8 +1735,8 @@
       setTimeout(() => {
         if (panel.isConnected) panel.style.transition = savedTransition;
       }, 320);
-      const nr = panel.getBoundingClientRect();
-      cfg.panelPos = { left: Math.round(nr.left), top: Math.round(nr.top) };
+      // 目标值与上面写入的坐标一致，不读取动画过渡中的中间位置。
+      cfg.panelPos = { left: Math.round(nx), top: Math.round(ny) };
       saveCfg(cfg);
     } catch (err) {}
   }
@@ -1710,11 +1745,11 @@
   let bilivexAnimInjected = false;
   function injectFloatingDmAnim() {
     if (bilivexAnimInjected) return;
-    if (!document.head) return;
+    if (!uiDocument.head) return;
     // 移除旧的（如有），确保颜色变量更新
-    const old = document.getElementById('bilivex-float-dm-anim');
+    const old = uiDocument.getElementById('bilivex-float-dm-anim');
     if (old) old.remove();
-    const style = document.createElement('style');
+    const style = uiDocument.createElement('style');
     style.id = 'bilivex-float-dm-anim';
     style.textContent = '@keyframes bilivex-float-plus{' +
       '0%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}' +
@@ -1722,16 +1757,16 @@
       '70%{opacity:0.95;transform:translate(-50%,-160%) scale(1);}' +
       '100%{opacity:0;transform:translate(-50%,-220%) scale(0.9);}' +
       '}';
-    document.head.appendChild(style);
+    uiDocument.head.appendChild(style);
     bilivexAnimInjected = true;
   }
 
   // ---------- Toast ----------
   let toastTimer = null;
   function showToast(text) {
-    let t = document.getElementById('bilivex-toast');
+    let t = uiDocument.getElementById('bilivex-toast');
     if (!t) {
-      t = document.createElement('div');
+      t = uiDocument.createElement('div');
       t.id = 'bilivex-toast';
       t.style.cssText = 'position:fixed;left:50%;top:30%;transform:translateX(-50%);' +
         'background:rgba(0,0,0,0.78);color:#fff;padding:8px 16px;border-radius:6px;' +
@@ -1809,7 +1844,7 @@
       }
       // 兜底清理：已滚出视口且非当前悬停的冻结弹幕/按钮（防止残留累积）
       try {
-        const layer = document.getElementById('bilivex-dm-resident');
+        const layer = uiDocument.getElementById('bilivex-dm-resident');
         if (layer) {
           const hov = FloatingDmEngine.hovered;
           $$('.bili-danmaku-x-dm, .bilivex-float-plus-btn', layer).forEach((el) => {
