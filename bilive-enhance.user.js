@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.0.8
+// @version      1.0.9
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停冻结驻留，可快捷 +1 回复；② 评论区——聊天区弹幕悬停显示 +1/复制按钮；③ 小尾巴——发送弹幕自动追加自定义文字；④ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -102,30 +102,73 @@
   function $$(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
 
   function setReactLikeValue(el, value) {
-    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const ownerWindow = el.ownerDocument.defaultView || window;
+    const proto = el instanceof ownerWindow.HTMLTextAreaElement
+      ? ownerWindow.HTMLTextAreaElement.prototype : ownerWindow.HTMLInputElement.prototype;
     const desc = Object.getOwnPropertyDescriptor(proto, 'value');
-    if (desc && desc.set) desc.set.call(el, value);
-    el.dispatchEvent(new Event('input', { bubbles: true }));
+    if (!desc || !desc.set) return false;
+    desc.set.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+    return el.value === value;
   }
 
   function findChatInput() {
-    const ta = document.querySelector('textarea.chat-input.border-box');
-    if (ta) return ta;
-    // 兜底：在聊天控制面板内找 textarea
-    const ctl = document.querySelector('.chat-control-panel');
-    if (ctl) {
-      const t2 = ctl.querySelector('textarea');
-      if (t2) return t2;
+    const selectors = [
+      'textarea.chat-input.border-box',
+      '.chat-control-panel textarea',
+      'textarea[placeholder*="发言"]',
+      'textarea[placeholder*="聊天"]',
+      'textarea[data-e2e*="chat"]',
+    ];
+    for (const selector of selectors) {
+      const input = document.querySelector(selector);
+      if (input && !input.disabled && input.offsetParent !== null) return input;
     }
     return null;
   }
 
-  function findSendBtn() {
-    const btn = document.querySelector('button.send-btn');
-    if (btn) return btn;
-    const ctl = document.querySelector('.chat-control-panel');
-    if (ctl) return ctl.querySelector('button');
+  const CHAT_SEND_SELECTORS = [
+    'button.send-btn',
+    'button[aria-label*="发送"]',
+    'button[title*="发送"]',
+    '[data-e2e*="send"]',
+    '.send-button',
+  ];
+
+  function isEnabledChatSendButton(button, input) {
+    if (!button || button === input || button.disabled || button.getAttribute('aria-disabled') === 'true') {
+      return false;
+    }
+    const scope = input && input.closest('.chat-control-panel, .chat-input-outer, .chat-input-panel');
+    return (!scope || scope.contains(button)) && CHAT_SEND_SELECTORS.some((selector) => button.matches(selector));
+  }
+
+  function findSendBtn(input) {
+    const scope = input && input.closest('.chat-control-panel, .chat-input-outer, .chat-input-panel');
+    const roots = scope ? [scope, document] : [document];
+    for (const root of roots) {
+      for (const selector of CHAT_SEND_SELECTORS) {
+        const button = root.querySelector(selector);
+        if (isEnabledChatSendButton(button, input)) return button;
+      }
+    }
     return null;
+  }
+
+  function appendTailForManualSend(ta) {
+    const originalText = ta && ta.value;
+    if (!ta || !cfg.tailEnabled || !cfg.tailText || !originalText || originalText.endsWith(cfg.tailText)) {
+      return;
+    }
+    if (ta._bilivexTailAppending) return;
+    ta._bilivexTailAppending = true;
+    try {
+      // React 的发送处理可能晚于当前事件循环；保留最终文本直至页面自身消费/清空。
+      setReactLikeValue(ta, originalText + cfg.tailText);
+    } finally {
+      ta._bilivexTailAppending = false;
+    }
   }
 
   // 填入并尝试发送。返回结果状态：'sent' | 'filled' | 'no-input'
@@ -135,28 +178,34 @@
     if (!ta) return { status: 'no-input', message: '未找到聊天输入框（可能未登录）' };
     // 触发聚焦，便于用户看到输入
     try { ta.focus(); } catch (e) {}
-    setReactLikeValue(ta, text);
-    // 小尾巴补齐：若启用，input 事件已触发，再确保文本以尾巴结尾
-    if (cfg.tailEnabled && cfg.tailText && !text.endsWith(cfg.tailText)) {
-      // 二次写入带尾巴（仅在文本未带尾巴时）
-      const next = text + cfg.tailText;
-      setReactLikeValue(ta, next);
+    // 只在脚本发送入口生成一次最终文本；用户直接编辑 textarea 不经过这里。
+    const finalText = cfg.tailEnabled && cfg.tailText && !text.endsWith(cfg.tailText)
+      ? text + cfg.tailText
+      : text;
+    if (!setReactLikeValue(ta, finalText)) {
+      return { status: 'filled', message: '输入框暂不可用' };
     }
     if (opts.autoSend === false) return { status: 'filled' };
-    // 模拟 Enter 键发送
+    // 只走一个真实发送边界：按钮优先，找不到明确按钮时才使用 Enter。
+    const btn = findSendBtn(ta);
+    if (btn) {
+      try {
+        btn.focus();
+        btn.click();
+        return { status: 'sent' };
+      } catch (e) {}
+    }
     try {
+      ta.focus();
       const ev = new KeyboardEvent('keydown', {
         key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
         bubbles: true, cancelable: true,
       });
-      ta.dispatchEvent(ev);
-    } catch (e) {}
-    // 兜底：点击发送按钮
-    const btn = findSendBtn();
-    if (btn && !btn.disabled) {
-      try { btn.click(); } catch (e) {}
+      const dispatched = ta.dispatchEvent(ev);
+      return dispatched ? { status: 'sent' } : { status: 'filled', message: '已填入，请按回车发送' };
+    } catch (e) {
+      return { status: 'filled', message: '已填入，请按回车发送' };
     }
-    return { status: 'sent' };
   }
 
   // ---------- 主题应用 ----------
@@ -377,16 +426,46 @@
     }
   } catch (e) {}
   const uiDocument = document;
-  function toUiRect(rect) { return rect; }
-  function getFrameOffset() { return { left: 0, top: 0 }; }
+  function getFrameOffset() {
+    let left = 0, top = 0;
+    let currentWindow = window;
+    try {
+      while (currentWindow !== panelWindow && currentWindow.frameElement) {
+        const frameRect = currentWindow.frameElement.getBoundingClientRect();
+        left += frameRect.left;
+        top += frameRect.top;
+        currentWindow = currentWindow.parent;
+      }
+    } catch (e) {}
+    return { left, top };
+  }
+  function toUiRect(rect) {
+    if (!rect) return rect;
+    const offset = getFrameOffset();
+    if (offset.left === 0 && offset.top === 0) return rect;
+    return {
+      left: rect.left + offset.left,
+      top: rect.top + offset.top,
+      right: rect.right + offset.left,
+      bottom: rect.bottom + offset.top,
+      width: rect.width,
+      height: rect.height,
+      x: rect.x + offset.left,
+      y: rect.y + offset.top,
+      toJSON: rect.toJSON ? rect.toJSON.bind(rect) : undefined
+    };
+  }
   function getUiHost() {
-    return (document.fullscreenElement && document.fullscreenElement.nodeType === 1) ? document.fullscreenElement : document.body;
+    const fullscreen = panelDocument.fullscreenElement;
+    // 活动页常给 body 设置 transform/overflow，fixed 子节点会被裁剪或落入局部层叠上下文。
+    // 顶层 UI 直接挂 documentElement，只有全屏时才迁入全屏元素。
+    return (fullscreen && fullscreen.nodeType === 1) ? fullscreen : panelDocument.documentElement;
   }
 
   let residentLayer = null;
   function getResidentLayer() {
-    if (residentLayer && document.body.contains(residentLayer)) return residentLayer;
-    residentLayer = document.createElement('div');
+    if (residentLayer && panelDocument.documentElement.contains(residentLayer)) return residentLayer;
+    residentLayer = panelDocument.createElement('div');
     residentLayer.id = 'bilivex-dm-resident';
     residentLayer.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;' +
       'pointer-events:none;overflow:hidden;z-index:2147483000;';
@@ -397,8 +476,9 @@
   function syncFullscreenUi() {
     try {
       const host = getUiHost();
-      ['bilivex-dm-resident', 'bilivex-toast'].forEach((id) => {
-        const el = document.getElementById(id);
+      if (!host) return;
+      ['bilivex-dm-resident', 'bilivex-toast', 'bilivex-panel'].forEach((id) => {
+        const el = panelDocument.getElementById(id);
         if (el && el.parentNode !== host) host.appendChild(el);
       });
     } catch (e) {}
@@ -506,6 +586,30 @@
       setTimeout(() => { btn.dataset.bilivexBusy = ''; }, 300);
     });
 
+    const restoreFloatingSource = (source, hoverId) => {
+      if (!source || !source.isConnected || !hoverId ||
+          source.dataset.bilivexHoverPaused !== hoverId ||
+          source._bilivexHoverId !== hoverId ||
+          source.classList.contains('bili-danmaku-x-disable')) {
+        return false;
+      }
+      const snapshots = source._bilivexAnimationSnapshot || [];
+      source._bilivexAnimationSnapshot = null;
+      delete source.dataset.bilivexHoverPaused;
+      source._bilivexHoverId = null;
+      source.classList.remove('bili-danmaku-x-paused');
+      source.style.visibility = '';
+      source.style.backgroundColor = '';
+      source.style.boxShadow = '';
+      snapshots.forEach((snapshot) => {
+        try {
+          if (snapshot.currentTime != null) snapshot.animation.currentTime = snapshot.currentTime;
+          if (snapshot.playState === 'running' || snapshot.playState === 'pending') snapshot.animation.play();
+        } catch (e) {}
+      });
+      return true;
+    };
+
     const onEnter = () => {
       if (!cfg.floatDmPlus) return null;
       try {
@@ -522,11 +626,19 @@
           }
         } catch (e) { origOpacity = '1'; }
         if (!origOpacity) origOpacity = '1';
-        let progress = 0;
+        // 悬停期间保持弹幕在画面中的位置与样式，离开后继续滚动。
+        FloatingDmEngine.bindAnimationEndBlock(item.ownerDocument);
+        const animationSnapshot = [];
         try {
-          const anims = item.getAnimations();
-          if (anims.length && anims[0].currentTime != null) progress = anims[0].currentTime;
+          item.getAnimations().forEach((animation) => {
+            const playState = animation.playState;
+            const currentTime = animation.currentTime;
+            if (playState === 'running' || playState === 'pending') animation.pause();
+            animationSnapshot.push({ animation, playState, currentTime });
+          });
         } catch (e) {}
+        const progress = animationSnapshot.length && animationSnapshot[0].currentTime != null
+          ? animationSnapshot[0].currentTime : 0;
         const rect = toUiRect(item.getBoundingClientRect());
         const playerRect = getPlayerRect();
         const origParent = item.parentNode;
@@ -535,62 +647,73 @@
         item._bilivexHoverId = hoverId;
         item._bilivexOrigParent = origParent;
         item._bilivexAnimProgress = progress;
-        const clone = uiDocument.importNode(item, true);
-        const oldBtn = clone.querySelector('.bilivex-float-plus-btn');
-        if (oldBtn) oldBtn.remove();
+        item._bilivexAnimationSnapshot = animationSnapshot;
+        // 悬停时显示弹幕文字与高亮，不影响原始弹幕的滚动。
+        const clone = uiDocument.createElement('div');
+        clone.className = 'bilivex-float-highlight';
         clone.dataset.bilivexResident = '1';
         clone._bilivexHoverId = hoverId;
         clone._bilivexSource = item;
         clone._bilivexAnimProgress = progress;
         clone._bilivexOrigParent = origParent;
+        const residentText = extractFloatingDmText(item);
+        const sourceText = item.querySelector('.bili-danmaku-x-text') || item;
+        const textLayer = uiDocument.createElement('span');
+        textLayer.className = 'bilivex-float-text';
+        textLayer.textContent = residentText;
+        textLayer.style.setProperty('display', 'block', 'important');
+        textLayer.style.setProperty('width', '100%', 'important');
+        textLayer.style.setProperty('height', '100%', 'important');
+        textLayer.style.setProperty('overflow', 'visible', 'important');
+        textLayer.style.setProperty('white-space', 'nowrap', 'important');
+        textLayer.style.setProperty('pointer-events', 'none', 'important');
+        textLayer.style.setProperty('user-select', 'none', 'important');
         try {
-          const fromCs = getComputedStyle(item);
-          const toCs = getComputedStyle(clone);
-          const vars = new Set();
-          try { for (let i = 0; i < fromCs.length; i++) { const p = fromCs.item(i); if (p && p.charCodeAt(0) === 45 /*'-'*/) vars.add(p); } } catch (e3) {}
-          ['--opacity','--fontSize','--scale','--translateX','--translateY','--translateZ','--duration','--offset','--fontWeight','--fontFamily','--color','--textShadow','--size','--top','--left','--bottom','--right','--width','--height','--precise-distance','--wrap-width','--fireIndex','--fireWidth','--top-show','--bottom-show','--left-show','--right-show'].forEach((v) => vars.add(v));
-          vars.forEach((v) => {
-            try {
-              const fv = fromCs.getPropertyValue(v);
-              const tv = toCs.getPropertyValue(v);
-              if (fv !== '' && fv !== tv) clone.style.setProperty(v, fv);
-            } catch (e3) {}
+          const textStyle = getComputedStyle(sourceText);
+          ['color', 'font-family', 'font-size', 'font-weight', 'font-style', 'line-height',
+            'letter-spacing', 'text-shadow'].forEach((name) => {
+            const value = textStyle.getPropertyValue(name);
+            if (value) textLayer.style.setProperty(name, value, 'important');
           });
-        } catch (e2) {}
+        } catch (e) {}
+        textLayer.style.setProperty('opacity', '1', 'important');
+        clone.appendChild(textLayer);
+        clone._bilivexTextLayer = textLayer;
         item.classList.add('bili-danmaku-x-paused');
-        item.style.visibility = 'hidden';
-        clone.style.animation = 'none';
-        clone.style.animationDelay = '';
+        item.style.backgroundColor = currentTheme.highlight;
+        item.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
         // 保留弹幕当下的真实坐标；不得向播放器边界钳制，否则左缘弹幕会被搬到左上角并持续命中鼠标。
-        const cloneLeft = rect.left;
-        const cloneTop = rect.top;
-        clone.style.position = 'fixed';
-        clone.style.left = cloneLeft + 'px';
-        clone.style.top = cloneTop + 'px';
-        clone.style.margin = '0';
-        clone.style.zIndex = '9999';
-        clone.style.pointerEvents = 'auto';
-        clone.style.visibility = '';
-        clone.style.opacity = origOpacity;
-        if (playerRect) {
-          const clipTop = Math.max(0, playerRect.top - rect.top);
-          const clipRight = Math.max(0, rect.right - playerRect.right);
-          const clipBottom = Math.max(0, rect.bottom - playerRect.bottom);
-          const clipLeft = Math.max(0, playerRect.left - rect.left);
-          clone.style.clipPath = `inset(${clipTop}px ${clipRight}px ${clipBottom}px ${clipLeft}px)`;
-        }
-        // 冻结 + 高亮 + 细边框
-        clone.classList.add('bili-danmaku-x-paused');
+        clone.style.setProperty('position', 'fixed', 'important');
+        clone.style.setProperty('left', rect.left + 'px', 'important');
+        clone.style.setProperty('top', rect.top + 'px', 'important');
+        clone.style.setProperty('width', rect.width + 'px', 'important');
+        clone.style.setProperty('height', rect.height + 'px', 'important');
+        clone.style.setProperty('box-sizing', 'border-box', 'important');
+        clone.style.setProperty('margin', '0', 'important');
+        clone.style.setProperty('padding', '0', 'important');
+        clone.style.setProperty('border', '0', 'important');
+        clone.style.setProperty('transform', 'none', 'important');
+        clone.style.setProperty('z-index', '9999', 'important');
+        clone.style.setProperty('pointer-events', 'none', 'important');
         clone.style.backgroundColor = currentTheme.highlight;
         clone.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
-        // 3) +1 按钮
+        // 3) +1 按钮：跟随弹幕显示，优先放在右侧，空间不足时回退左侧。
         const cBtn = uiDocument.createElement('button');
         cBtn.className = 'bilivex-float-plus-btn';
         cBtn.type = 'button';
         cBtn.textContent = '+1';
         cBtn.dataset.bilivexAction = 'plus1';
-        cBtn.style.cssText = 'position:fixed;left:' + (rect.left + rect.width / 2) + 'px;top:' + (rect.bottom + 6) + 'px;' +
-          'transform:translateX(-50%);margin:0;' +
+        const viewportWidth = uiDocument.documentElement.clientWidth || window.innerWidth;
+        const rightLimit = playerRect ? Math.min(playerRect.right, viewportWidth) : viewportWidth;
+        const leftLimit = playerRect ? Math.max(playerRect.left, 0) : 0;
+        const buttonWidth = 68;
+        const buttonGap = 8;
+        const rightLeft = rect.right + buttonGap;
+        const leftLeft = rect.left - buttonGap - buttonWidth;
+        const buttonLeft = rightLeft + buttonWidth <= rightLimit ? rightLeft : Math.max(leftLimit, leftLeft);
+        const buttonTop = rect.top + rect.height / 2;
+        cBtn.style.cssText = 'position:fixed;left:' + buttonLeft + 'px;top:' + buttonTop + 'px;' +
+          'transform:translateY(-50%);margin:0;' +
           `background:${currentTheme.primary};color:#fff;border:none;border-radius:12px;` +
           'padding:5px 14px;font-size:14px;line-height:18px;font-weight:600;' +
           'cursor:pointer;z-index:10000;pointer-events:auto;' +
@@ -598,45 +721,16 @@
         cBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); });
         cBtn.addEventListener('click', (e) => {
           e.stopPropagation(); e.preventDefault();
-          const t = extractFloatingDmText(clone);
+          const t = extractFloatingDmText(item);
           if (!t) { showToast('该弹幕无文本内容'); return; }
           const rr = fillAndSend(t);
-          showFloatingPlusFeedback(clone);
+          showFloatingPlusFeedback(item);
           showToast(rr.message || (rr.status === 'sent' ? '已发送' : '已填入，请按回车'));
         });
         clone._bilivexFloatBtn = cBtn;
         getResidentLayer().appendChild(clone);
         getResidentLayer().appendChild(cBtn);
-        // 弹幕动画结束后自动释放悬停状态
-        const sourceListenerStartedAt = performance.now();
-        const releaseEndedSource = (event) => {
-          if (event.target !== item) return;
-          if (typeof event.timeStamp === 'number' && event.timeStamp < sourceListenerStartedAt) return;
-          if (item.dataset.bilivexHoverPaused !== hoverId) return;
-          clone._bilivexSourceEnded = true;
-          if (FloatingDmEngine.hovered !== clone) return;
-          FloatingDmEngine.leave(clone);
-        };
-        clone._bilivexSourceRelease = releaseEndedSource;
-        item.addEventListener('animationend', releaseEndedSource);
-        item.addEventListener('animationcancel', releaseEndedSource);
-        // +1 按钮置于弹幕正下方（水平居中、不遮挡弹幕文字）
-        try {
-          const prect = getPlayerRect();
-          if (prect) {
-            requestAnimationFrame(() => {
-              try {
-                if (!cBtn.isConnected) return;
-                const br = cBtn.getBoundingClientRect();
-                if (br.width === 0 || br.height === 0) return;
-                if (br.bottom > prect.bottom - 2) {
-                  const targetTop = prect.bottom - br.height - 4;
-                  cBtn.style.top = targetTop + 'px';
-                }
-              } catch (e2) {}
-            });
-          }
-        } catch (e2) {}
+        // 悬停区与 +1 按钮按各自实际位置判断，鼠标可在两者间顺畅移动。
         clone._bilivexFloatOnLeave = () => {
           try {
             cBtn.style.display = 'none';
@@ -645,19 +739,9 @@
             const source = clone._bilivexSource;
             const activeSource = source === item && source && source.isConnected &&
               source.dataset.bilivexHoverPaused === (clone._bilivexHoverId || '') &&
-              !source.classList.contains('bili-danmaku-x-disable') && !clone._bilivexSourceEnded;
-            if (source && clone._bilivexSourceRelease) {
-              source.removeEventListener('animationend', clone._bilivexSourceRelease);
-              source.removeEventListener('animationcancel', clone._bilivexSourceRelease);
-            }
-            // 仅弹幕仍活跃时恢复显示；已结束的弹幕直接清理悬停效果
-            if (activeSource) {
-              source.classList.remove('bili-danmaku-x-paused');
-              source.style.visibility = '';
-              delete source.dataset.bilivexHoverPaused;
-            }
-            clone._bilivexSourceRelease = null;
-            clone._bilivexSourceEnded = false;
+              source._bilivexHoverId === (clone._bilivexHoverId || '') &&
+              !source.classList.contains('bili-danmaku-x-disable');
+            if (activeSource) restoreFloatingSource(source, clone._bilivexHoverId);
             clone._bilivexSource = null;
             if (clone.isConnected) clone.remove();
           } catch (e) {}
@@ -666,10 +750,7 @@
       } catch (e) { return null; }
     };
     const onLeave = () => {
-      try {
-        item.classList.remove('bili-danmaku-x-paused');
-        item.style.visibility = '';
-      } catch (e) {}
+      try { restoreFloatingSource(item, item._bilivexHoverId); } catch (e) {}
     };
 
     try {
@@ -678,32 +759,22 @@
     } catch (e) {}
 
     item._bilivexFloatCleanup = () => {
+      const isResident = item.dataset && item.dataset.bilivexResident === '1';
       if (btn.parentNode) btn.parentNode.removeChild(btn);
-      item.classList.remove('bili-danmaku-x-paused');
-      item.style.backgroundColor = '';
-      item.style.boxShadow = '';
-      item.style.zIndex = '';
-      try {
-        item.classList.remove('bili-danmaku-x-paused');
-        item.style.visibility = '';
-      } catch (e) {}
-      try {
-        if (item.dataset && item.dataset.bilivexResident === '1' && item._bilivexOrigParent && item._bilivexOrigParent.isConnected) {
-          item._bilivexOrigParent.appendChild(item);
-          delete item.dataset.bilivexResident;
-          item.style.position = '';
-          item.style.left = '';
-          item.style.top = '';
-          item.style.margin = '';
-        }
-      } catch (e) {}
+      if (isResident && typeof item._bilivexFloatOnLeave === 'function') {
+        item._bilivexFloatOnLeave();
+      }
+      if (isResident && item.isConnected) item.remove();
       item._bilivexFloatCleanup = null;
       item._bilivexFloatOnEnter = null;
       item._bilivexFloatOnLeave = null;
       item._bilivexOrigParent = null;
       item._bilivexAnimProgress = null;
-      item._bilivexHoverId = null;
-      try { delete item.dataset.bilivexHoverPaused; } catch (e) {}
+      if (isResident) {
+        item._bilivexAnimationSnapshot = null;
+        item._bilivexHoverId = null;
+        try { delete item.dataset.bilivexHoverPaused; } catch (e) {}
+      }
     };
   }
 
@@ -718,12 +789,20 @@
     return false;
   }
 
-  // 仅对正在播放的弹幕启用悬停（已结束的弹幕不响应）
+  // 只对仍可见且未禁用的弹幕启用悬停
   function hasActiveFloatingDmAnimation(item) {
-    if (!item || typeof item.getAnimations !== 'function') return false;
+    if (!item || !item.isConnected) return false;
     try {
-      return item.getAnimations().some((animation) =>
-        animation.playState === 'running' || animation.playState === 'pending');
+      const rect = item.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return false;
+      if (item.classList.contains('bili-danmaku-x-disable') || isBilivexReleasingDm(item)) return false;
+      if (typeof item.getAnimations !== 'function') return true;
+      const animations = item.getAnimations();
+      if (animations.length === 0) return true;
+      return animations.some((animation) => {
+        const state = animation.playState;
+        return state === 'running' || state === 'pending' || state === 'paused';
+      });
     } catch (e) {
       return false;
     }
@@ -742,6 +821,33 @@
     _candHits: 0,        // 候选命中帧计数
     _candMiss: 0,        // 候选 miss 计数
     _followRaf: 0,
+    _animationBlockDocuments: new WeakSet(),
+
+    bindAnimationEndBlock(ownerDocument) {
+      const sourceDocument = ownerDocument || uiDocument;
+      if (!sourceDocument || this._animationBlockDocuments.has(sourceDocument)) return;
+      this._animationBlockDocuments.add(sourceDocument);
+      const onAnimEndBlock = (e) => {
+        const cur = this.hovered;
+        if (!cur) return;
+        // 悬停期间原始弹幕保持暂停状态，其动画结束/取消事件不处理，避免悬停时弹幕提前消失。
+        const source = cur.dataset && cur.dataset.bilivexResident === '1'
+          ? cur._bilivexSource : cur;
+        if (!source || !source.isConnected || source.ownerDocument !== sourceDocument ||
+            !source.classList.contains('bili-danmaku-x-paused') ||
+            !source.dataset.bilivexHoverPaused ||
+            source._bilivexHoverId !== source.dataset.bilivexHoverPaused) {
+          return;
+        }
+        const t = e.target;
+        if (t === source || (t && t.nodeType === 1 && source.contains(t))) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      };
+      sourceDocument.addEventListener('animationend', onAnimEndBlock, true);
+      sourceDocument.addEventListener('animationcancel', onAnimEndBlock, true);
+    },
 
     start() {
       if (this.bound) return;
@@ -761,25 +867,16 @@
         if (this.rafId) return;
         this.rafId = requestAnimationFrame(() => { this.rafId = 0; this.check(); });
       };
-      uiDocument.addEventListener('pointermove', onMove, { passive: true });
-      uiDocument.addEventListener('mousemove', onMove, { passive: true });
+      // pointermove 已覆盖鼠标与触控指针；仅在不支持 PointerEvent 时回退 mousemove，
+      // 避免同一鼠标移动被两个事件重复计算候选。
+      const moveEvent = typeof window.PointerEvent === 'function' ? 'pointermove' : 'mousemove';
+      uiDocument.addEventListener(moveEvent, onMove, { passive: true });
       // 兜底：鼠标离开窗口时清除悬停
       const onLeaveWin = () => { if (this.hovered) this.leave(this.hovered); };
       uiDocument.addEventListener('pointerleave', onLeaveWin);
       uiDocument.addEventListener('mouseleave', onLeaveWin);
 
-      const onAnimEndBlock = (e) => {
-        const cur = this.hovered;
-        if (!cur) return;
-        if (!cur.classList.contains('bili-danmaku-x-paused')) return;
-        const t = e.target;
-        if (t === cur || (t && t.nodeType === 1 && cur.contains(t))) {
-          e.stopImmediatePropagation();
-          e.preventDefault();
-        }
-      };
-      window.addEventListener('animationend', onAnimEndBlock, true);
-      window.addEventListener('animationcancel', onAnimEndBlock, true);
+      this.bindAnimationEndBlock(uiDocument);
     },
 
     getBodyRect(item) {
@@ -788,8 +885,9 @@
     },
 
     getLocalPoint(px, py) {
-      const offset = getFrameOffset();
-      return { x: px - offset.left, y: py - offset.top };
+      // 指针事件在 uiDocument 上分发，client 坐标已经属于该文档视口；
+      // 只有跨文档矩形转换时才需要 getFrameOffset。
+      return { x: px, y: py };
     },
     // 向上找最近的弹幕节点
     findDm(el) {
@@ -813,9 +911,17 @@
         }
       } catch (e) {}
       const container = findFloatingDmContainer();
-      if (container) {
-        const dms = container.querySelectorAll('.bili-danmaku-x-dm');
-        for (const d of dms) {
+      const candidateRoots = [];
+      if (container) candidateRoots.push(container);
+      const player = document.querySelector('.web-player-danmaku, .danmaku-item-container, #live-player');
+      if (player && !candidateRoots.includes(player)) candidateRoots.push(player);
+      const dms = [];
+      candidateRoots.forEach((root) => {
+        root.querySelectorAll('.bili-danmaku-x-dm').forEach((d) => {
+          if (!dms.includes(d)) dms.push(d);
+        });
+      });
+      for (const d of dms) {
           if (d.classList.contains('bili-danmaku-x-disable')) continue;
           if (isBilivexReleasingDm(d)) continue;
           if (!hasActiveFloatingDmAnimation(d)) continue;
@@ -825,16 +931,12 @@
             r = toUiRect(d.getBoundingClientRect());
           }
           if (r.width === 0 || r.height === 0) continue;
-          if (d.dataset.bilivexFloatInited === '1') {
-            try { if (getComputedStyle(d).pointerEvents !== 'none') continue; } catch (e) { continue; }
-          }
           if (px >= r.left && px <= r.right && py >= r.top && py <= r.bottom) {
             if (!d.dataset.bilivexFloatInited) ensureFloatingDmOverlay(d);
             if (typeof d._bilivexFloatOnEnter !== 'function') continue;
             return d;
           }
         }
-      }
       return null;
     },
 
@@ -859,18 +961,29 @@
           const local = this.getLocalPoint(px, py);
           const topEl = uiDocument.elementFromPoint(px, py) || document.elementFromPoint(local.x, local.y);
           const btn = cur._bilivexFloatBtn || cur.querySelector('.bilivex-float-plus-btn');
-          if (topEl && (topEl === cur || cur.contains(topEl) || topEl === btn || (btn && btn.contains(topEl)))) return;
-          // 已冻结弹幕与其下方 +1 按钮之间保持连续悬停区域
+          const source = cur.dataset && cur.dataset.bilivexResident === '1' ? cur._bilivexSource : cur;
+          const sourceRect = source && source.isConnected ? source.getBoundingClientRect() : null;
+          const visualRect = cur.getBoundingClientRect();
+          const inRect = (r) => r && px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
+          if (topEl && (topEl === cur || cur.contains(topEl) || topEl === source ||
+              (source && source.contains(topEl)) || topEl === btn || (btn && btn.contains(topEl)))) return;
+          // 弹幕、悬停区与 +1 按钮视为同一热区，鼠标在其间移动时保持悬停。
+          if (inRect(sourceRect) || inRect(visualRect) || inRect(btn && btn.getBoundingClientRect())) return;
           if (btn) {
-            const itemRect = cur.getBoundingClientRect();
             const buttonRect = btn.getBoundingClientRect();
-            if (px >= itemRect.left && px <= itemRect.right &&
-                py >= itemRect.top && py <= buttonRect.bottom) return;
+            const itemRect = sourceRect || visualRect;
+            const gapLeft = Math.min(itemRect.right, buttonRect.right);
+            const gapRight = Math.max(itemRect.left, buttonRect.left);
+            const gapTop = Math.max(itemRect.top, buttonRect.top);
+            const gapBottom = Math.min(itemRect.bottom, buttonRect.bottom);
+            if (gapLeft <= gapRight && gapTop <= gapBottom &&
+                px >= gapLeft && px <= gapRight && py >= gapTop && py <= gapBottom) return;
           }
         } catch (e) {}
       }
-      if (cur) this.leave(cur);
       const cand = this._computeCandidate(px, py);
+      const curSource = cur && cur.dataset && cur.dataset.bilivexResident === '1' ? cur._bilivexSource : cur;
+      if (cur && cand && cand === curSource) return;
       if (!cand) {
         if (this._cand) {
           this._candMiss = (this._candMiss || 0) + 1;
@@ -881,28 +994,15 @@
             return;
           }
         }
+        if (cur) this.leave(cur);
         this._cand = null; this._candHits = 0; this._candMiss = 0;
         return;
       }
-      if (this._cand === cand) {
-        this._candHits = (this._candHits || 0) + 1;
-        this._candMiss = 0;
-        if (this._candHits >= 2) {
-          this._cand = null; this._candHits = 0; this._candMiss = 0;
-          this.hover(cand);
-          return;
-        }
-      } else if (!this._cand || (this._candMiss || 0) > 1) {
-        this._cand = cand; this._candHits = 1; this._candMiss = 0;
-      } else {
-        this._candMiss = (this._candMiss || 0) + 1;
-        if (this._candMiss > 1) {
-          this._cand = cand; this._candHits = 1; this._candMiss = 0;
-        }
-      }
-      if (!this._followRaf) {
-        this._followRaf = requestAnimationFrame(() => { this._followRaf = 0; this.check(); });
-      }
+      if (cur && cand !== curSource) this.leave(cur);
+      // 当前帧命中即可切换悬停；RAF 已负责将高频指针事件合帧，
+      // 再等待第二帧会在快速移动的直播弹幕上产生可感知延迟。
+      this._cand = null; this._candHits = 0; this._candMiss = 0;
+      this.hover(cand);
     },
 
     hover(item) {
@@ -934,10 +1034,11 @@
       const item = this.hovered;
       if (!item) { this.stopKeepAlive(); return; }
       const source = item.dataset && item.dataset.bilivexResident === '1' ? item._bilivexSource : null;
-      const sourceIsActive = !source || (source.isConnected &&
-        source.dataset.bilivexHoverPaused === (item._bilivexHoverId || '') &&
-        !source.classList.contains('bili-danmaku-x-disable') && !item._bilivexSourceEnded);
-      if (item.isConnected && sourceIsActive) {
+      const sourceIsDisabled = source && source.classList.contains('bili-danmaku-x-disable');
+      const sourceIsDetached = source && !source.isConnected;
+      const sourceHoverMatches = !source || source.dataset.bilivexHoverPaused === item._bilivexHoverId;
+      // 悬停期间保持冻结；弹幕结束或失效时才释放悬停效果。
+      if (item.isConnected && !sourceIsDisabled && !sourceIsDetached && sourceHoverMatches) {
         try {
           const r = item.getBoundingClientRect();
           if (r.width > 0 && r.height > 0) {
@@ -1002,20 +1103,18 @@
         item.dataset.bilivexFloatInited = '';
       });
       rotate.dataset.bilivexFloatBound = '';
-      if (residentLayer && residentLayer.ownerDocument.body.contains(residentLayer)) {
-        $$('.bili-danmaku-x-dm', residentLayer).forEach(item => {
+      if (residentLayer && residentLayer.ownerDocument.documentElement.contains(residentLayer)) {
+        $$('[data-bilivex-resident="1"]', residentLayer).forEach(item => {
           if (typeof item._bilivexFloatCleanup === 'function') {
             try { item._bilivexFloatCleanup(); } catch (e) {}
-          } else {
+          } else if (item.dataset.bilivexResident === '1') {
             try {
-              if (item._bilivexOrigParent && item._bilivexOrigParent.isConnected) {
-                item._bilivexOrigParent.appendChild(item);
-                item.style.position = '';
-                item.style.left = '';
-                item.style.top = '';
-                item.style.margin = '';
-                item.style.visibility = '';
-                item.classList.remove('bili-danmaku-x-paused');
+              if (typeof item._bilivexFloatOnLeave === 'function') {
+                item._bilivexFloatOnLeave();
+              } else {
+                const pairedButton = item._bilivexFloatBtn;
+                if (pairedButton && pairedButton.isConnected) pairedButton.remove();
+                if (item.isConnected) item.remove();
               }
             } catch (e2) {}
           }
@@ -1030,22 +1129,14 @@
 
   let boundTailCtl = null;
   function rebindInputTailHandler() {
-    // 在每个新出现的 textarea 上做小尾巴补齐
     const apply = (ta) => {
       if (!ta || ta.dataset.bilivexTailBound) return;
       ta.dataset.bilivexTailBound = '1';
-      ta.addEventListener('input', (e) => {
-        if (!cfg.tailEnabled || !cfg.tailText) return;
-        const v = ta.value;
-        // 仅在用户光标在末尾时自动补尾巴，避免破坏正在编辑的中间内容
-        if (v && !v.endsWith(cfg.tailText) && (ta.selectionStart === v.length)) {
-          const proto = HTMLTextAreaElement.prototype;
-          const desc = Object.getOwnPropertyDescriptor(proto, 'value');
-          desc.set.call(ta, v + cfg.tailText);
-          ta.dispatchEvent(new Event('input', { bubbles: true }));
-          // 还原光标到末尾
-          try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {}
+      ta.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) {
+          return;
         }
+        appendTailForManualSend(ta);
       }, true);
     };
     const ctl = document.querySelector('.chat-control-panel');
@@ -1053,6 +1144,11 @@
     ctl.dataset.bilivexTailCtlBound = '1';
     boundTailCtl = ctl;
     apply(ctl.querySelector('textarea.chat-input, textarea'));
+    ctl.addEventListener('click', (event) => {
+      const ta = findChatInput();
+      const target = event.target && event.target.closest ? event.target.closest('button, [role="button"]') : null;
+      if (ta && isEnabledChatSendButton(target, ta)) appendTailForManualSend(ta);
+    }, true);
     const mo = new MutationObserver(() => apply(ctl.querySelector('textarea')));
     mo.observe(ctl, { childList: true, subtree: true });
     ctl._bilivexTailMO = mo;
@@ -1082,7 +1178,7 @@
 
     // 视觉反馈：禁用面板按钮
     const setPanelBtnState = (busy) => {
-      const pb = document.querySelector('#bilivex-panel button[data-bilivex-like="1"]');
+      const pb = panelDocument.querySelector('#bilivex-panel button[data-bilivex-like="1"]');
       if (!pb) return;
       pb.disabled = busy;
       pb.style.opacity = busy ? '0.6' : '';
@@ -1164,9 +1260,52 @@
   }
 
   // ---------- 悬浮主菜单 ----------
+  function ensurePanelVisible(panel, host) {
+    if (!panel || !host) return false;
+    if (panel.parentNode !== host) host.appendChild(panel);
+    panel.style.position = 'fixed';
+    panel.style.zIndex = '2147483001';
+    panel.style.display = 'block';
+    panel.style.visibility = 'visible';
+    panel.style.opacity = '1';
+    panel.style.pointerEvents = 'auto';
+    if (cfg.panelCollapsed) {
+      panel.style.width = COLLAPSED_BTN_SIZE + 'px';
+      panel.style.height = COLLAPSED_BTN_SIZE + 'px';
+    } else {
+      panel.style.width = '220px';
+      panel.style.minHeight = '0';
+    }
+    // 旧版本可能保存过不同窗口尺寸下的位置；保证面板完整留在当前视口中。
+    try {
+      const r = panel.getBoundingClientRect();
+      const vw = panelWindow.innerWidth;
+      const vh = panelWindow.innerHeight;
+      if (r.width > 0 && r.height > 0 && vw > 0 && vh > 0 &&
+          (r.left < 8 || r.top < 8 || r.right > vw - 8 || r.bottom > vh - 8)) {
+        const left = Math.max(8, Math.min(r.left, Math.max(8, vw - r.width - 8)));
+        const top = Math.max(8, Math.min(r.top, Math.max(8, vh - r.height - 8)));
+        panel.style.left = left + 'px';
+        panel.style.top = top + 'px';
+        panel.style.right = 'auto';
+        cfg.panelPos = { left: Math.round(left), top: Math.round(top) };
+        saveCfg(cfg);
+      }
+    } catch (e) {}
+    return panel.isConnected;
+  }
+
   function buildPanel() {
-    // 面板在页面顶层，多个同源页面共用同一份，已存在则不重复创建。
-    if (panelDocument.getElementById('bilivex-panel')) return;
+    // 面板在页面顶层，多个同源页面共用同一份；全屏时挂到全屏宿主。
+    const existing = panelDocument.getElementById('bilivex-panel');
+    const host = getUiHost();
+    if (!host) return false;
+    if (existing) {
+      // SPA/全屏切换可能留下脱离宿主的旧节点，重新挂载并恢复控制器引用。
+      if (!ensurePanelVisible(existing, host)) return false;
+      setCurrentPanel(existing);
+      return true;
+    }
 
     const panel = panelDocument.createElement('div');
     panel.id = 'bilivex-panel';
@@ -1175,7 +1314,7 @@
       'position:fixed',
       (cfg.panelPos && cfg.panelPos.left != null && cfg.panelPos.top != null)
         ? ('left:' + cfg.panelPos.left + 'px;top:' + cfg.panelPos.top + 'px;right:auto')
-        : 'right:18px;top:96px',
+        : 'right:18px;top:96px;left:auto',
       'z-index:2147483001',
       // 折叠态为 56×56 圆形 logo 悬浮球；展开态维持 220px 矩形面板
       collapsed
@@ -1191,7 +1330,7 @@
     ].join(';');
 
     // 标题栏：展开态使用当前主题渐变色；折叠态 head 仅承载 logo（视觉由 img 主导）
-    const head = document.createElement('div');
+    const head = panelDocument.createElement('div');
     head.style.cssText = collapsed
       ? 'width:100%;height:100%;padding:0;border-bottom:none;' +
         'background:transparent;border-radius:50%;cursor:grab;' +
@@ -1202,12 +1341,12 @@
         'background:' + currentTheme.titleGradient + ';' +
         'color:#fff;border-radius:11px 11px 0 0;cursor:move;' +
         'transition:background .25s ease;';
-    const title = document.createElement('span');
+    const title = panelDocument.createElement('span');
     title.textContent = 'BiLivex';
     title.style.cssText = collapsed
       ? 'display:none;'
       : 'font-weight:600;font-size:13px;letter-spacing:.3px;line-height:18px;';
-    const tog = document.createElement('span');
+    const tog = panelDocument.createElement('span');
     tog.textContent = collapsed ? '▸' : '▾';
     tog.style.cssText = collapsed
       ? 'position:absolute;right:2px;bottom:2px;background:rgba(0,0,0,0.55);color:#fff;' +
@@ -1216,7 +1355,7 @@
       : 'cursor:pointer;font-size:14px;line-height:18px;opacity:.92;';
     head.appendChild(title);
     // logo 图（始终存在于 head 内，展开态隐藏，applyPanelCollapsedStyles 统一切换显隐）
-    const logo = document.createElement('img');
+    const logo = panelDocument.createElement('img');
     logo.id = 'bilivex-logo';
     logo.src = LOGO_DATA_URI;
     logo.alt = '';
@@ -1227,7 +1366,7 @@
     head.appendChild(tog);
     panel.appendChild(head);
 
-    const body = document.createElement('div');
+    const body = panelDocument.createElement('div');
     body.style.cssText = 'padding:10px 12px 12px;' + (collapsed ? 'display:none;' : '');
     panel.appendChild(body);
 
@@ -1235,17 +1374,17 @@
 
     // 分组小标题 + 分隔线：用于把功能区按「弹幕增强/点赞」分组
     const section = (sectionTitle) => {
-      const wrap = document.createElement('div');
+      const wrap = panelDocument.createElement('div');
       wrap.style.cssText = 'margin-top:8px;';
       wrap.className = 'bilivex-section';
       if (sectionTitle) {
-        const h = document.createElement('div');
+        const h = panelDocument.createElement('div');
         h.textContent = sectionTitle;
         h.className = 'bilivex-section-title';
         h.style.cssText = 'font-size:11px;font-weight:600;color:#9099a3;letter-spacing:.6px;' +
           'line-height:18px;margin-bottom:4px;text-transform:uppercase;';
         wrap.appendChild(h);
-        const hr = document.createElement('div');
+        const hr = panelDocument.createElement('div');
         hr.style.cssText = 'height:1px;background:#f0f2f5;margin-bottom:4px;';
         wrap.appendChild(hr);
       }
@@ -1256,7 +1395,7 @@
     // 单行容器：min-height 保证不同高度控件视觉对齐
     const row = (children, opts) => {
       opts = opts || {};
-      const r = document.createElement('div');
+      const r = panelDocument.createElement('div');
       r.className = 'bilivex-row';
       r.style.cssText = 'display:flex;align-items:center;justify-content:space-between;' +
         'gap:8px;min-height:30px;padding:2px 0;margin-bottom:6px;' +
@@ -1270,7 +1409,7 @@
     // 标签：line-height 与开关高度匹配
     const lbl = (text, opts) => {
       opts = opts || {};
-      const s = document.createElement('span');
+      const s = panelDocument.createElement('span');
       s.textContent = text;
       s.className = 'bilivex-label';
       s.style.cssText = 'color:#3a3f45;font-size:12px;line-height:18px;flex:1;min-width:0;' +
@@ -1281,18 +1420,18 @@
 
     // 开关（使用当前主题主色）
     const sw = (checked, onChange) => {
-      const wrap = document.createElement('label');
+      const wrap = panelDocument.createElement('label');
       wrap.className = 'bilivex-switch';
       wrap.style.cssText = 'position:relative;display:inline-block;width:32px;height:18px;cursor:pointer;flex-shrink:0;';
-      const inp = document.createElement('input');
+      const inp = panelDocument.createElement('input');
       inp.type = 'checkbox'; inp.checked = checked;
       inp.style.cssText = 'opacity:0;width:0;height:0;margin:0;';
-      const slider = document.createElement('span');
+      const slider = panelDocument.createElement('span');
       slider.className = 'bilivex-switch-slider';
       slider.style.cssText = 'position:absolute;inset:0;' +
         'background:' + (checked ? currentTheme.primary : '#cfd5db') +
         ';border-radius:18px;transition:.2s;';
-      const knob = document.createElement('span');
+      const knob = panelDocument.createElement('span');
       knob.style.cssText = 'position:absolute;left:' + (checked ? '16px' : '2px') +
         ';top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:.2s;' +
         'box-shadow:0 1px 3px rgba(0,0,0,0.2);';
@@ -1309,7 +1448,7 @@
 
     // 单行文本输入
     const txt = (value, placeholder, onChange) => {
-      const i = document.createElement('input');
+      const i = panelDocument.createElement('input');
       i.type = 'text'; i.value = value; i.placeholder = placeholder;
       i.style.cssText = 'flex:1;min-width:0;padding:5px 8px;border:1px solid #e0e6ed;border-radius:6px;' +
         'font-size:12px;line-height:18px;color:#222;background:#fff;outline:none;transition:border-color .15s;';
@@ -1322,7 +1461,7 @@
     // 按钮（统一圆角、内边距、行高，确保与开关视觉节奏匹配）
     const btn = (text, bg, onClick, opts) => {
       opts = opts || {};
-      const b = document.createElement('button');
+      const b = panelDocument.createElement('button');
       b.textContent = text;
       b.style.cssText = `background:${bg};color:#fff;border:none;border-radius:6px;` +
         'padding:5px 12px;cursor:pointer;font-size:12px;line-height:18px;font-weight:500;' +
@@ -1337,7 +1476,7 @@
 
     // 多行 textarea
     const ta = (value, placeholder, onChange) => {
-      const t = document.createElement('textarea');
+      const t = panelDocument.createElement('textarea');
       t.value = value; t.placeholder = placeholder;
       t.style.cssText = 'width:100%;min-height:54px;padding:5px 8px;border:1px solid #e0e6ed;border-radius:6px;' +
         'font-size:12px;line-height:18px;resize:vertical;box-sizing:border-box;' +
@@ -1350,15 +1489,15 @@
 
     // 主题选择按钮组
     const themeRow = (parent) => {
-      const wrap = document.createElement('div');
+      const wrap = panelDocument.createElement('div');
       wrap.className = 'bilivex-theme-row';
       wrap.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;' +
         'margin-bottom:8px;min-height:30px;';
       wrap.appendChild(lbl('主题'));
-      const group = document.createElement('div');
+      const group = panelDocument.createElement('div');
       group.style.cssText = 'display:flex;gap:6px;flex-shrink:0;';
       ['blue', 'pink'].forEach((t) => {
-        const b = document.createElement('button');
+        const b = panelDocument.createElement('button');
         b.type = 'button';
         b.dataset.bilivexTheme = t;
         b.textContent = THEMES[t].name;
@@ -1389,7 +1528,7 @@
     currentSection = section('弹幕增强');
     row([lbl('小尾巴'), sw(cfg.tailEnabled, v => { cfg.tailEnabled = v; saveCfg(cfg); showToast(v ? '已开启小尾巴' : '已关闭小尾巴'); })]);
     // 小尾巴文本：单列布局（label + input 垂直堆叠）
-    const tailWrap = document.createElement('div');
+    const tailWrap = panelDocument.createElement('div');
     tailWrap.style.cssText = 'margin-bottom:8px;box-sizing:border-box;width:100%;padding-right:0;';
     tailWrap.appendChild(lbl('尾巴内容', { muted: true }));
     const tailInput = txt(cfg.tailText, '如：喵', v => { cfg.tailText = v; saveCfg(cfg); });
@@ -1409,7 +1548,7 @@
     const likeBtn = btn('30连击 ♥', currentTheme.accentGradient, oneClickLike);
     likeBtn.dataset.bilivexLike = '1';
     // label + button 单行布局。
-    const likeRow = document.createElement('div');
+    const likeRow = panelDocument.createElement('div');
     likeRow.className = 'bilivex-row bilivex-row-like';
     likeRow.style.cssText = 'display:flex;align-items:center;gap:8px;min-height:30px;' +
       'margin-bottom:4px;';
@@ -1417,7 +1556,7 @@
     likeRow.appendChild(likeBtn);
     currentSection.appendChild(likeRow);
     // 小字提示
-    const likeHint = document.createElement('div');
+    const likeHint = panelDocument.createElement('div');
     likeHint.textContent = '点一次 = 连续点赞 30 次，可点亮粉丝团灯牌';
     likeHint.className = 'bilivex-hint';
     likeHint.style.cssText = 'color:#9099a3;font-size:11px;line-height:1.5;margin:0 0 4px;padding-left:2px;word-break:break-all;overflow-wrap:anywhere;';
@@ -1451,7 +1590,8 @@
     });
     bindDragHandlers();
 
-    panelDocument.body.appendChild(panel);
+    // 使用当前 UI 宿主，保证播放器全屏时悬浮球仍处于全屏层级内。
+    if (!ensurePanelVisible(panel, host)) return false;
 
     if (collapsed) attachCollapsedHover(head, panel);
 
@@ -1459,6 +1599,7 @@
     applyTheme();
 
     avoidChatCollision(panel);
+    return true;
   }
 
   // 折叠态悬浮球的 hover 加深效果（仅阴影加深，不再有粉色变换）
@@ -1847,7 +1988,7 @@
         const layer = uiDocument.getElementById('bilivex-dm-resident');
         if (layer) {
           const hov = FloatingDmEngine.hovered;
-          $$('.bili-danmaku-x-dm, .bilivex-float-plus-btn', layer).forEach((el) => {
+          $$('[data-bilivex-resident="1"], .bilivex-float-plus-btn', layer).forEach((el) => {
             if (el === hov || el === (hov && hov._bilivexFloatBtn)) return;
             const r = el.getBoundingClientRect();
             if (r.width === 0 && r.height === 0) {
@@ -1882,58 +2023,48 @@
   }
 
   let initTimer = null;
+  let spaWatching = false;
   function tryInit() {
-    if (document.querySelector('.chat-history-list') || document.querySelector('.chat-control-panel')) {
-      initRoom();
-      buildPanel();
-      return true;
-    }
-    return false;
+    // 面板属于顶层页面，不应依赖聊天区是否已完成异步渲染。
+    const panelReady = buildPanel() !== false;
+    initRoom();
+    return panelReady;
   }
 
   function start() {
     try {
       document.addEventListener('fullscreenchange', syncFullscreenUi);
       document.addEventListener('webkitfullscreenchange', syncFullscreenUi);
+      if (panelDocument !== document) {
+        panelDocument.addEventListener('fullscreenchange', syncFullscreenUi);
+        panelDocument.addEventListener('webkitfullscreenchange', syncFullscreenUi);
+      }
     } catch (e) {}
     // 注入视觉反馈动画 keyframes
     injectFloatingDmAnim();
-    if (!tryInit()) {
-      const mo = new MutationObserver(() => {
-        if (tryInit()) {
-          mo.disconnect();
-          watchSpa();
-        }
-      });
-      mo.observe(document.documentElement, { childList: true, subtree: true });
-      setTimeout(() => { tryInit(); watchSpa(); }, 3000);
-    } else {
-      watchSpa();
-    }
+    tryInit();
+    watchSpa();
     guardianObserveOnce();
   }
 
   function watchSpa() {
-    // 监听 URL 变化 + 顶层 DOM 重建
+    // 每个脚本实例只监听自身文档；顶层面板由 buildPanel 复用，不能被 iframe 实例删除。
+    if (spaWatching || !document.documentElement) return;
+    spaWatching = true;
     let lastUrl = location.href;
-    const wrap = document.getElementById('live-room-app') || document.body;
     const mo = new MutationObserver(() => {
-      if (location.href !== lastUrl) {
+      const urlChanged = location.href !== lastUrl;
+      const panelMissing = !panelDocument.getElementById('bilivex-panel');
+      if (urlChanged || panelMissing) {
         lastUrl = location.href;
-        // 重建：清理旧 panel 并重绑
-        const old = document.getElementById('bilivex-panel'); if (old) old.remove();
         clearTimeout(initTimer);
-        initTimer = setTimeout(() => {
-          initRoom();
-          buildPanel();
-        }, 800);
-      } else if (!document.querySelector('.chat-history-list') || !document.getElementById('bilivex-panel')) {
-        clearTimeout(initTimer);
-        initTimer = setTimeout(() => { initRoom(); buildPanel(); }, 600);
+        initTimer = setTimeout(tryInit, urlChanged ? 800 : 300);
+      } else {
+        initRoom();
       }
       guardianCheck();
     });
-    mo.observe(wrap, { childList: true, subtree: true });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
   }
 
   // ---------- 启动 ----------
