@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.0.9
+// @version      1.0.10
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停冻结驻留，可快捷 +1 回复；② 评论区——聊天区弹幕悬停显示 +1/复制按钮；③ 小尾巴——发送弹幕自动追加自定义文字；④ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -113,6 +113,81 @@
     return el.value === value;
   }
 
+  function readCookie(name, doc) {
+    const prefix = name + '=';
+    for (const part of ((doc || document).cookie || '').split(';')) {
+      const cookie = part.trim();
+      if (cookie.startsWith(prefix)) return decodeURIComponent(cookie.slice(prefix.length));
+    }
+    return '';
+  }
+
+  function roomIdFromUrl(url) {
+    if (!url) return '';
+    try {
+      const parsed = new URL(url, location.href);
+      const queryRoomId = parsed.searchParams.get('room_id') || parsed.searchParams.get('roomid') || parsed.searchParams.get('id');
+      if (/^\d+$/.test(queryRoomId || '')) return queryRoomId;
+      const match = parsed.pathname.match(/^\/(?:blanc\/)?(\d+)(?:\/|$)/);
+      return match ? match[1] : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function findRoomId(doc, win) {
+    const currentWindow = win || window;
+    const currentDocument = doc || document;
+    const fromCurrentUrl = roomIdFromUrl(currentWindow.location.href);
+    if (fromCurrentUrl) return fromCurrentUrl;
+    const roomElement = currentDocument.querySelector('[data-room-id], [data-roomid]');
+    const roomId = roomElement && (roomElement.getAttribute('data-room-id') || roomElement.getAttribute('data-roomid'));
+    return /^\d+$/.test(roomId || '') ? roomId : '';
+  }
+
+  function findLiveSendContext() {
+    const seen = new Set();
+    const scan = (currentWindow) => {
+      if (!currentWindow || seen.has(currentWindow)) return null;
+      seen.add(currentWindow);
+      try {
+        const currentDocument = currentWindow.document;
+        const roomId = findRoomId(currentDocument, currentWindow);
+        const csrf = readCookie('bili_jct', currentDocument);
+        if (roomId && csrf) return { window: currentWindow, roomId, csrf };
+        for (const frame of Array.from(currentDocument.querySelectorAll('iframe'))) {
+          const context = scan(frame.contentWindow);
+          if (context) return context;
+        }
+      } catch (e) {}
+      return null;
+    };
+    return scan(window) || (window.top !== window ? scan(window.top) : null);
+  }
+
+  // 使用实际直播文档的已登录会话发送，避免全屏 iframe 的聊天 UI 事件链丢失点击。
+  async function sendDanmakuByApi(text) {
+    const context = findLiveSendContext();
+    if (!context) return { status: 'unavailable' };
+    const body = new context.window.FormData();
+    const fields = {
+      bubble: '0', msg: text, color: '16777215', mode: '1', room_type: '0', jumpfrom: '0',
+      reply_mid: '0', reply_attr: '0', replay_dmid: '', fontsize: '25', roomid: context.roomId,
+      rnd: String(Math.floor(Date.now() / 1000)), csrf: context.csrf, csrf_token: context.csrf,
+    };
+    for (const [key, value] of Object.entries(fields)) body.append(key, value);
+    try {
+      const response = await context.window.fetch('https://api.live.bilibili.com/msg/send', {
+        method: 'POST', credentials: 'include', body,
+      });
+      const result = await response.json();
+      if (response.ok && result && result.code === 0) return { status: 'sent' };
+      return { status: 'failed', message: (result && result.message) || '发送失败' };
+    } catch (e) {
+      return { status: 'failed', message: '发送请求失败' };
+    }
+  }
+
   function findChatInput() {
     const selectors = [
       'textarea.chat-input.border-box',
@@ -121,11 +196,23 @@
       'textarea[placeholder*="聊天"]',
       'textarea[data-e2e*="chat"]',
     ];
-    for (const selector of selectors) {
-      const input = document.querySelector(selector);
-      if (input && !input.disabled && input.offsetParent !== null) return input;
-    }
-    return null;
+    const seen = new Set();
+    const findInDocument = (root) => {
+      if (!root || seen.has(root)) return null;
+      seen.add(root);
+      for (const selector of selectors) {
+        const input = root.querySelector(selector);
+        if (input && !input.disabled && input.offsetParent !== null) return input;
+      }
+      for (const frame of Array.from(root.querySelectorAll('iframe'))) {
+        try {
+          const input = findInDocument(frame.contentDocument);
+          if (input) return input;
+        } catch (e) {}
+      }
+      return null;
+    };
+    return findInDocument(document) || findInDocument(panelDocument);
   }
 
   const CHAT_SEND_SELECTORS = [
@@ -145,8 +232,9 @@
   }
 
   function findSendBtn(input) {
+    const ownerDocument = input && input.ownerDocument ? input.ownerDocument : document;
     const scope = input && input.closest('.chat-control-panel, .chat-input-outer, .chat-input-panel');
-    const roots = scope ? [scope, document] : [document];
+    const roots = scope ? [scope, ownerDocument] : [ownerDocument];
     for (const root of roots) {
       for (const selector of CHAT_SEND_SELECTORS) {
         const button = root.querySelector(selector);
@@ -186,26 +274,79 @@
       return { status: 'filled', message: '输入框暂不可用' };
     }
     if (opts.autoSend === false) return { status: 'filled' };
-    // 只走一个真实发送边界：按钮优先，找不到明确按钮时才使用 Enter。
-    const btn = findSendBtn(ta);
-    if (btn) {
+    // Vue 会在 input 后异步更新发送按钮状态，下一帧再点击实际按钮。
+    const ownerWindow = ta.ownerDocument.defaultView || window;
+    ownerWindow.requestAnimationFrame(() => {
+      const btn = findSendBtn(ta);
+      if (btn && !btn.disabled && btn.getAttribute('aria-disabled') !== 'true') {
+        try { btn.click(); return; } catch (e) {}
+      }
       try {
-        btn.focus();
-        btn.click();
-        return { status: 'sent' };
+        ta.focus();
+        ta.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
+          bubbles: true, cancelable: true,
+        }));
       } catch (e) {}
-    }
+    });
+    return { status: 'queued', message: '已填入，正在发送' };
+  }
+
+  function sendPlusOne(text) {
+    const finalText = cfg.tailEnabled && cfg.tailText && !text.endsWith(cfg.tailText)
+      ? text + cfg.tailText
+      : text;
+    const apiResult = sendDanmakuByApi(finalText);
+    apiResult.then((result) => {
+      if (result.status === 'sent') {
+        showToast('已发送');
+        return;
+      }
+      if (result.status === 'failed') {
+        showToast(result.message || '发送失败');
+        return;
+      }
+      const fallback = fillAndSend(text);
+      showToast(fallback.message || (fallback.status === 'sent' ? '已发送' : '已填入，请按回车'));
+    });
+    return { status: 'queued', message: '正在发送' };
+  }
+
+  function requestTopLevelPlus(text) {
+    if (!text || window === window.top) return false;
     try {
-      ta.focus();
-      const ev = new KeyboardEvent('keydown', {
-        key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
-        bubbles: true, cancelable: true,
-      });
-      const dispatched = ta.dispatchEvent(ev);
-      return dispatched ? { status: 'sent' } : { status: 'filled', message: '已填入，请按回车发送' };
+      window.top.postMessage({ type: 'bilivex-float-plus', text }, location.origin);
+      return true;
     } catch (e) {
-      return { status: 'filled', message: '已填入，请按回车发送' };
+      return false;
     }
+  }
+
+  function bindTopLevelPlusBridge() {
+    if (window._bilivexFloatPlusBridgeBound) return;
+    window._bilivexFloatPlusBridgeBound = true;
+    window.addEventListener('message', (event) => {
+      if (event.origin !== location.origin) return;
+      const data = event.data;
+      if (!data || typeof data.text !== 'string' || !data.text.trim()) return;
+      const text = data.text.trim();
+      if (data.type === 'bilivex-float-plus-execute') {
+        sendPlusOne(text);
+        return;
+      }
+      if (data.type !== 'bilivex-float-plus' || window !== window.top) return;
+      for (const frame of Array.from(document.querySelectorAll('iframe'))) {
+        try {
+          const frameWindow = frame.contentWindow;
+          const frameDocument = frame.contentDocument;
+          if (frameWindow && frameDocument && roomIdFromUrl(frame.src || frameWindow.location.href)) {
+            frameWindow.postMessage({ type: 'bilivex-float-plus-execute', text }, location.origin);
+            return;
+          }
+        } catch (e) {}
+      }
+      sendPlusOne(text);
+    });
   }
 
   // ---------- 主题应用 ----------
@@ -261,14 +402,7 @@
       b.style.boxShadow = '0 2px 6px ' + currentTheme.primaryShadow;
     });
 
-    // 7. 弹幕悬停高亮背景 + 细边框：仅刷新仍处于 hover 状态的弹幕（即 backgroundColor 非空）
-    $$('.chat-item.danmaku-item').forEach((item) => {
-      if (item.style.backgroundColor) {
-        item.style.backgroundColor = currentTheme.highlight;
-        // 同步刷新悬停细边框颜色（inset box-shadow，不影响布局）
-        item.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
-      }
-    });
+    // 7. 不改写聊天弹幕节点，保留 B 站原生的本人弹幕框选样式。
 
     // 8. 重新注入 keyframes 渐变（下次反馈动画使用新色）
     bilivexAnimInjected = false;
@@ -313,8 +447,7 @@
     const text = item.dataset.danmaku || (item.querySelector('.danmaku-item-right') || {}).textContent || '';
     plusBtn.addEventListener('click', (e) => {
       e.stopPropagation(); e.preventDefault();
-      const r = fillAndSend(text);
-      showToast(r.message || (r.status === 'sent' ? '已发送' : '已填入，请按回车'));
+      sendPlusOne(text);
     });
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation(); e.preventDefault();
@@ -325,16 +458,12 @@
     let hoverTimer = null;
     item._bilivexOnEnter = () => {
       clearTimeout(hoverTimer);
+      // 聊天行的背景、边框和本人标记全部交给 B 站原生组件处理。
       bar.style.display = 'flex';
-      // 弹幕高亮：背景 + 主题色细边框（inset box-shadow，不影响布局/行高跳动）
-      item.style.backgroundColor = currentTheme.highlight;
-      item.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
     };
     item._bilivexOnLeave = () => {
       hoverTimer = setTimeout(() => {
         bar.style.display = 'none';
-        item.style.backgroundColor = '';
-        item.style.boxShadow = '';
       }, 80);
     };
     item._bilivexCleanup = () => {
@@ -371,8 +500,7 @@
       if (typeof item._bilivexOnEnter === 'function') return;
       const oldBar = item.querySelector('.bilivex-dm-bar');
       if (oldBar) oldBar.remove();
-      item.style.backgroundColor = '';
-      item.style.boxShadow = '';
+      delete item._bilivexChatStyleSnapshot;
       delete item.dataset.bilivexInited;
       ensureDanmakuOverlay(item);
     });
@@ -456,20 +584,60 @@
     };
   }
   function getUiHost() {
-    const fullscreen = panelDocument.fullscreenElement;
-    // 活动页常给 body 设置 transform/overflow，fixed 子节点会被裁剪或落入局部层叠上下文。
-    // 顶层 UI 直接挂 documentElement，只有全屏时才迁入全屏元素。
-    return (fullscreen && fullscreen.nodeType === 1) ? fullscreen : panelDocument.documentElement;
+    const localFullscreen = uiDocument.fullscreenElement;
+    if (localFullscreen && localFullscreen.nodeType === 1) return localFullscreen;
+    const topFullscreen = panelDocument.fullscreenElement;
+    if (topFullscreen && topFullscreen.nodeType === 1) return topFullscreen;
+    return panelDocument.documentElement;
   }
 
   let residentLayer = null;
   function getResidentLayer() {
-    if (residentLayer && panelDocument.documentElement.contains(residentLayer)) return residentLayer;
-    residentLayer = panelDocument.createElement('div');
-    residentLayer.id = 'bilivex-dm-resident';
-    residentLayer.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;' +
-      'pointer-events:none;overflow:hidden;z-index:2147483000;';
-    getUiHost().appendChild(residentLayer);
+    const host = getUiHost();
+    if (!host) return null;
+    if (residentLayer && residentLayer.parentNode === host) return residentLayer;
+    if (residentLayer && residentLayer.ownerDocument !== host.ownerDocument) {
+      try {
+        $$('[data-bilivex-resident="1"]', residentLayer).forEach((el) => {
+          if (typeof el._bilivexFloatOnLeave === 'function') el._bilivexFloatOnLeave();
+          else el.remove();
+        });
+        $$('.bilivex-float-plus-btn', residentLayer).forEach((el) => el.remove());
+        residentLayer.remove();
+      } catch (e) {}
+      residentLayer = null;
+    }
+    if (!residentLayer) {
+      const ownerDocument = host.ownerDocument || panelDocument;
+      residentLayer = ownerDocument.createElement('div');
+      residentLayer.id = 'bilivex-dm-resident';
+      residentLayer.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;' +
+        'pointer-events:none;overflow:hidden;z-index:2147483000;';
+    }
+    const playerRectUi = getPlayerRect();
+    if (playerRectUi) {
+      const offset = getFrameOffset();
+      const localRect = host.ownerDocument === uiDocument
+        ? {
+            left: playerRectUi.left - offset.left,
+            top: playerRectUi.top - offset.top,
+            right: playerRectUi.right - offset.left,
+            bottom: playerRectUi.bottom - offset.top
+          }
+        : playerRectUi;
+      const vw = host.ownerDocument.documentElement.clientWidth || host.ownerDocument.defaultView.innerWidth;
+      const vh = host.ownerDocument.documentElement.clientHeight || host.ownerDocument.defaultView.innerHeight;
+      const top = Math.max(0, localRect.top);
+      const right = Math.max(0, vw - localRect.right);
+      const bottom = Math.max(0, vh - localRect.bottom);
+      const left = Math.max(0, localRect.left);
+      residentLayer.style.clipPath = 'inset(' + top + 'px ' + right + 'px ' + bottom + 'px ' + left + 'px)';
+      residentLayer.style.webkitClipPath = residentLayer.style.clipPath;
+    } else {
+      residentLayer.style.clipPath = '';
+      residentLayer.style.webkitClipPath = '';
+    }
+    host.appendChild(residentLayer);
     return residentLayer;
   }
 
@@ -477,9 +645,11 @@
     try {
       const host = getUiHost();
       if (!host) return;
-      ['bilivex-dm-resident', 'bilivex-toast', 'bilivex-panel'].forEach((id) => {
+      const layer = getResidentLayer();
+      if (layer && layer.parentNode !== host) host.appendChild(layer);
+      ['bilivex-toast', 'bilivex-panel'].forEach((id) => {
         const el = panelDocument.getElementById(id);
-        if (el && el.parentNode !== host) host.appendChild(el);
+        if (el && el.ownerDocument === host.ownerDocument && el.parentNode !== host) host.appendChild(el);
       });
     } catch (e) {}
   }
@@ -579,10 +749,9 @@
         setTimeout(() => { btn.dataset.bilivexBusy = ''; }, 300);
         return;
       }
-      const r = fillAndSend(liveText);
+      sendPlusOne(liveText);
       // 视觉反馈：弹出 ✓ +1 动效
       showFloatingPlusFeedback(item);
-      showToast(r.message || (r.status === 'sent' ? '已发送' : '已填入，请按回车'));
       setTimeout(() => { btn.dataset.bilivexBusy = ''; }, 300);
     });
 
@@ -639,8 +808,7 @@
         } catch (e) {}
         const progress = animationSnapshot.length && animationSnapshot[0].currentTime != null
           ? animationSnapshot[0].currentTime : 0;
-        const rect = toUiRect(item.getBoundingClientRect());
-        const playerRect = getPlayerRect();
+        const sourceRect = item.getBoundingClientRect();
         const origParent = item.parentNode;
         const hoverId = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8);
         item.dataset.bilivexHoverPaused = hoverId;
@@ -649,7 +817,10 @@
         item._bilivexAnimProgress = progress;
         item._bilivexAnimationSnapshot = animationSnapshot;
         // 悬停时显示弹幕文字与高亮，不影响原始弹幕的滚动。
-        const clone = uiDocument.createElement('div');
+        const residentHost = getResidentLayer();
+        if (!residentHost) return null;
+        const overlayDocument = residentHost.ownerDocument || uiDocument;
+        const clone = overlayDocument.createElement('div');
         clone.className = 'bilivex-float-highlight';
         clone.dataset.bilivexResident = '1';
         clone._bilivexHoverId = hoverId;
@@ -658,7 +829,7 @@
         clone._bilivexOrigParent = origParent;
         const residentText = extractFloatingDmText(item);
         const sourceText = item.querySelector('.bili-danmaku-x-text') || item;
-        const textLayer = uiDocument.createElement('span');
+        const textLayer = overlayDocument.createElement('span');
         textLayer.className = 'bilivex-float-text';
         textLayer.textContent = residentText;
         textLayer.style.setProperty('display', 'block', 'important');
@@ -682,6 +853,25 @@
         item.classList.add('bili-danmaku-x-paused');
         item.style.backgroundColor = currentTheme.highlight;
         item.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
+        const rect = overlayDocument === item.ownerDocument ? sourceRect : toUiRect(sourceRect);
+        const playerRectUi = getPlayerRect();
+        const frameOffset = getFrameOffset();
+        const playerRect = overlayDocument === uiDocument && panelDocument !== uiDocument && playerRectUi
+          ? {
+              left: playerRectUi.left - frameOffset.left,
+              right: playerRectUi.right - frameOffset.left,
+              top: playerRectUi.top - frameOffset.top,
+              bottom: playerRectUi.bottom - frameOffset.top
+            }
+          : playerRectUi;
+        if (playerRect) {
+          const clipTop = Math.max(0, playerRect.top - rect.top);
+          const clipRight = Math.max(0, rect.right - playerRect.right);
+          const clipBottom = Math.max(0, rect.bottom - playerRect.bottom);
+          const clipLeft = Math.max(0, playerRect.left - rect.left);
+          textLayer.style.setProperty('clip-path', 'inset(' + clipTop + 'px ' + clipRight + 'px ' + clipBottom + 'px ' + clipLeft + 'px)', 'important');
+          textLayer.style.setProperty('-webkit-clip-path', textLayer.style.clipPath, 'important');
+        }
         // 保留弹幕当下的真实坐标；不得向播放器边界钳制，否则左缘弹幕会被搬到左上角并持续命中鼠标。
         clone.style.setProperty('position', 'fixed', 'important');
         clone.style.setProperty('left', rect.left + 'px', 'important');
@@ -698,7 +888,7 @@
         clone.style.backgroundColor = currentTheme.highlight;
         clone.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
         // 3) +1 按钮：跟随弹幕显示，优先放在右侧，空间不足时回退左侧。
-        const cBtn = uiDocument.createElement('button');
+        const cBtn = overlayDocument.createElement('button');
         cBtn.className = 'bilivex-float-plus-btn';
         cBtn.type = 'button';
         cBtn.textContent = '+1';
@@ -723,13 +913,12 @@
           e.stopPropagation(); e.preventDefault();
           const t = extractFloatingDmText(item);
           if (!t) { showToast('该弹幕无文本内容'); return; }
-          const rr = fillAndSend(t);
+          sendPlusOne(t);
           showFloatingPlusFeedback(item);
-          showToast(rr.message || (rr.status === 'sent' ? '已发送' : '已填入，请按回车'));
         });
         clone._bilivexFloatBtn = cBtn;
-        getResidentLayer().appendChild(clone);
-        getResidentLayer().appendChild(cBtn);
+        residentHost.appendChild(clone);
+        residentHost.appendChild(cBtn);
         // 悬停区与 +1 按钮按各自实际位置判断，鼠标可在两者间顺畅移动。
         clone._bilivexFloatOnLeave = () => {
           try {
@@ -795,7 +984,20 @@
     try {
       const rect = item.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return false;
+      const style = getComputedStyle(item);
+      if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) <= 0) return false;
       if (item.classList.contains('bili-danmaku-x-disable') || isBilivexReleasingDm(item)) return false;
+      const playerRectUi = getPlayerRect();
+      const playerRect = playerRectUi && item.ownerDocument === uiDocument && panelDocument !== uiDocument
+        ? {
+            left: playerRectUi.left - getFrameOffset().left,
+            right: playerRectUi.right - getFrameOffset().left,
+            top: playerRectUi.top - getFrameOffset().top,
+            bottom: playerRectUi.bottom - getFrameOffset().top
+          }
+        : playerRectUi;
+      if (playerRect && (rect.right < playerRect.left || rect.left > playerRect.right ||
+          rect.bottom < playerRect.top || rect.top > playerRect.bottom)) return false;
       if (typeof item.getAnimations !== 'function') return true;
       const animations = item.getAnimations();
       if (animations.length === 0) return true;
@@ -852,10 +1054,12 @@
     start() {
       if (this.bound) return;
       this.bound = true;
-      const onMove = (e) => {
+      const onMoveAt = (clientX, clientY, addFrameOffset) => {
         const now = Date.now();
         const prevPx = this.px, prevPy = this.py, prevTs = this._lastMoveTs;
-        this.px = e.clientX; this.py = e.clientY;
+        const frameOffset = addFrameOffset ? getFrameOffset() : { left: 0, top: 0 };
+        this.px = clientX + frameOffset.left;
+        this.py = clientY + frameOffset.top;
         this._lastMoveTs = now;
         if (prevPx >= 0 && prevPy >= 0 && prevTs > 0) {
           const dt = Math.max(1, now - prevTs);
@@ -867,14 +1071,20 @@
         if (this.rafId) return;
         this.rafId = requestAnimationFrame(() => { this.rafId = 0; this.check(); });
       };
+      const onMove = (e) => onMoveAt(e.clientX, e.clientY, true);
       // pointermove 已覆盖鼠标与触控指针；仅在不支持 PointerEvent 时回退 mousemove，
       // 避免同一鼠标移动被两个事件重复计算候选。
       const moveEvent = typeof window.PointerEvent === 'function' ? 'pointermove' : 'mousemove';
       uiDocument.addEventListener(moveEvent, onMove, { passive: true });
-      // 兜底：鼠标离开窗口时清除悬停
+      // 兼容 iframe 直播间：鼠标从弹幕移到 +1 按钮时保持悬停，不因跨页面元素而中断。
+      if (panelDocument !== uiDocument) {
+        panelDocument.addEventListener(moveEvent, (e) => onMoveAt(e.clientX, e.clientY, false), { passive: true });
+      }
+      // 兜底：鼠标离开顶层窗口时清除悬停；iframe 实例不能在离开 iframe 时提前释放。
       const onLeaveWin = () => { if (this.hovered) this.leave(this.hovered); };
-      uiDocument.addEventListener('pointerleave', onLeaveWin);
-      uiDocument.addEventListener('mouseleave', onLeaveWin);
+      const leaveDocument = panelDocument === uiDocument ? uiDocument : panelDocument;
+      leaveDocument.addEventListener('pointerleave', onLeaveWin);
+      leaveDocument.addEventListener('mouseleave', onLeaveWin);
 
       this.bindAnimationEndBlock(uiDocument);
     },
@@ -885,9 +1095,8 @@
     },
 
     getLocalPoint(px, py) {
-      // 指针事件在 uiDocument 上分发，client 坐标已经属于该文档视口；
-      // 只有跨文档矩形转换时才需要 getFrameOffset。
-      return { x: px, y: py };
+      const offset = getFrameOffset();
+      return { x: px - offset.left, y: py - offset.top };
     },
     // 向上找最近的弹幕节点
     findDm(el) {
@@ -962,7 +1171,7 @@
           const topEl = uiDocument.elementFromPoint(px, py) || document.elementFromPoint(local.x, local.y);
           const btn = cur._bilivexFloatBtn || cur.querySelector('.bilivex-float-plus-btn');
           const source = cur.dataset && cur.dataset.bilivexResident === '1' ? cur._bilivexSource : cur;
-          const sourceRect = source && source.isConnected ? source.getBoundingClientRect() : null;
+          const sourceRect = source && source.isConnected ? toUiRect(source.getBoundingClientRect()) : null;
           const visualRect = cur.getBoundingClientRect();
           const inRect = (r) => r && px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
           if (topEl && (topEl === cur || cur.contains(topEl) || topEl === source ||
@@ -976,6 +1185,7 @@
             const gapRight = Math.max(itemRect.left, buttonRect.left);
             const gapTop = Math.max(itemRect.top, buttonRect.top);
             const gapBottom = Math.min(itemRect.bottom, buttonRect.bottom);
+            // 给按钮与弹幕之间的实际空隙保留联合热区，避免 iframe 坐标转换后移动到按钮时释放。
             if (gapLeft <= gapRight && gapTop <= gapBottom &&
                 px >= gapLeft && px <= gapRight && py >= gapTop && py <= gapBottom) return;
           }
@@ -2032,6 +2242,7 @@
   }
 
   function start() {
+    bindTopLevelPlusBridge();
     try {
       document.addEventListener('fullscreenchange', syncFullscreenUi);
       document.addEventListener('webkitfullscreenchange', syncFullscreenUi);
@@ -2048,7 +2259,7 @@
   }
 
   function watchSpa() {
-    // 每个脚本实例只监听自身文档；顶层面板由 buildPanel 复用，不能被 iframe 实例删除。
+    // 兼容 iframe 直播间：各页面实例独立运行，共享的悬浮面板不被 iframe 实例误删。
     if (spaWatching || !document.documentElement) return;
     spaWatching = true;
     let lastUrl = location.href;
