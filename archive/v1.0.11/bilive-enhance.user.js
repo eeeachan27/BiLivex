@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.0.10
+// @version      1.0.11
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停冻结驻留，可快捷 +1 回复；② 评论区——聊天区弹幕悬停显示 +1/复制按钮；③ 小尾巴——发送弹幕自动追加自定义文字；④ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -93,6 +93,13 @@
     try { GM_setValue('bilivex_cfg', JSON.stringify(cfg)); } catch (e) {}
   }
 
+  // 面板在顶层、聊天控件在 iframe 时，各自的运行时配置不会自动同步。
+  // 发送前重新读取持久化设置，确保手动发送与 +1 使用面板刚保存的小尾巴。
+  function getTailText() {
+    const latest = loadCfg();
+    return latest.tailEnabled && latest.tailText ? latest.tailText : '';
+  }
+
   let cfg = loadCfg();
   // 当前主题色板
   let currentTheme = THEMES[cfg.theme] || THEMES.blue;
@@ -165,10 +172,41 @@
     return scan(window) || (window.top !== window ? scan(window.top) : null);
   }
 
+  // +1 请求按单账号串行；聊天框不可用时才使用真实接口兜底。
+  const PLUS_SEND_TIMEOUT_MS = 10000;
+  let plusRequestSeq = 0;
+  let plusSendTail = Promise.resolve();
+
+  function nextPlusRequestId() {
+    plusRequestSeq += 1;
+    return 'plus-' + Date.now() + '-' + plusRequestSeq;
+  }
+
+  function tracePlus(event, details) {
+    const entry = { event, ts: Date.now(), ...(details || {}) };
+    try {
+      const logs = window.__bilivexPlusLog || (window.__bilivexPlusLog = []);
+      logs.push(entry);
+      if (logs.length > 80) logs.shift();
+      console.info('[BiLivex +1]', event, entry);
+    } catch (e) {}
+  }
+
+  function enqueuePlusSend(task) {
+    const run = plusSendTail.then(task, task);
+    // ponytail: global serial queue; split by room/account only if throughput becomes a measured issue.
+    plusSendTail = run.catch(() => {});
+    return run;
+  }
+
   // 使用实际直播文档的已登录会话发送，避免全屏 iframe 的聊天 UI 事件链丢失点击。
-  async function sendDanmakuByApi(text) {
+  async function sendDanmakuByApi(text, requestId) {
+    const startedAt = Date.now();
     const context = findLiveSendContext();
-    if (!context) return { status: 'unavailable' };
+    if (!context) {
+      tracePlus('unavailable', { requestId, textLength: text.length });
+      return { status: 'unavailable', requestId };
+    }
     const body = new context.window.FormData();
     const fields = {
       bubble: '0', msg: text, color: '16777215', mode: '1', room_type: '0', jumpfrom: '0',
@@ -176,15 +214,35 @@
       rnd: String(Math.floor(Date.now() / 1000)), csrf: context.csrf, csrf_token: context.csrf,
     };
     for (const [key, value] of Object.entries(fields)) body.append(key, value);
+    const controller = new context.window.AbortController();
+    const timeout = context.window.setTimeout(() => controller.abort(), PLUS_SEND_TIMEOUT_MS);
     try {
+      tracePlus('request-start', { requestId, roomId: context.roomId });
       const response = await context.window.fetch('https://api.live.bilibili.com/msg/send', {
-        method: 'POST', credentials: 'include', body,
+        method: 'POST', credentials: 'include', body, signal: controller.signal,
       });
       const result = await response.json();
-      if (response.ok && result && result.code === 0) return { status: 'sent' };
-      return { status: 'failed', message: (result && result.message) || '发送失败' };
+      const details = {
+        requestId, roomId: context.roomId, httpStatus: response.status,
+        code: result && result.code, elapsedMs: Date.now() - startedAt,
+      };
+      if (response.ok && result && result.code === 0) {
+        tracePlus('request-sent', details);
+        return { status: 'sent', requestId, roomId: context.roomId, elapsedMs: details.elapsedMs };
+      }
+      const message = (result && (result.message || result.msg)) || ('发送失败（HTTP ' + response.status + '）');
+      tracePlus('request-failed', { ...details, message });
+      return { status: 'failed', requestId, roomId: context.roomId, message, httpStatus: response.status, code: details.code };
     } catch (e) {
-      return { status: 'failed', message: '发送请求失败' };
+      const timeoutHit = e && e.name === 'AbortError';
+      const message = timeoutHit ? '发送超时，请稍后重试' : '发送请求失败，请检查网络后重试';
+      tracePlus('request-error', {
+        requestId, roomId: context.roomId, elapsedMs: Date.now() - startedAt,
+        error: e && e.message, timeout: timeoutHit,
+      });
+      return { status: 'failed', requestId, roomId: context.roomId, message, timeout: timeoutHit };
+    } finally {
+      context.window.clearTimeout(timeout);
     }
   }
 
@@ -246,40 +304,68 @@
 
   function appendTailForManualSend(ta) {
     const originalText = ta && ta.value;
-    if (!ta || !cfg.tailEnabled || !cfg.tailText || !originalText || originalText.endsWith(cfg.tailText)) {
+    const tailText = getTailText();
+    if (!ta || !tailText || !originalText || originalText.endsWith(tailText)) {
       return;
     }
     if (ta._bilivexTailAppending) return;
     ta._bilivexTailAppending = true;
     try {
       // React 的发送处理可能晚于当前事件循环；保留最终文本直至页面自身消费/清空。
-      setReactLikeValue(ta, originalText + cfg.tailText);
+      setReactLikeValue(ta, originalText + tailText);
     } finally {
       ta._bilivexTailAppending = false;
     }
   }
 
-  // 填入并尝试发送。返回结果状态：'sent' | 'filled' | 'no-input'
-  function fillAndSend(text, opts) {
+  // 等待直播聊天组件就绪，避免 iframe 异步挂载的短窗口落入接口发送分支。
+  function waitForNativeChatInput(timeoutMs) {
+    const deadline = Date.now() + (timeoutMs || 2500);
+    return new Promise((resolve) => {
+      const poll = () => {
+        const input = findChatInput();
+        if (input || Date.now() >= deadline) {
+          resolve(input || null);
+          return;
+        }
+        setTimeout(poll, 100);
+      };
+      poll();
+    });
+  }
+
+  // 填入并尝试发送。返回状态：'queued' | 'filled' | 'no-input' | 'failed'。
+  // queued 表示真实聊天按钮或 Enter 事件已经触发，不伪造服务端成功结果。
+  async function fillAndSend(text, opts) {
     opts = opts || {};
-    const ta = findChatInput();
-    if (!ta) return { status: 'no-input', message: '未找到聊天输入框（可能未登录）' };
-    // 触发聚焦，便于用户看到输入
+    const ta = await waitForNativeChatInput();
+    if (!ta) return { status: 'no-input', message: '未找到原生聊天输入框，请稍后重试' };
     try { ta.focus(); } catch (e) {}
-    // 只在脚本发送入口生成一次最终文本；用户直接编辑 textarea 不经过这里。
-    const finalText = cfg.tailEnabled && cfg.tailText && !text.endsWith(cfg.tailText)
-      ? text + cfg.tailText
-      : text;
+    const tailText = getTailText();
+    const finalText = opts.finalText || (tailText && !text.endsWith(tailText)
+      ? text + tailText
+      : text);
     if (!setReactLikeValue(ta, finalText)) {
-      return { status: 'filled', message: '输入框暂不可用' };
+      return Promise.resolve({ status: 'failed', message: '输入框暂不可用' });
     }
-    if (opts.autoSend === false) return { status: 'filled' };
-    // Vue 会在 input 后异步更新发送按钮状态，下一帧再点击实际按钮。
+    tracePlus('dom-input', { requestId: opts.requestId, textLength: finalText.length });
+    if (opts.autoSend === false) return Promise.resolve({ status: 'filled', message: '已填入输入框' });
+    // Vue 会在 input 后异步更新按钮状态，下一帧再点击真实发送按钮。
     const ownerWindow = ta.ownerDocument.defaultView || window;
-    ownerWindow.requestAnimationFrame(() => {
+    const schedule = typeof ownerWindow.requestAnimationFrame === 'function'
+      ? ownerWindow.requestAnimationFrame.bind(ownerWindow)
+      : (cb) => ownerWindow.setTimeout(cb, 0);
+    return new Promise((resolve) => schedule(() => {
       const btn = findSendBtn(ta);
       if (btn && !btn.disabled && btn.getAttribute('aria-disabled') !== 'true') {
-        try { btn.click(); return; } catch (e) {}
+        try {
+          btn.click();
+          tracePlus('dom-click', { requestId: opts.requestId });
+          resolve({ status: 'queued', message: '已通过原生聊天框发送' });
+          return;
+        } catch (e) {
+          tracePlus('dom-click-error', { requestId: opts.requestId, error: e && e.message });
+        }
       }
       try {
         ta.focus();
@@ -287,29 +373,76 @@
           key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
           bubbles: true, cancelable: true,
         }));
-      } catch (e) {}
-    });
-    return { status: 'queued', message: '已填入，正在发送' };
+        tracePlus('dom-enter', { requestId: opts.requestId });
+        resolve({ status: 'queued', message: '已通过原生聊天框发送' });
+      } catch (e) {
+        tracePlus('dom-enter-error', { requestId: opts.requestId, error: e && e.message });
+        resolve({ status: 'failed', message: '无法触发聊天框发送' });
+      }
+    }));
   }
 
   function sendPlusOne(text) {
-    const finalText = cfg.tailEnabled && cfg.tailText && !text.endsWith(cfg.tailText)
-      ? text + cfg.tailText
-      : text;
-    const apiResult = sendDanmakuByApi(finalText);
-    apiResult.then((result) => {
-      if (result.status === 'sent') {
+    const cleanText = String(text || '').trim();
+    if (!cleanText) {
+      showToast('该弹幕无文本内容');
+      return Promise.resolve({ status: 'invalid', message: '该弹幕无文本内容' });
+    }
+    const requestId = nextPlusRequestId();
+    const tailText = getTailText();
+    const finalText = tailText && !cleanText.endsWith(tailText)
+      ? cleanText + tailText
+      : cleanText;
+    tracePlus('queued', { requestId, textLength: finalText.length });
+    return enqueuePlusSend(async () => {
+      // 聊天框优先：只有聊天组件不可用时才使用 API，避免绕过 B 站本人发送状态。
+      const domResult = await fillAndSend(finalText, { requestId, finalText });
+      if (domResult.status === 'queued' || domResult.status === 'filled') {
+        tracePlus('dom-result', { requestId, status: domResult.status });
+        showToast(domResult.message || '已通过原生聊天框发送');
+        return { ...domResult, requestId };
+      }
+      tracePlus('dom-unavailable', { requestId, status: domResult.status });
+      const apiResult = await sendDanmakuByApi(finalText, requestId);
+      if (apiResult.status === 'sent') {
         showToast('已发送');
-        return;
+        return apiResult;
       }
-      if (result.status === 'failed') {
-        showToast(result.message || '发送失败');
-        return;
+      if (apiResult.status === 'failed') {
+        showToast(apiResult.message || '发送失败');
+        return apiResult;
       }
-      const fallback = fillAndSend(text);
-      showToast(fallback.message || (fallback.status === 'sent' ? '已发送' : '已填入，请按回车'));
+      const result = { status: 'failed', requestId, message: '当前无法发送，请确认已登录直播间' };
+      tracePlus('send-unavailable', result);
+      showToast(result.message);
+      return result;
+    }).catch((error) => {
+      const message = '发送失败，请重试';
+      tracePlus('queue-error', { requestId, error: error && error.message });
+      showToast(message);
+      return { status: 'failed', requestId, message };
     });
-    return { status: 'queued', message: '正在发送' };
+  }
+
+  function runPlusButtonAction(button, action, onAccepted) {
+    if (!button || button.dataset.bilivexBusy === '1') return Promise.resolve({ status: 'busy' });
+    button.dataset.bilivexBusy = '1';
+    button.setAttribute('aria-busy', 'true');
+    button.disabled = true;
+    return Promise.resolve().then(action).then((result) => {
+      if (result && (result.status === 'sent' || result.status === 'queued' || result.status === 'filled')) {
+        if (typeof onAccepted === 'function') onAccepted(result);
+      }
+      return result;
+    }).catch((error) => {
+      tracePlus('button-error', { error: error && error.message });
+      showToast('发送失败，请重试');
+      return { status: 'failed', message: '发送失败，请重试' };
+    }).finally(() => {
+      button.dataset.bilivexBusy = '';
+      button.removeAttribute('aria-busy');
+      button.disabled = false;
+    });
   }
 
   function requestTopLevelPlus(text) {
@@ -402,7 +535,7 @@
       b.style.boxShadow = '0 2px 6px ' + currentTheme.primaryShadow;
     });
 
-    // 7. 不改写聊天弹幕节点，保留 B 站原生的本人弹幕框选样式。
+    // 7. 本人聊天弹幕固定使用蓝色边框，与当前面板主题无关。
 
     // 8. 重新注入 keyframes 渐变（下次反馈动画使用新色）
     bilivexAnimInjected = false;
@@ -412,9 +545,19 @@
   // ---------- 聊天区弹幕悬停按钮 ----------
   // 通过在每条弹幕上添加悬浮操作按钮实现 +1 / 复制
 
+  function markOwnDanmaku(item) {
+    if (!item || !item.classList.contains('danmaku-item')) return;
+    const isOwn = !!item.querySelector('.user-name.my-self');
+    item.classList.toggle('bilivex-own-danmaku', isOwn);
+    item.style.boxSizing = 'border-box';
+    item.style.boxShadow = isOwn ? 'inset 0 0 0 1px #1E88E5' : '';
+    item.style.borderRadius = isOwn ? '4px' : '';
+  }
+
   function ensureDanmakuOverlay(item) {
     if (!item || item.dataset.bilivexInited) return;
     if (!item.classList.contains('danmaku-item')) return;
+    markOwnDanmaku(item);
     item.dataset.bilivexInited = '1';
     item.style.position = item.style.position || 'relative';
     // 操作按钮容器：置于弹幕行右侧垂直居中（right:4px + top:50% + translateY(-50%)），
@@ -447,7 +590,7 @@
     const text = item.dataset.danmaku || (item.querySelector('.danmaku-item-right') || {}).textContent || '';
     plusBtn.addEventListener('click', (e) => {
       e.stopPropagation(); e.preventDefault();
-      sendPlusOne(text);
+      runPlusButtonAction(plusBtn, () => sendPlusOne(text));
     });
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation(); e.preventDefault();
@@ -481,7 +624,10 @@
     list.dataset.bilivexHoverBound = '1';
     boundChatList = list;
     const refresh = () => {
-      $$('.chat-item.danmaku-item', list).forEach(ensureDanmakuOverlay);
+      $$('.chat-item.danmaku-item', list).forEach((item) => {
+        markOwnDanmaku(item);
+        ensureDanmakuOverlay(item);
+      });
     };
     refresh();
     const mo = new MutationObserver(() => refresh());
@@ -741,18 +887,14 @@
     btn.addEventListener('mousedown', (e) => { e.stopPropagation(); });
     btn.addEventListener('click', (e) => {
       e.stopPropagation(); e.preventDefault();
-      if (btn.dataset.bilivexBusy === '1') return;
-      btn.dataset.bilivexBusy = '1';
       const liveText = extractFloatingDmText(item);
       if (!liveText) {
         showToast('该弹幕无文本内容');
-        setTimeout(() => { btn.dataset.bilivexBusy = ''; }, 300);
         return;
       }
-      sendPlusOne(liveText);
-      // 视觉反馈：弹出 ✓ +1 动效
-      showFloatingPlusFeedback(item);
-      setTimeout(() => { btn.dataset.bilivexBusy = ''; }, 300);
+      runPlusButtonAction(btn, () => sendPlusOne(liveText), (result) => {
+        if (result.status === 'sent' || result.status === 'queued') showFloatingPlusFeedback(item);
+      });
     });
 
     const restoreFloatingSource = (source, hoverId) => {
@@ -913,8 +1055,9 @@
           e.stopPropagation(); e.preventDefault();
           const t = extractFloatingDmText(item);
           if (!t) { showToast('该弹幕无文本内容'); return; }
-          sendPlusOne(t);
-          showFloatingPlusFeedback(item);
+          runPlusButtonAction(cBtn, () => sendPlusOne(t), (result) => {
+            if (result.status === 'sent' || result.status === 'queued') showFloatingPlusFeedback(item);
+          });
         });
         clone._bilivexFloatBtn = cBtn;
         residentHost.appendChild(clone);
