@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.0.11
+// @version      1.1.0
 // @license      MIT
-// @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停冻结驻留，可快捷 +1 回复；② 评论区——聊天区弹幕悬停显示 +1/复制按钮；③ 小尾巴——发送弹幕自动追加自定义文字；④ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
+// @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停后可快捷 +1 回复；② 收藏夹——收藏、搜索、编辑与跨设备迁移常用弹幕；③ 评论区——聊天区弹幕悬停显示 +1/收藏/复制按钮；④ 小尾巴——发送弹幕自动追加自定义文字；⑤ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
 // @match        https://live.bilibili.com/*
 // @grant        GM_setValue
@@ -15,10 +15,11 @@
  * BiLivex - 哔哩哔哩直播增强
  *
  * 核心功能：
- *   1) 弹幕 +1：漂浮弹幕悬停冻结驻留，提供快捷 +1 回复。
- *   2) 评论区：聊天区弹幕悬停显示 +1 / 复制按钮。
- *   3) 小尾巴：发送弹幕时自动在末尾追加自定义文字。
- *   4) 一键点赞：连续点赞 30 次点亮粉丝团灯牌。
+ *   1) 弹幕 +1：悬停弹幕后快捷发送同内容弹幕。
+ *   2) 收藏夹：收藏、搜索、编辑、导入和导出常用弹幕。
+ *   3) 评论区：聊天区弹幕悬停显示 +1 / 收藏 / 复制按钮。
+ *   4) 小尾巴：发送弹幕时自动在末尾追加自定义文字。
+ *   5) 一键点赞：连续点赞 30 次点亮粉丝团灯牌。
  */
 
 (function () {
@@ -73,24 +74,114 @@
     copyEnabled: true,         // 复制按钮开关
     panelCollapsed: false,     // 侧边菜单折叠
     panelPos: null,            // 拖拽后的面板位置 {left,top}，null 表示未拖拽过，使用默认+避让
+    panelAnchor: null,         // 面板沿 left/right 一侧锚定，尺寸变化时保持同侧
     theme: 'blue',             // 主题 'blue' | 'pink'
+    favoritesSchemaVersion: 1,
+    favorites: [],
   };
+
+  const FAVORITES_MAX_COUNT = 1000;
+  const FAVORITE_TEXT_MAX_LENGTH = 200;
+  // 收藏列表独立于面板开关、位置和主题配置保存。顶层面板与 iframe 内弹幕脚本会并行运行，
+  // 独立存储可避免任一旧 cfg 快照在收起菜单时覆盖刚新增的收藏。
+  const FAVORITES_STORAGE_KEY = 'bilivex_favorites';
+
+  function normalizeFavoriteText(value) {
+    if (typeof value !== 'string') return '';
+    const text = value.trim();
+    return text.length <= FAVORITE_TEXT_MAX_LENGTH ? text : text.slice(0, FAVORITE_TEXT_MAX_LENGTH);
+  }
+
+  function makeFavorite(text, old) {
+    const now = Date.now();
+    return {
+      id: old && old.id ? String(old.id) : 'fav-' + now + '-' + Math.random().toString(36).slice(2, 8),
+      text,
+      createdAt: old && Number.isFinite(old.createdAt) ? old.createdAt : now,
+      updatedAt: now,
+    };
+  }
+
+  function normalizeFavorites(value) {
+    const result = [];
+    const seen = new Set();
+    if (!Array.isArray(value)) return result;
+    value.forEach((item) => {
+      const text = normalizeFavoriteText(typeof item === 'string' ? item : item && item.text);
+      if (!text || seen.has(text) || result.length >= FAVORITES_MAX_COUNT) return;
+      seen.add(text);
+      result.push(makeFavorite(text, typeof item === 'object' ? item : null));
+    });
+    return result;
+  }
+
+  function readStoredFavorites() {
+    try {
+      const raw = GM_getValue(FAVORITES_STORAGE_KEY);
+      if (!raw) return null;
+      return normalizeFavorites(JSON.parse(raw));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeStoredFavorites(favorites) {
+    const normalized = normalizeFavorites(favorites);
+    try { GM_setValue(FAVORITES_STORAGE_KEY, JSON.stringify(normalized)); } catch (e) {}
+    return normalized;
+  }
 
   function loadCfg() {
     try {
       const raw = GM_getValue('bilivex_cfg');
-      if (!raw) return { ...DEFAULT_CFG };
-      const obj = JSON.parse(raw);
-      // 缺失 theme 时默认为 blue
+      const obj = raw ? JSON.parse(raw) : {};
       if (!obj.theme || (obj.theme !== 'blue' && obj.theme !== 'pink')) obj.theme = 'blue';
-      return { ...DEFAULT_CFG, ...obj };
+      if (obj.panelAnchor !== 'left' && obj.panelAnchor !== 'right') obj.panelAnchor = null;
+      // 兼容旧版本嵌在 cfg 内的收藏；首次读到旧列表时迁移到独立存储，
+      // 后续顶层菜单与 iframe 实例只会读取同一份收藏数据。
+      const storedFavorites = readStoredFavorites();
+      const legacyFavorites = normalizeFavorites(obj.favorites);
+      const favorites = storedFavorites === null ? legacyFavorites : storedFavorites;
+      if (storedFavorites === null && legacyFavorites.length) writeStoredFavorites(legacyFavorites);
+      return { ...DEFAULT_CFG, ...obj, favorites };
     } catch (e) {
-      return { ...DEFAULT_CFG };
+      const storedFavorites = readStoredFavorites();
+      return { ...DEFAULT_CFG, favorites: storedFavorites === null ? [] : storedFavorites };
     }
   }
 
-  function saveCfg(cfg) {
-    try { GM_setValue('bilivex_cfg', JSON.stringify(cfg)); } catch (e) {}
+  function saveCfg(nextCfg) {
+    // 不使用调用方缓存的 favorites，避免 iframe / 顶层两个实例互相覆写收藏列表。
+    const storedFavorites = readStoredFavorites();
+    const favorites = storedFavorites === null
+      ? normalizeFavorites(nextCfg.favorites)
+      : storedFavorites;
+    try { GM_setValue('bilivex_cfg', JSON.stringify({ ...nextCfg, favorites })); } catch (e) {}
+  }
+
+  function getFavorites() {
+    const storedFavorites = readStoredFavorites();
+    return storedFavorites === null ? normalizeFavorites(loadCfg().favorites) : storedFavorites;
+  }
+
+  function addFavorite(text) {
+    const clean = normalizeFavoriteText(text);
+    if (!clean) return { status: 'invalid' };
+    const favorites = getFavorites();
+    if (favorites.some((item) => item.text === clean)) return { status: 'duplicate' };
+    if (favorites.length >= FAVORITES_MAX_COUNT) return { status: 'limit' };
+    favorites.push(makeFavorite(clean));
+    const savedFavorites = writeStoredFavorites(favorites);
+    cfg = { ...cfg, favorites: savedFavorites };
+    saveCfg(cfg);
+    return { status: 'added', item: savedFavorites[savedFavorites.length - 1] };
+  }
+
+  function replaceFavorites(favorites) {
+    const savedFavorites = writeStoredFavorites(favorites);
+    cfg = { ...cfg, favorites: savedFavorites };
+    saveCfg(cfg);
+    return savedFavorites;
   }
 
   // 面板在顶层、聊天控件在 iframe 时，各自的运行时配置不会自动同步。
@@ -529,15 +620,21 @@
       }
     });
 
-    // 6. 漂浮弹幕已绑定的 +1 按钮（ensureFloatingDmOverlay 创建）
+    // 6. 漂浮弹幕已绑定的操作按钮（ensureFloatingDmOverlay 创建）
     Array.from(uiDocument.querySelectorAll('.bilivex-float-plus-btn')).forEach((b) => {
       b.style.background = currentTheme.primary;
       b.style.boxShadow = '0 2px 6px ' + currentTheme.primaryShadow;
     });
+    Array.from(uiDocument.querySelectorAll('.bilivex-float-favorite-btn')).forEach((b) => {
+      b.style.background = '#6c7a89';
+    });
+    Array.from(uiDocument.querySelectorAll('.bilivex-float-actions')).forEach((group) => {
+      group.style.boxShadow = '0 2px 8px ' + currentTheme.primaryShadow;
+    });
 
     // 7. 本人聊天弹幕固定使用蓝色边框，与当前面板主题无关。
 
-    // 8. 重新注入 keyframes 渐变（下次反馈动画使用新色）
+    // 8. 刷新反馈动画样式，使 +1 浮字使用新主题色
     bilivexAnimInjected = false;
     injectFloatingDmAnim();
   }
@@ -583,7 +680,10 @@
     };
     const plusBtn = mkBtn('+1', currentTheme.primary);
     const copyBtn = mkBtn('复制', 'rgba(0,0,0,0.55)');
+    const favoriteBtn = mkBtn('收藏', '#6c7a89');
+    favoriteBtn.dataset.bilivexAction = 'favorite';
     if (cfg.plusOneEnabled) bar.appendChild(plusBtn);
+    bar.appendChild(favoriteBtn);
     if (cfg.copyEnabled) bar.appendChild(copyBtn);
     item.appendChild(bar);
 
@@ -591,6 +691,11 @@
     plusBtn.addEventListener('click', (e) => {
       e.stopPropagation(); e.preventDefault();
       runPlusButtonAction(plusBtn, () => sendPlusOne(text));
+    });
+    favoriteBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); e.preventDefault();
+      const result = addFavorite(text);
+      showToast(result.status === 'added' ? '已收藏' : result.status === 'duplicate' ? '已在收藏夹中' : result.status === 'limit' ? '收藏夹已达上限' : '该弹幕无文本内容');
     });
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation(); e.preventDefault();
@@ -729,6 +834,13 @@
       toJSON: rect.toJSON ? rect.toJSON.bind(rect) : undefined
     };
   }
+  // 漂浮弹幕的指针坐标始终以顶层页面为准；仅跨 iframe 的弹幕需要换算位置，
+  // 顶层操作栏本身不再叠加偏移，保证鼠标停在操作栏上时悬停不会丢失。
+  function getFloatingUiRect(el) {
+    if (!el || typeof el.getBoundingClientRect !== 'function') return null;
+    const rect = el.getBoundingClientRect();
+    return el.ownerDocument === uiDocument ? toUiRect(rect) : rect;
+  }
   function getUiHost() {
     const localFullscreen = uiDocument.fullscreenElement;
     if (localFullscreen && localFullscreen.nodeType === 1) return localFullscreen;
@@ -748,7 +860,7 @@
           if (typeof el._bilivexFloatOnLeave === 'function') el._bilivexFloatOnLeave();
           else el.remove();
         });
-        $$('.bilivex-float-plus-btn', residentLayer).forEach((el) => el.remove());
+        $$('.bilivex-float-actions, .bilivex-float-plus-btn', residentLayer).forEach((el) => el.remove());
         residentLayer.remove();
       } catch (e) {}
       residentLayer = null;
@@ -827,11 +939,11 @@
     }
     try {
       const clone = item.cloneNode(true);
-      clone.querySelectorAll('.bilivex-float-plus-btn').forEach((b) => b.remove());
+      clone.querySelectorAll('.bilivex-float-actions, .bilivex-float-plus-btn, .bilivex-float-favorite-btn').forEach((b) => b.remove());
       return (clone.textContent || '').trim();
     } catch (e) {
       let t = (item.textContent || '').trim();
-      item.querySelectorAll('.bilivex-float-plus-btn').forEach((b) => {
+      item.querySelectorAll('.bilivex-float-actions, .bilivex-float-plus-btn, .bilivex-float-favorite-btn').forEach((b) => {
         if (b.textContent) t = t.replace(b.textContent, '').trim();
       });
       return t;
@@ -1029,28 +1141,42 @@
         clone.style.setProperty('pointer-events', 'none', 'important');
         clone.style.backgroundColor = currentTheme.highlight;
         clone.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
-        // 3) +1 按钮：跟随弹幕显示，优先放在右侧，空间不足时回退左侧。
+        // 3) 操作组：跟随弹幕显示，优先放在右侧，空间不足时回退左侧。
+        const actionGroup = overlayDocument.createElement('div');
+        actionGroup.className = 'bilivex-float-actions';
         const cBtn = overlayDocument.createElement('button');
         cBtn.className = 'bilivex-float-plus-btn';
         cBtn.type = 'button';
         cBtn.textContent = '+1';
         cBtn.dataset.bilivexAction = 'plus1';
-        const viewportWidth = uiDocument.documentElement.clientWidth || window.innerWidth;
+        const cFav = overlayDocument.createElement('button');
+        cFav.className = 'bilivex-float-favorite-btn';
+        cFav.type = 'button';
+        cFav.textContent = '收藏';
+        cFav.dataset.bilivexAction = 'favorite';
+        const viewportWidth = overlayDocument.documentElement.clientWidth || overlayDocument.defaultView.innerWidth;
+        const viewportHeight = overlayDocument.documentElement.clientHeight || overlayDocument.defaultView.innerHeight;
         const rightLimit = playerRect ? Math.min(playerRect.right, viewportWidth) : viewportWidth;
         const leftLimit = playerRect ? Math.max(playerRect.left, 0) : 0;
-        const buttonWidth = 68;
-        const buttonGap = 8;
-        const rightLeft = rect.right + buttonGap;
-        const leftLeft = rect.left - buttonGap - buttonWidth;
-        const buttonLeft = rightLeft + buttonWidth <= rightLimit ? rightLeft : Math.max(leftLimit, leftLeft);
-        const buttonTop = rect.top + rect.height / 2;
-        cBtn.style.cssText = 'position:fixed;left:' + buttonLeft + 'px;top:' + buttonTop + 'px;' +
-          'transform:translateY(-50%);margin:0;' +
-          `background:${currentTheme.primary};color:#fff;border:none;border-radius:12px;` +
-          'padding:5px 14px;font-size:14px;line-height:18px;font-weight:600;' +
-          'cursor:pointer;z-index:10000;pointer-events:auto;' +
-          'box-shadow:0 1px 4px rgba(0,0,0,0.25);display:inline-block;user-select:none;white-space:nowrap;';
-        cBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); });
+        const topLimit = playerRect ? Math.max(playerRect.top, 0) : 0;
+        const bottomLimit = playerRect ? Math.min(playerRect.bottom, viewportHeight) : viewportHeight;
+        // 操作组保留可见的 6px 留白；热区判定会单独连通这段空隙，避免为了可操作性牺牲视觉间距。
+        const actionJoin = -6;
+        actionGroup.style.cssText = 'position:fixed;left:0;top:0;transform:none;margin:0;display:flex;align-items:center;gap:4px;' +
+          'padding:3px;border-radius:15px;background:rgba(255,255,255,.62);opacity:.88;' +
+          'border:1px solid rgba(255,255,255,.42);box-shadow:0 2px 8px rgba(0,0,0,.14);' +
+          'backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);' +
+          'transition:opacity .16s ease;z-index:10000;pointer-events:auto;user-select:none;white-space:nowrap;';
+        [cBtn, cFav].forEach((button) => {
+          button.style.cssText = 'border:none;border-radius:12px;padding:4px 10px;font-size:13px;line-height:18px;' +
+            'font-weight:600;cursor:pointer;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);' +
+            'transition:transform .1s ease,filter .1s ease;';
+          button.addEventListener('mousedown', (e) => { e.stopPropagation(); button.style.transform = 'scale(.95)'; });
+          button.addEventListener('mouseup', () => { button.style.transform = ''; });
+          button.addEventListener('mouseleave', () => { button.style.transform = ''; });
+        });
+        cBtn.style.background = currentTheme.primary;
+        cFav.style.background = '#6c7a89';
         cBtn.addEventListener('click', (e) => {
           e.stopPropagation(); e.preventDefault();
           const t = extractFloatingDmText(item);
@@ -1059,15 +1185,42 @@
             if (result.status === 'sent' || result.status === 'queued') showFloatingPlusFeedback(item);
           });
         });
-        clone._bilivexFloatBtn = cBtn;
+        cFav.addEventListener('click', (e) => {
+          e.stopPropagation(); e.preventDefault();
+          const result = addFavorite(extractFloatingDmText(item));
+          showToast(result.status === 'added' ? '已收藏' : result.status === 'duplicate' ? '已在收藏夹中' : result.status === 'limit' ? '收藏夹已达上限' : '该弹幕无文本内容');
+        });
+        actionGroup.appendChild(cBtn);
+        actionGroup.appendChild(cFav);
+        clone._bilivexFloatBtn = actionGroup;
+        clone._bilivexFloatActionGroup = actionGroup;
+        actionGroup._bilivexFloatClone = clone;
         residentHost.appendChild(clone);
-        residentHost.appendChild(cBtn);
-        // 悬停区与 +1 按钮按各自实际位置判断，鼠标可在两者间顺畅移动。
+        residentHost.appendChild(actionGroup);
+        const actionRect = actionGroup.getBoundingClientRect();
+        const actionWidth = actionRect.width;
+        const actionHeight = actionRect.height;
+        const rightLeft = rect.right - actionJoin;
+        const leftLeft = rect.left + actionJoin - actionWidth;
+        const minLeft = leftLimit;
+        const maxLeft = Math.max(minLeft, rightLimit - actionWidth);
+        let actionLeft = rightLeft <= maxLeft ? rightLeft : (leftLeft >= minLeft ? leftLeft : Math.min(maxLeft, Math.max(minLeft, rect.left)));
+        let actionTop = rect.top + (rect.height - actionHeight) / 2;
+        if (rightLeft > maxLeft && leftLeft < minLeft) {
+          const belowTop = rect.bottom - actionJoin;
+          const aboveTop = rect.top + actionJoin - actionHeight;
+          actionTop = belowTop + actionHeight <= bottomLimit ? belowTop : Math.max(topLimit, aboveTop);
+        }
+        actionTop = Math.min(Math.max(topLimit, actionTop), Math.max(topLimit, bottomLimit - actionHeight));
+        actionGroup.style.left = actionLeft + 'px';
+        actionGroup.style.top = actionTop + 'px';
+        // 弹幕、收藏按钮和 +1 按钮共用一个悬停操作组。
         clone._bilivexFloatOnLeave = () => {
           try {
-            cBtn.style.display = 'none';
-            if (cBtn.isConnected) cBtn.remove();
+            actionGroup.style.display = 'none';
+            if (actionGroup.isConnected) actionGroup.remove();
             clone._bilivexFloatBtn = null;
+            clone._bilivexFloatActionGroup = null;
             const source = clone._bilivexSource;
             const activeSource = source === item && source && source.isConnected &&
               source.dataset.bilivexHoverPaused === (clone._bilivexHoverId || '') &&
@@ -1079,7 +1232,9 @@
           } catch (e) {}
         };
         return clone;
-      } catch (e) { return null; }
+      } catch (e) {
+        return null;
+      }
     };
     const onLeave = () => {
       try { restoreFloatingSource(item, item._bilivexHoverId); } catch (e) {}
@@ -1092,7 +1247,9 @@
 
     item._bilivexFloatCleanup = () => {
       const isResident = item.dataset && item.dataset.bilivexResident === '1';
+      const actionGroup = item._bilivexFloatActionGroup || item._bilivexFloatBtn;
       if (btn.parentNode) btn.parentNode.removeChild(btn);
+      if (actionGroup && actionGroup.isConnected) actionGroup.remove();
       if (isResident && typeof item._bilivexFloatOnLeave === 'function') {
         item._bilivexFloatOnLeave();
       }
@@ -1166,7 +1323,24 @@
     _candHits: 0,        // 候选命中帧计数
     _candMiss: 0,        // 候选 miss 计数
     _followRaf: 0,
+    _leaveTimer: null,
     _animationBlockDocuments: new WeakSet(),
+
+    cancelPendingLeave() {
+      if (this._leaveTimer) {
+        clearTimeout(this._leaveTimer);
+        this._leaveTimer = null;
+      }
+    },
+
+    scheduleLeave(item) {
+      if (!item || this._leaveTimer) return;
+      // 8px 操作组间距允许鼠标从弹幕平滑移入按钮，离开所有热区后才短暂延迟释放。
+      this._leaveTimer = setTimeout(() => {
+        this._leaveTimer = null;
+        if (this.hovered === item) this.leave(item);
+      }, 120);
+    },
 
     bindAnimationEndBlock(ownerDocument) {
       const sourceDocument = ownerDocument || uiDocument;
@@ -1175,7 +1349,7 @@
       const onAnimEndBlock = (e) => {
         const cur = this.hovered;
         if (!cur) return;
-        // 悬停期间原始弹幕保持暂停状态，其动画结束/取消事件不处理，避免悬停时弹幕提前消失。
+        // 悬停时弹幕停在原地，其滚动动画相应暂停，避免悬停期间弹幕提前滚出画面。
         const source = cur.dataset && cur.dataset.bilivexResident === '1'
           ? cur._bilivexSource : cur;
         if (!source || !source.isConnected || source.ownerDocument !== sourceDocument ||
@@ -1298,8 +1472,10 @@
       if (px >= 0 && py >= 0) {
         try {
           const local = this.getLocalPoint(px, py);
-          const topEl = uiDocument.elementFromPoint(px, py) || document.elementFromPoint(local.x, local.y);
-          if (topEl && topEl.closest && topEl.closest('#bilivex-panel, .bilivex-dm-bar')) {
+          // panelDocument 使用顶层坐标；uiDocument（iframe）必须使用换算后的局部坐标。
+          const panelEl = panelDocument.elementFromPoint(px, py);
+          const sourceEl = uiDocument === panelDocument ? panelEl : uiDocument.elementFromPoint(local.x, local.y);
+          if ([panelEl, sourceEl].some((el) => el && el.closest && el.closest('#bilivex-panel, .bilivex-dm-bar'))) {
             if (cur) this.leave(cur);
             this._cand = null;
             this._candHits = 0;
@@ -1311,32 +1487,56 @@
       if (cur && cur.isConnected) {
         try {
           const local = this.getLocalPoint(px, py);
-          const topEl = uiDocument.elementFromPoint(px, py) || document.elementFromPoint(local.x, local.y);
-          const btn = cur._bilivexFloatBtn || cur.querySelector('.bilivex-float-plus-btn');
+          // 弹幕与操作栏不在同一页面时分别命中，避免把两套坐标混在一起造成悬停误判。
+          const panelEl = panelDocument.elementFromPoint(px, py);
+          const sourceEl = uiDocument === panelDocument ? panelEl : uiDocument.elementFromPoint(local.x, local.y);
+          const topEl = panelEl || sourceEl;
+          const actionGroup = cur._bilivexFloatActionGroup || cur._bilivexFloatBtn || cur.querySelector('.bilivex-float-actions');
           const source = cur.dataset && cur.dataset.bilivexResident === '1' ? cur._bilivexSource : cur;
-          const sourceRect = source && source.isConnected ? toUiRect(source.getBoundingClientRect()) : null;
-          const visualRect = cur.getBoundingClientRect();
+          const sourceRect = source && source.isConnected ? getFloatingUiRect(source) : null;
+          const visualRect = getFloatingUiRect(cur);
+          const actionRect = actionGroup && actionGroup.isConnected ? getFloatingUiRect(actionGroup) : null;
           const inRect = (r) => r && px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
           if (topEl && (topEl === cur || cur.contains(topEl) || topEl === source ||
-              (source && source.contains(topEl)) || topEl === btn || (btn && btn.contains(topEl)))) return;
-          // 弹幕、悬停区与 +1 按钮视为同一热区，鼠标在其间移动时保持悬停。
-          if (inRect(sourceRect) || inRect(visualRect) || inRect(btn && btn.getBoundingClientRect())) return;
-          if (btn) {
-            const buttonRect = btn.getBoundingClientRect();
+              (source && source.contains(topEl)) || topEl === actionGroup || (actionGroup && actionGroup.contains(topEl)))) {
+            this.cancelPendingLeave();
+            return;
+          }
+          // 弹幕、悬停副本与完整操作组均是热区；仅保留两者之间的最短连接通道，
+          // 避免旧版整块包围矩形把空白区域错误识别为悬停。
+          if (inRect(sourceRect) || inRect(visualRect) || inRect(actionRect)) {
+            this.cancelPendingLeave();
+            return;
+          }
+          if (actionRect) {
             const itemRect = sourceRect || visualRect;
-            const gapLeft = Math.min(itemRect.right, buttonRect.right);
-            const gapRight = Math.max(itemRect.left, buttonRect.left);
-            const gapTop = Math.max(itemRect.top, buttonRect.top);
-            const gapBottom = Math.min(itemRect.bottom, buttonRect.bottom);
-            // 给按钮与弹幕之间的实际空隙保留联合热区，避免 iframe 坐标转换后移动到按钮时释放。
-            if (gapLeft <= gapRight && gapTop <= gapBottom &&
-                px >= gapLeft && px <= gapRight && py >= gapTop && py <= gapBottom) return;
+            const horizontalBridge = itemRect.right <= actionRect.left || actionRect.right <= itemRect.left;
+            const bridge = horizontalBridge
+              ? {
+                  left: Math.min(itemRect.right, actionRect.right),
+                  right: Math.max(itemRect.left, actionRect.left),
+                  top: Math.max(itemRect.top, actionRect.top),
+                  bottom: Math.min(itemRect.bottom, actionRect.bottom)
+                }
+              : {
+                  left: Math.max(itemRect.left, actionRect.left),
+                  right: Math.min(itemRect.right, actionRect.right),
+                  top: Math.min(itemRect.bottom, actionRect.bottom),
+                  bottom: Math.max(itemRect.top, actionRect.top)
+                };
+            if (bridge.right >= bridge.left && bridge.bottom >= bridge.top && inRect(bridge)) {
+              this.cancelPendingLeave();
+              return;
+            }
           }
         } catch (e) {}
       }
       const cand = this._computeCandidate(px, py);
       const curSource = cur && cur.dataset && cur.dataset.bilivexResident === '1' ? cur._bilivexSource : cur;
-      if (cur && cand && cand === curSource) return;
+      if (cur && cand && cand === curSource) {
+        this.cancelPendingLeave();
+        return;
+      }
       if (!cand) {
         if (this._cand) {
           this._candMiss = (this._candMiss || 0) + 1;
@@ -1347,18 +1547,18 @@
             return;
           }
         }
-        if (cur) this.leave(cur);
+        if (cur) this.scheduleLeave(cur);
         this._cand = null; this._candHits = 0; this._candMiss = 0;
         return;
       }
       if (cur && cand !== curSource) this.leave(cur);
-      // 当前帧命中即可切换悬停；RAF 已负责将高频指针事件合帧，
-      // 再等待第二帧会在快速移动的直播弹幕上产生可感知延迟。
+      // 命中即切换悬停，避免快速移动的直播弹幕在切换时产生可感知延迟。
       this._cand = null; this._candHits = 0; this._candMiss = 0;
       this.hover(cand);
     },
 
     hover(item) {
+      this.cancelPendingLeave();
       let visual = item;
       if (item._bilivexFloatOnEnter) {
         const ret = item._bilivexFloatOnEnter();
@@ -1369,6 +1569,7 @@
     },
 
     leave(item) {
+      this.cancelPendingLeave();
       if (item && item._bilivexFloatOnLeave) item._bilivexFloatOnLeave();
       this.hovered = null;
       this.stopKeepAlive();
@@ -1391,6 +1592,7 @@
       const sourceIsDetached = source && !source.isConnected;
       const sourceHoverMatches = !source || source.dataset.bilivexHoverPaused === item._bilivexHoverId;
       // 悬停期间保持冻结；弹幕结束或失效时才释放悬停效果。
+      // 面板尺寸动画结束后，位置已按最终布局稳定，直接保存最终坐标即可。
       if (item.isConnected && !sourceIsDisabled && !sourceIsDetached && sourceHoverMatches) {
         try {
           const r = item.getBoundingClientRect();
@@ -1422,8 +1624,7 @@
     rotate._bilivexFloatMO = mo;
     $$(':scope .bili-danmaku-x-dm[data-bilivex-float-inited="1"]', rotate).forEach((item) => {
       if (typeof item._bilivexFloatOnEnter === 'function') return;
-      const oldBtn = item.querySelector('.bilivex-float-plus-btn');
-      if (oldBtn) oldBtn.remove();
+      item.querySelectorAll('.bilivex-float-actions, .bilivex-float-plus-btn, .bilivex-float-favorite-btn').forEach((el) => el.remove());
       item.classList.remove('bili-danmaku-x-paused');
       item.style.backgroundColor = '';
       item.style.boxShadow = '';
@@ -1465,13 +1666,16 @@
               if (typeof item._bilivexFloatOnLeave === 'function') {
                 item._bilivexFloatOnLeave();
               } else {
-                const pairedButton = item._bilivexFloatBtn;
-                if (pairedButton && pairedButton.isConnected) pairedButton.remove();
+                const pairedGroup = item._bilivexFloatActionGroup || item._bilivexFloatBtn;
+                if (pairedGroup && pairedGroup.isConnected) pairedGroup.remove();
                 if (item.isConnected) item.remove();
               }
             } catch (e2) {}
           }
           item.dataset.bilivexFloatInited = '';
+        });
+        $$('.bilivex-float-actions', residentLayer).forEach((group) => {
+          if (!group._bilivexFloatClone && group.isConnected) group.remove();
         });
       }
     }
@@ -1662,6 +1866,7 @@
 
     const panel = panelDocument.createElement('div');
     panel.id = 'bilivex-panel';
+    if (cfg.panelAnchor === 'left' || cfg.panelAnchor === 'right') panel.dataset.bilivexPanelAnchor = cfg.panelAnchor;
     const collapsed = !!cfg.panelCollapsed;
     panel.style.cssText = [
       'position:fixed',
@@ -1678,8 +1883,8 @@
            'border-radius:12px;box-shadow:0 4px 16px ' + currentTheme.primaryShadow + ';color:#222;overflow:visible;'),
       'font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif',
       'user-select:none',
-      // 原位折叠/展开时 width/height/border-radius/box-shadow 平滑过渡
-      'transition:width .25s ease,height .25s ease,border-radius .25s ease,box-shadow .25s ease,background .25s ease',
+      // 原位折叠/展开时同步过渡尺寸与位置；右侧锚点需要 left 与 width 同步变化以保持右缘不跳动。
+      'transition:width .25s ease,height .25s ease,left .25s ease,top .25s ease,border-radius .25s ease,box-shadow .25s ease,background .25s ease',
     ].join(';');
 
     // 标题栏：展开态使用当前主题渐变色；折叠态 head 仅承载 logo（视觉由 img 主导）
@@ -1720,6 +1925,7 @@
     panel.appendChild(head);
 
     const body = panelDocument.createElement('div');
+    body.className = 'bilivex-panel-body';
     body.style.cssText = 'padding:10px 12px 12px;' + (collapsed ? 'display:none;' : '');
     panel.appendChild(body);
 
@@ -1895,6 +2101,10 @@
     // 复制按钮
     row([lbl('复制按钮'), sw(cfg.copyEnabled, v => { cfg.copyEnabled = v; saveCfg(cfg); toggleDmBarVisibility(); })]);
 
+    const favoriteMenuBtn = btn('收藏', currentTheme.primary, openFavoritesPanel);
+    favoriteMenuBtn.style.cssText += 'width:100%;box-sizing:border-box;margin-top:2px;';
+    row([favoriteMenuBtn], { mb: 2 });
+
     // 分组 2：点赞
     currentSection = section('点赞');
     // 30连击按钮（使用主题 accent 互补色，与标题色形成对比）
@@ -1936,7 +2146,7 @@
           const panelRect = pressState.panelRef.getBoundingClientRect();
           dragState.ox = pressState.x - panelRect.left;
           dragState.oy = pressState.y - panelRect.top;
-          pressState.panelRef.style.cursor = 'grabbing';
+          startPanelDrag(pressState.panelRef);
         }
       }, 220);
       e.preventDefault();
@@ -1969,6 +2179,47 @@
     });
   }
 
+  // 主菜单展开、收起和收藏夹变宽时保持同一侧贴边，避免尺寸变化时左右跳动。
+  const PANEL_VIEWPORT_GAP = 8;
+  function getPanelAnchor(panel, rect) {
+    const stored = panel && panel.dataset ? panel.dataset.bilivexPanelAnchor : '';
+    if (stored === 'left' || stored === 'right') return stored;
+    if (cfg.panelAnchor === 'left' || cfg.panelAnchor === 'right') {
+      if (panel && panel.dataset) panel.dataset.bilivexPanelAnchor = cfg.panelAnchor;
+      return cfg.panelAnchor;
+    }
+    const r = rect || panel.getBoundingClientRect();
+    const anchor = r.left + r.width / 2 >= panelWindow.innerWidth / 2 ? 'right' : 'left';
+    if (panel && panel.dataset) panel.dataset.bilivexPanelAnchor = anchor;
+    cfg.panelAnchor = anchor;
+    saveCfg(cfg);
+    return anchor;
+  }
+
+  function placePanelAtAnchor(panel, previousRect, anchor) {
+    const rect = panel.getBoundingClientRect();
+    const vw = panelWindow.innerWidth;
+    const vh = panelWindow.innerHeight;
+    const maxLeft = Math.max(PANEL_VIEWPORT_GAP, vw - rect.width - PANEL_VIEWPORT_GAP);
+    const maxTop = Math.max(PANEL_VIEWPORT_GAP, vh - rect.height - PANEL_VIEWPORT_GAP);
+    const wantedLeft = anchor === 'right' ? previousRect.right - rect.width : previousRect.left;
+    const left = Math.max(PANEL_VIEWPORT_GAP, Math.min(wantedLeft, maxLeft));
+    const top = Math.max(PANEL_VIEWPORT_GAP, Math.min(previousRect.top, maxTop));
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+    panel.style.right = 'auto';
+    panel.dataset.bilivexPanelAnchor = anchor;
+    cfg.panelAnchor = anchor;
+    cfg.panelPos = { left: Math.round(left), top: Math.round(top) };
+    saveCfg(cfg);
+    return { left, top, width: rect.width, height: rect.height };
+  }
+
+  function isFavoritesPanelOpen(panel) {
+    const view = panel && panel.querySelector('.bilivex-favorites-view');
+    return !!(view && view.style.display !== 'none');
+  }
+
   // 原位切换面板的折叠/展开视觉；展开时根据小球位置智能选边，并最终吸附到视口边缘
   let collapseAnimSeq = 0;   // 动画序号，防止快速连续点击时旧回调覆盖新状态
   function setPanelCollapsed(collapsed) {
@@ -1982,10 +2233,23 @@
 
     if (collapsed) {
       const preRect = panel.getBoundingClientRect();
-      const isRightSide = preRect.right > panelWindow.innerWidth / 2;
-      // 收起前以原先靠近的视口侧为锚；右侧不能保留展开菜单的左边缘。
-      panel.style.left = (isRightSide ? preRect.right - COLLAPSED_BTN_SIZE : preRect.left) + 'px';
-      panel.style.right = 'auto';
+      const anchor = getPanelAnchor(panel, preRect);
+      const pinRight = anchor === 'right';
+      const rightOffset = Math.max(0, panelWindow.innerWidth - preRect.right);
+      // 右锚点不用同时插值 left 与 width，而是临时固定 right 再收窄宽度。
+      // 这样浏览器始终以同一个右边缘排版，镜像左侧“固定起点、收缩尺寸”的动画。
+      if (pinRight) {
+        const savedTransition = panel.style.transition;
+        panel.style.transition = 'none';
+        panel.style.left = 'auto';
+        panel.style.right = rightOffset + 'px';
+        void panel.offsetWidth;
+        panel.style.transition = savedTransition;
+      } else {
+        panel.style.left = preRect.left + 'px';
+        panel.style.right = 'auto';
+      }
+      panel.style.top = preRect.top + 'px';
       if (body) body.style.display = 'none';
       const fromH = panel.offsetHeight;
       panel.style.height = fromH + 'px';
@@ -1998,6 +2262,15 @@
         setTimeout(() => {
           if (seq !== collapseAnimSeq || !panel.isConnected) return;
           const collapsedRect = panel.getBoundingClientRect();
+          // 动画结束后保存最终位置，视觉位置不变。
+          if (pinRight) {
+            const savedTransition = panel.style.transition;
+            panel.style.transition = 'none';
+            panel.style.left = collapsedRect.left + 'px';
+            panel.style.right = 'auto';
+            void panel.offsetWidth;
+            panel.style.transition = savedTransition;
+          }
           cfg.panelPos = { left: Math.round(collapsedRect.left), top: Math.round(collapsedRect.top) };
           saveCfg(cfg);
         }, 300);
@@ -2006,22 +2279,30 @@
     }
 
     if (body) body.style.display = '';
-    // 展开只保留当前左上角位置，必要时钳制到视口内；边缘吸附仅发生在拖动结束。
+    // 展开与收藏夹变宽均使用同一锚点；右锚点同样先固定 right，再只过渡宽高。
     const preRect = panel.getBoundingClientRect();
-    const vw = panelWindow.innerWidth;
-    const vh = panelWindow.innerHeight;
     const savedTransition = panel.style.transition;
+    const targetWidth = isFavoritesPanelOpen(panel) ? '340px' : '220px';
+    const anchor = getPanelAnchor(panel, preRect);
+    const pinRight = anchor === 'right';
+    const rightOffset = Math.max(0, panelWindow.innerWidth - preRect.right);
     panel.style.transition = 'none';
-    panel.style.left = preRect.left + 'px';
+    if (pinRight) {
+      panel.style.left = 'auto';
+      panel.style.right = rightOffset + 'px';
+    } else {
+      panel.style.left = preRect.left + 'px';
+      panel.style.right = 'auto';
+    }
     panel.style.top = preRect.top + 'px';
-    panel.style.right = 'auto';
     applyPanelCollapsedStyles(panel, head, title, tog, false);
-    panel.style.width = '220px';
+    panel.style.width = targetWidth;
     panel.style.height = 'auto';
-    const targetW = panel.offsetWidth;
-    const targetH = panel.offsetHeight;
-    const nx = Math.max(8, Math.min(preRect.left, vw - targetW - 8));
-    const ny = Math.max(8, Math.min(preRect.top, vh - targetH - 8));
+    const targetRect = panel.getBoundingClientRect();
+    const maxLeft = Math.max(PANEL_VIEWPORT_GAP, panelWindow.innerWidth - targetRect.width - PANEL_VIEWPORT_GAP);
+    const maxTop = Math.max(PANEL_VIEWPORT_GAP, panelWindow.innerHeight - targetRect.height - PANEL_VIEWPORT_GAP);
+    const nx = Math.max(PANEL_VIEWPORT_GAP, Math.min(anchor === 'right' ? preRect.right - targetRect.width : preRect.left, maxLeft));
+    const ny = Math.max(PANEL_VIEWPORT_GAP, Math.min(preRect.top, maxTop));
     applyPanelCollapsedStyles(panel, head, title, tog, true);
     panel.style.width = COLLAPSED_BTN_SIZE + 'px';
     panel.style.height = COLLAPSED_BTN_SIZE + 'px';
@@ -2029,13 +2310,31 @@
     requestAnimationFrame(() => {
       if (seq !== collapseAnimSeq) return;
       applyPanelCollapsedStyles(panel, head, title, tog, false);
-      panel.style.left = nx + 'px';
+      if (pinRight) {
+        panel.style.left = 'auto';
+        panel.style.right = rightOffset + 'px';
+      } else {
+        panel.style.left = nx + 'px';
+        panel.style.right = 'auto';
+      }
       panel.style.top = ny + 'px';
-      panel.style.right = 'auto';
-      panel.style.width = '220px';
-      panel.style.height = targetH + 'px';
+      panel.style.width = targetWidth;
+      panel.style.height = targetRect.height + 'px';
+      panel.dataset.bilivexPanelAnchor = anchor;
+      cfg.panelPos = { left: Math.round(nx), top: Math.round(ny) };
+      saveCfg(cfg);
       setTimeout(() => {
-        if (seq === collapseAnimSeq) panel.style.height = 'auto';
+        if (seq !== collapseAnimSeq || !panel.isConnected) return;
+        panel.style.height = 'auto';
+        if (pinRight) {
+          const expandedRect = panel.getBoundingClientRect();
+          const stableTransition = panel.style.transition;
+          panel.style.transition = 'none';
+          panel.style.left = expandedRect.left + 'px';
+          panel.style.right = 'auto';
+          void panel.offsetWidth;
+          panel.style.transition = stableTransition;
+        }
       }, 300);
       avoidChatCollision(panel);
     });
@@ -2097,7 +2396,7 @@
 
   function avoidChatCollision(panel) {
     try {
-      // 活动页聊天区在直播画面中，与顶层面板坐标系不同，不做本地避让判断。
+      // 活动页聊天区在直播画面中，位置随画面布局变化，不做本地避让判断。
       if (panelDocument !== document) return;
       // 用户已拖拽/吸附定位后不强制避让（尊重用户意图，避免展开时菜单被推到另一侧）
       if (cfg.panelPos && cfg.panelPos.left != null) return;
@@ -2131,7 +2430,7 @@
   // 页面顶层的面板拖拽状态全局共享，保证同一页面上只有一个控制器在工作。
   const panelController = panelWindow._bilivexPanelController || (panelWindow._bilivexPanelController = {
     currentPanel: null,
-    dragState: { dragging: false, ox: 0, oy: 0, moved: false },
+    dragState: { dragging: false, ox: 0, oy: 0, moved: false, transitionSuspended: false, savedTransition: '' },
     pressState: { down: false, x: 0, y: 0, moved: false, longPressed: false, longTimer: null, panelRef: null, pointerId: -1 },
     dragBound: false,
   });
@@ -2139,38 +2438,66 @@
   const pressState = panelController.pressState;
   // 吸附阈值（px）：面板中心距左/右视口边缘小于该值即吸附到侧边
   const SNAP_THRESHOLD = 120;
+  const DRAG_START_DISTANCE = 3;
   function setCurrentPanel(panel) {
     panelController.currentPanel = panel;
   }
+
+  // 拖动时临时关闭主菜单的位置过渡，让面板实时跟随鼠标，松手后再恢复平滑动画。
+  function startPanelDrag(panel) {
+    if (!panel) return;
+    if (!dragState.transitionSuspended) {
+      dragState.savedTransition = panel.style.transition;
+      dragState.transitionSuspended = true;
+    }
+    panel.style.transition = 'none';
+    panel.style.willChange = 'left, top';
+    panel.style.right = 'auto';
+    panel.style.cursor = 'grabbing';
+  }
+
+  function finishPanelDrag(panel) {
+    if (!panel) return;
+    panel.style.willChange = '';
+    if (dragState.transitionSuspended) {
+      panel.style.transition = dragState.savedTransition || '';
+      dragState.transitionSuspended = false;
+      dragState.savedTransition = '';
+    }
+  }
+
+  function movePanelWithPointer(panel, clientX, clientY) {
+    if (!panel) return;
+    panel.style.left = (clientX - dragState.ox) + 'px';
+    panel.style.top = (clientY - dragState.oy) + 'px';
+    panel.style.right = 'auto';
+  }
+
   function bindDragHandlers() {
     if (panelController.dragBound) return;       // 全局监听只绑定一次
     panelController.dragBound = true;
-    // 使用 pointermove/pointerup 配合 head 上的 setPointerCapture，
-    // 即使鼠标越过 iframe 边界也不会丢事件（事件跟随捕获指针到达 head，再冒泡到 document）。
+    // 使用指针事件配合捕获，鼠标越过 iframe 边界也不会丢失拖动与悬停。
     panelDocument.addEventListener('pointermove', (e) => {
-      // 拖动中：实时跟随
+      // 拖动时直接写入坐标，位置逐帧跟随指针，不做插值。
       if (dragState.dragging && panelController.currentPanel) {
         dragState.moved = true;
-        panelController.currentPanel.style.left = (e.clientX - dragState.ox) + 'px';
-        panelController.currentPanel.style.top = (e.clientY - dragState.oy) + 'px';
-        panelController.currentPanel.style.right = 'auto';
+        movePanelWithPointer(panelController.currentPanel, e.clientX, e.clientY);
         return;
       }
-      // 按压未拖动：位移超过阈值 → 转为快速拖动
+      // 轻微移动即可进入拖动，避免原 6px 阈值和 220ms 长按共同造成“拖不动、慢半拍”的手感。
       if (pressState.down && !pressState.moved && pressState.panelRef) {
         const dx = e.clientX - pressState.x;
         const dy = e.clientY - pressState.y;
-        if (Math.hypot(dx, dy) > 6) {
+        if (Math.hypot(dx, dy) > DRAG_START_DISTANCE) {
           pressState.moved = true;
           dragState.dragging = true;
           dragState.moved = true;
+          clearTimeout(pressState.longTimer);
           const panelRect = pressState.panelRef.getBoundingClientRect();
           dragState.ox = pressState.x - panelRect.left;
           dragState.oy = pressState.y - panelRect.top;
-          pressState.panelRef.style.left = (e.clientX - dragState.ox) + 'px';
-          pressState.panelRef.style.top = (e.clientY - dragState.oy) + 'px';
-          pressState.panelRef.style.right = 'auto';
-          pressState.panelRef.style.cursor = 'grabbing';
+          startPanelDrag(pressState.panelRef);
+          movePanelWithPointer(pressState.panelRef, e.clientX, e.clientY);
         }
       }
     }, { passive: true });
@@ -2186,10 +2513,14 @@
         saveCfg(cfg);
         setPanelCollapsed(cfg.panelCollapsed);
       } else if (wasDrag && panel) {
-        // 拖动结束 → 边缘吸附 + 保存位置
+        // 先恢复平滑动画，再执行一次边缘吸附。
+        finishPanelDrag(panel);
         snapPanelToEdge(panel);
       }
-      if (panel) panel.style.cursor = '';
+      if (panel) {
+        finishPanelDrag(panel);
+        panel.style.cursor = '';
+      }
       dragState.dragging = false;
       dragState.moved = false;
       pressState.moved = false;
@@ -2226,16 +2557,19 @@
       panel.style.left = nx + 'px';
       panel.style.top = ny + 'px';
       panel.style.right = 'auto';
+      panel.dataset.bilivexPanelAnchor = snapLeft === null
+        ? (centerX >= vw / 2 ? 'right' : 'left')
+        : (snapLeft ? 'left' : 'right');
       setTimeout(() => {
         if (panel.isConnected) panel.style.transition = savedTransition;
       }, 320);
-      // 目标值与上面写入的坐标一致，不读取动画过渡中的中间位置。
+      // 保存吸附后的最终位置。
       cfg.panelPos = { left: Math.round(nx), top: Math.round(ny) };
       saveCfg(cfg);
     } catch (err) {}
   }
 
-  // ---------- 漂浮弹幕 +1 视觉反馈动画 keyframes ----------
+  // ---------- 漂浮弹幕 +1 反馈动画样式 ----------
   let bilivexAnimInjected = false;
   function injectFloatingDmAnim() {
     if (bilivexAnimInjected) return;
@@ -2258,14 +2592,16 @@
   // ---------- Toast ----------
   let toastTimer = null;
   function showToast(text) {
-    let t = uiDocument.getElementById('bilivex-toast');
+    const host = getUiHost();
+    const toastDocument = host && host.ownerDocument ? host.ownerDocument : panelDocument;
+    let t = toastDocument.getElementById('bilivex-toast');
     if (!t) {
-      t = uiDocument.createElement('div');
+      t = toastDocument.createElement('div');
       t.id = 'bilivex-toast';
       t.style.cssText = 'position:fixed;left:50%;top:30%;transform:translateX(-50%);' +
         'background:rgba(0,0,0,0.78);color:#fff;padding:8px 16px;border-radius:6px;' +
         'font-size:13px;z-index:100000;pointer-events:none;opacity:0;transition:opacity .15s;';
-      getUiHost().appendChild(t);
+      host.appendChild(t);
     }
     t.textContent = text;
     t.style.opacity = '1';
@@ -2290,6 +2626,202 @@
     ta.select();
     try { document.execCommand('copy'); } catch (e) {}
     ta.remove();
+  }
+
+  function favoriteButton(text, kind, onClick) {
+    const b = panelDocument.createElement('button');
+    b.type = 'button';
+    b.textContent = text;
+    b.dataset.bilivexFavoriteButton = kind || 'secondary';
+    b.style.cssText = 'border:1px solid ' + (kind === 'primary' ? currentTheme.primary : '#dbe2ea') + ';' +
+      'background:' + (kind === 'primary' ? currentTheme.primary : '#fff') + ';' +
+      'color:' + (kind === 'primary' ? '#fff' : '#4d5966') + ';border-radius:6px;padding:5px 10px;' +
+      'font-size:12px;line-height:18px;cursor:pointer;white-space:nowrap;transition:opacity .15s,transform .1s;';
+    b.addEventListener('mousedown', () => { b.style.transform = 'scale(.96)'; });
+    b.addEventListener('mouseup', () => { b.style.transform = ''; });
+    b.addEventListener('mouseleave', () => { b.style.transform = ''; });
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function resizePanelForFavorites(expanded) {
+    const panel = panelDocument.getElementById('bilivex-panel');
+    if (!panel || cfg.panelCollapsed) return;
+    const beforeRect = panel.getBoundingClientRect();
+    const anchor = getPanelAnchor(panel, beforeRect);
+    const savedTransition = panel.style.transition;
+    // 先关闭尺寸过渡取得目标的真实边界，再按既定边锚钳制，避免右侧展开越界或收起反向跳位。
+    panel.style.transition = 'none';
+    panel.style.width = expanded ? '340px' : '220px';
+    panel.style.height = 'auto';
+    placePanelAtAnchor(panel, beforeRect, anchor);
+    panel.style.transition = savedTransition;
+  }
+
+  function closeFavoritesPanel() {
+    const panel = panelDocument.getElementById('bilivex-panel');
+    if (!panel) return;
+    const body = panel.querySelector('.bilivex-panel-body');
+    const view = body && body.querySelector('.bilivex-favorites-view');
+    if (!body || !view) return;
+    Array.from(body.children).forEach((child) => { if (child !== view) child.style.display = ''; });
+    view.style.display = 'none';
+    resizePanelForFavorites(false);
+  }
+
+  function saveFavoritesExport() {
+    const favorites = getFavorites();
+    if (!favorites.length) { showToast('暂无可导出的收藏'); return; }
+    const content = JSON.stringify({ format: 'bilivex-favorites', schemaVersion: 1, exportedAt: new Date().toISOString(), favorites }, null, 2);
+    const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = panelDocument.createElement('a');
+    const date = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    a.href = url;
+    a.download = 'BiLivex-弹幕收藏夹-' + date.getFullYear() + pad(date.getMonth() + 1) + pad(date.getDate()) + '-' + pad(date.getHours()) + pad(date.getMinutes()) + '.json';
+    a.style.display = 'none';
+    panelDocument.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    showToast('已导出收藏夹');
+  }
+
+  function importFavoritesFile(file, done) {
+    if (!file) return;
+    if (file.size > 1024 * 1024) { showToast('导入文件不能超过 1MB'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result || ''));
+        if (!data || data.format !== 'bilivex-favorites' || data.schemaVersion !== 1 || !Array.isArray(data.favorites)) {
+          throw new Error('invalid');
+        }
+        const before = getFavorites();
+        const combined = normalizeFavorites(before.concat(data.favorites));
+        const added = Math.max(0, combined.length - before.length);
+        const supplied = normalizeFavorites(data.favorites).length;
+        replaceFavorites(combined);
+        if (typeof done === 'function') done();
+        showToast('导入完成：新增 ' + added + ' 条，跳过 ' + Math.max(0, supplied - added) + ' 条');
+      } catch (e) {
+        showToast('导入失败：请选择有效的收藏文件');
+      }
+    };
+    reader.onerror = () => showToast('导入文件读取失败');
+    reader.readAsText(file, 'utf-8');
+  }
+
+  function renderFavoritesView(mode, query) {
+    const panel = panelDocument.getElementById('bilivex-panel');
+    const body = panel && panel.querySelector('.bilivex-panel-body');
+    const view = body && body.querySelector('.bilivex-favorites-view');
+    if (!view) return;
+    const currentQuery = query == null ? (view.dataset.bilivexQuery || '') : query;
+    view.dataset.bilivexQuery = currentQuery;
+    view.textContent = '';
+    const head = panelDocument.createElement('div');
+    head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;';
+    const title = panelDocument.createElement('strong');
+    title.textContent = mode === 'edit' ? '编辑收藏' : '弹幕收藏夹';
+    title.style.cssText = 'font-size:13px;color:#303740;';
+    head.appendChild(title);
+    head.appendChild(favoriteButton('返回', 'secondary', () => mode === 'edit' ? renderFavoritesView('browse', currentQuery) : closeFavoritesPanel()));
+    view.appendChild(head);
+
+    if (mode === 'edit') {
+      const list = panelDocument.createElement('div');
+      list.style.cssText = 'display:flex;flex-direction:column;gap:7px;max-height:260px;overflow:auto;padding-right:2px;';
+      getFavorites().forEach((item) => {
+        const row = panelDocument.createElement('div');
+        row.style.cssText = 'display:flex;gap:6px;align-items:flex-start;';
+        const input = panelDocument.createElement('textarea');
+        input.value = item.text;
+        input.dataset.bilivexFavoriteId = item.id;
+        input.style.cssText = 'flex:1;min-width:0;min-height:36px;resize:vertical;box-sizing:border-box;padding:5px 7px;border:1px solid #e0e6ed;border-radius:6px;font:12px/18px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#222;';
+        row.appendChild(input);
+        row.appendChild(favoriteButton('删除', 'danger', () => { row.remove(); }));
+        list.appendChild(row);
+      });
+      const addInput = panelDocument.createElement('textarea');
+      addInput.placeholder = '新增收藏弹幕（空白内容不会保存）';
+      addInput.dataset.bilivexFavoriteNew = '1';
+      addInput.style.cssText = 'width:100%;min-height:52px;box-sizing:border-box;margin-top:8px;padding:5px 7px;border:1px dashed #cbd5df;border-radius:6px;resize:vertical;font:12px/18px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#222;';
+      view.appendChild(list);
+      view.appendChild(addInput);
+      const actions = panelDocument.createElement('div');
+      actions.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-top:9px;';
+      actions.appendChild(favoriteButton('取消', 'secondary', () => renderFavoritesView('browse', currentQuery)));
+      actions.appendChild(favoriteButton('保存', 'primary', () => {
+        const raw = Array.from(list.querySelectorAll('textarea')).map((input) => ({ id: input.dataset.bilivexFavoriteId, text: input.value }));
+        raw.push({ text: addInput.value });
+        const saved = replaceFavorites(raw);
+        renderFavoritesView('browse', currentQuery);
+        showToast('已保存 ' + saved.length + ' 条收藏');
+      }));
+      view.appendChild(actions);
+      return;
+    }
+
+    const search = panelDocument.createElement('input');
+    search.type = 'search';
+    search.value = currentQuery;
+    search.placeholder = '搜索收藏弹幕';
+    search.style.cssText = 'width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #e0e6ed;border-radius:6px;font-size:12px;line-height:18px;color:#222;outline:none;';
+    search.addEventListener('focus', () => { search.style.borderColor = currentTheme.primary; });
+    search.addEventListener('blur', () => { search.style.borderColor = '#e0e6ed'; });
+    search.addEventListener('input', () => renderFavoritesView('browse', search.value));
+    view.appendChild(search);
+    const list = panelDocument.createElement('div');
+    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;max-height:270px;overflow:auto;margin-top:8px;padding-right:2px;';
+    const needle = currentQuery.trim().toLocaleLowerCase();
+    const favorites = getFavorites().filter((item) => !needle || item.text.toLocaleLowerCase().includes(needle));
+    if (!favorites.length) {
+      const empty = panelDocument.createElement('div');
+      empty.textContent = getFavorites().length ? '未找到匹配的收藏弹幕' : '暂无收藏，可在弹幕旁点击“收藏”添加';
+      empty.style.cssText = 'padding:16px 4px;color:#9099a3;font-size:12px;text-align:center;line-height:1.6;';
+      list.appendChild(empty);
+    }
+    favorites.forEach((item) => {
+      const row = panelDocument.createElement('div');
+      row.style.cssText = 'display:flex;align-items:stretch;border:1px solid #edf0f3;border-radius:7px;background:#fff;overflow:hidden;';
+      const text = panelDocument.createElement('button');
+      text.type = 'button'; text.textContent = item.text; text.title = item.text;
+      text.style.cssText = 'flex:1;min-width:0;border:none;background:transparent;color:#3a3f45;text-align:left;padding:6px 8px;font:12px/18px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      text.addEventListener('click', () => { fillAndSend(item.text, { autoSend: false, finalText: item.text }).then((result) => showToast(result.message || '已填入输入框')); });
+      const send = favoriteButton('+1', 'primary', (e) => { e.stopPropagation(); runPlusButtonAction(send, () => sendPlusOne(item.text)); });
+      send.style.cssText += 'border-radius:0;border-top:none;border-bottom:none;border-right:none;border-left:1px solid rgba(255,255,255,.55);min-width:48px;';
+      row.appendChild(text); row.appendChild(send); list.appendChild(row);
+    });
+    view.appendChild(list);
+    const actions = panelDocument.createElement('div');
+    actions.style.cssText = 'display:flex;gap:7px;margin-top:9px;';
+    actions.appendChild(favoriteButton('修改', 'secondary', () => renderFavoritesView('edit', currentQuery)));
+    actions.appendChild(favoriteButton('导出', 'secondary', saveFavoritesExport));
+    const importer = panelDocument.createElement('input');
+    importer.type = 'file'; importer.accept = 'application/json,.json'; importer.style.display = 'none';
+    importer.addEventListener('change', () => importFavoritesFile(importer.files && importer.files[0], () => renderFavoritesView('browse', currentQuery)));
+    actions.appendChild(favoriteButton('导入', 'secondary', () => importer.click()));
+    view.appendChild(actions); view.appendChild(importer);
+    try { search.focus(); } catch (e) {}
+  }
+
+  function openFavoritesPanel() {
+    const panel = panelDocument.getElementById('bilivex-panel');
+    const body = panel && panel.querySelector('.bilivex-panel-body');
+    if (!body) return;
+    let view = body.querySelector('.bilivex-favorites-view');
+    if (!view) {
+      view = panelDocument.createElement('div');
+      view.className = 'bilivex-favorites-view';
+      view.style.cssText = 'display:none;';
+      body.appendChild(view);
+    }
+    Array.from(body.children).forEach((child) => { if (child !== view) child.style.display = 'none'; });
+    view.style.display = '';
+    renderFavoritesView('browse', view.dataset.bilivexQuery || '');
+    resizePanelForFavorites(true);
   }
 
   // ---------- 初始化 ----------
@@ -2394,7 +2926,7 @@
         panelDocument.addEventListener('webkitfullscreenchange', syncFullscreenUi);
       }
     } catch (e) {}
-    // 注入视觉反馈动画 keyframes
+    // 注入 +1 反馈动画样式
     injectFloatingDmAnim();
     tryInit();
     watchSpa();
