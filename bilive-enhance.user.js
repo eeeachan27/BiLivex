@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.1.0
+// @version      1.1.1
 // @license      MIT
-// @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停后可快捷 +1 回复；② 收藏夹——收藏、搜索、编辑与跨设备迁移常用弹幕；③ 评论区——聊天区弹幕悬停显示 +1/收藏/复制按钮；④ 小尾巴——发送弹幕自动追加自定义文字；⑤ 一键点赞——连续点赞 30 次点亮粉丝团灯牌。开源地址：https://github.com/eeeachan27/BiLivex
+// @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停后可快捷 +1 回复；② 收藏夹——收藏、搜索、编辑与跨设备迁移常用弹幕；③ 评论区——聊天区弹幕悬停显示 +1/收藏/复制按钮；④ 小尾巴——发送弹幕自动追加自定义文字；⑤ 一键点赞——连续点赞 30 次点亮粉丝团灯牌；⑥ 自动检查更新——发现新版本时在悬浮球旁提醒，可一键更新。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
 // @match        https://live.bilibili.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_xmlhttpRequest
+// @connect      cdn.jsdelivr.net
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -1403,6 +1405,31 @@
       leaveDocument.addEventListener('pointerleave', onLeaveWin);
       leaveDocument.addEventListener('mouseleave', onLeaveWin);
 
+      // 悬停冻结期间页面滚动：fixed 定位的悬停副本与随页面移动的源弹幕会分离成
+      // “双弹幕”（副本吸附在指针旁、原位置残留低透明度副本）。
+      // 指针静止时滚动页面一律判定为取消悬停：恢复源弹幕滚动并移除副本。
+      const onPageScroll = (e) => {
+        const hovered = this.hovered;
+        if (!hovered) return;
+        const target = e.target;
+        const source = hovered.dataset && hovered.dataset.bilivexResident === '1'
+          ? hovered._bilivexSource : hovered;
+        // 仅响应页面级滚动，或滚动容器包含源弹幕（滚动会改变弹幕视口位置）的情况；
+        // 聊天区等内部容器自动滚动不影响悬停。
+        const affectsSource = target === uiDocument || target === panelDocument ||
+          (target && target.nodeType === 1 && source && target !== source &&
+            typeof target.contains === 'function' && target.contains(source));
+        if (!affectsSource) return;
+        this.leave(hovered);
+        this._cand = null;
+        this._candHits = 0;
+        this._candMiss = 0;
+      };
+      uiDocument.addEventListener('scroll', onPageScroll, { passive: true, capture: true });
+      if (panelDocument !== uiDocument) {
+        panelDocument.addEventListener('scroll', onPageScroll, { passive: true, capture: true });
+      }
+
       this.bindAnimationEndBlock(uiDocument);
     },
 
@@ -1559,6 +1586,8 @@
 
     hover(item) {
       this.cancelPendingLeave();
+      // 同一时刻只允许存在一个悬停弹幕：切换前先释放上一个，避免双弹幕共存。
+      if (this.hovered && this.hovered !== item) this.leave(this.hovered);
       let visual = item;
       if (item._bilivexFloatOnEnter) {
         const ret = item._bilivexFloatOnEnter();
@@ -2824,6 +2853,196 @@
     resizePanelForFavorites(true);
   }
 
+  // ---------- 自动检查更新 ----------
+  // 定期拉取远端脚本头部的 @version 与本地版本比对；发现新版本时在悬浮球旁
+  // 弹出小窗提示，提供「忽略」与「更新」两个选项；「更新」在新标签页打开
+  // 油猴更新页（Greasy Fork 安装直链）。
+  const UPDATE_CHECK_URL = 'https://cdn.jsdelivr.net/gh/eeeachan27/BiLivex@main/bilive-enhance.user.js';
+  const UPDATE_INSTALL_URL = 'https://update.greasyfork.org/scripts/590601/BiLivex%20-%20%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%E7%9B%B4%E6%92%AD%E5%A2%9E%E5%BC%BA.user.js';
+  const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;   // 每 6 小时最多检查一次
+  const UPDATE_STATE_KEY = 'bilivex_update_state';
+
+  function getScriptVersion() {
+    try {
+      if (typeof GM_info !== 'undefined' && GM_info && GM_info.script && GM_info.script.version) {
+        return String(GM_info.script.version);
+      }
+    } catch (e) {}
+    return '1.1.1';
+  }
+
+  function compareVersions(a, b) {
+    const pa = String(a || '').split('.');
+    const pb = String(b || '').split('.');
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const na = parseInt(pa[i], 10) || 0;
+      const nb = parseInt(pb[i], 10) || 0;
+      if (na !== nb) return na - nb;
+    }
+    return 0;
+  }
+
+  function readUpdateState() {
+    try {
+      const raw = GM_getValue(UPDATE_STATE_KEY);
+      const obj = raw ? JSON.parse(raw) : {};
+      return obj && typeof obj === 'object' ? obj : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function writeUpdateState(state) {
+    try { GM_setValue(UPDATE_STATE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function fetchRemoteVersion(done) {
+    const parse = (text) => {
+      const m = /@version\s+([\w.\-]+)/.exec(String(text || '').split('==/UserScript==')[0]);
+      done(m ? m[1] : null);
+    };
+    if (typeof GM_xmlhttpRequest === 'function') {
+      try {
+        GM_xmlhttpRequest({
+          method: 'GET',
+          url: UPDATE_CHECK_URL + '?t=' + Date.now(),
+          timeout: 10000,
+          onload: (res) => parse(res && res.responseText),
+          onerror: () => done(null),
+          ontimeout: () => done(null)
+        });
+        return;
+      } catch (e) {}
+    }
+    fetch(UPDATE_CHECK_URL, { cache: 'no-store' })
+      .then((res) => res.text())
+      .then(parse)
+      .catch(() => done(null));
+  }
+
+  function showUpdateNotice(remoteVersion) {
+    if (!panelDocument.body) return;
+    if (panelDocument.getElementById('bilivex-update-notice')) return;
+    const doc = panelDocument;
+    const localVersion = getScriptVersion();
+    const box = doc.createElement('div');
+    box.id = 'bilivex-update-notice';
+    box.style.cssText = 'position:fixed;left:0;top:0;z-index:2147483100;width:240px;box-sizing:border-box;' +
+      'background:rgba(255,255,255,.98);border:1px solid #e0e6ed;border-radius:12px;' +
+      'box-shadow:0 8px 24px rgba(0,0,0,.2);padding:12px 14px 13px;color:#222;' +
+      'font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;' +
+      'user-select:none;opacity:0;transform:translateY(6px);' +
+      'transition:opacity .25s ease,transform .25s ease;';
+    const head = doc.createElement('div');
+    head.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px;';
+    const badge = doc.createElement('span');
+    badge.textContent = 'NEW';
+    badge.style.cssText = 'background:' + currentTheme.accentGradient + ';color:#fff;font-size:10px;' +
+      'font-weight:700;line-height:1;padding:3px 6px;border-radius:8px 4px 8px 4px;letter-spacing:.5px;';
+    const title = doc.createElement('strong');
+    title.textContent = '发现新版本';
+    title.style.cssText = 'font-size:13px;color:#303740;';
+    head.appendChild(badge);
+    head.appendChild(title);
+    box.appendChild(head);
+    const desc = doc.createElement('div');
+    desc.textContent = 'BiLivex 已发布 v' + remoteVersion + '（当前 v' + localVersion + '），建议更新获得最新功能与修复。';
+    desc.style.cssText = 'font-size:12px;color:#6b7683;margin-bottom:10px;';
+    box.appendChild(desc);
+    const actions = doc.createElement('div');
+    actions.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;';
+    const mkNoticeBtn = (label, primary) => {
+      const b = doc.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.style.cssText = 'border:none;border-radius:8px;padding:5px 12px;font-size:12px;line-height:18px;' +
+        'font-weight:600;cursor:pointer;transition:transform .1s ease,filter .1s ease;';
+      if (primary) {
+        b.style.background = currentTheme.feedbackGradient;
+        b.style.color = '#fff';
+        b.style.boxShadow = '0 1px 4px ' + currentTheme.feedbackShadow;
+      } else {
+        b.style.background = '#eef2f6';
+        b.style.color = '#4d5966';
+      }
+      b.addEventListener('mousedown', () => { b.style.transform = 'scale(.96)'; });
+      b.addEventListener('mouseup', () => { b.style.transform = ''; });
+      b.addEventListener('mouseleave', () => { b.style.transform = ''; });
+      return b;
+    };
+    const dismissNotice = () => {
+      box.style.opacity = '0';
+      box.style.transform = 'translateY(6px)';
+      setTimeout(() => { if (box.isConnected) box.remove(); }, 260);
+    };
+    const ignoreBtn = mkNoticeBtn('忽略', false);
+    ignoreBtn.addEventListener('click', () => {
+      const state = readUpdateState();
+      state.ignoredVersion = remoteVersion;
+      writeUpdateState(state);
+      dismissNotice();
+    });
+    const updateBtn = mkNoticeBtn('更新', true);
+    updateBtn.addEventListener('click', () => {
+      dismissNotice();
+      try {
+        panelWindow.open(UPDATE_INSTALL_URL, '_blank', 'noopener');
+      } catch (e) {
+        window.open(UPDATE_INSTALL_URL, '_blank', 'noopener');
+      }
+    });
+    actions.appendChild(ignoreBtn);
+    actions.appendChild(updateBtn);
+    box.appendChild(actions);
+    doc.body.appendChild(box);
+    // 定位到悬浮球旁：优先放在球左侧，空间不足时放右侧，并钳制在视口内。
+    try {
+      const panel = doc.getElementById('bilivex-panel');
+      const vw = panelWindow.innerWidth || doc.documentElement.clientWidth;
+      const vh = panelWindow.innerHeight || doc.documentElement.clientHeight;
+      const pr = panel ? panel.getBoundingClientRect()
+        : { left: vw - 74, right: vw - 18, top: 96, bottom: 152 };
+      const br = box.getBoundingClientRect();
+      let left = pr.left - br.width - 12;
+      if (left < 8) left = Math.min(Math.max(8, vw - br.width - 8), pr.right + 12);
+      const top = Math.max(8, Math.min(pr.top, Math.max(8, vh - br.height - 8)));
+      box.style.left = left + 'px';
+      box.style.top = top + 'px';
+    } catch (e) {
+      box.style.left = 'auto';
+      box.style.right = '84px';
+      box.style.top = '96px';
+    }
+    requestAnimationFrame(() => {
+      box.style.opacity = '1';
+      box.style.transform = 'translateY(0)';
+    });
+  }
+
+  function checkForUpdate() {
+    try {
+      // 只在顶层页面实例检查，避免 iframe 实例重复请求与重复弹窗。
+      if (document !== panelDocument) return;
+      // 真机调试入口：URL 带 #bilivex-update-test 时强制弹出更新提示，不走网络。
+      if (/bilivex-update-test/.test(panelWindow.location.hash)) {
+        setTimeout(() => showUpdateNotice('9.9.9'), 800);
+        return;
+      }
+      const state = readUpdateState();
+      const now = Date.now();
+      if (state.lastCheckAt && now - state.lastCheckAt < UPDATE_CHECK_INTERVAL_MS) return;
+      state.lastCheckAt = now;
+      writeUpdateState(state);
+      fetchRemoteVersion((remoteVersion) => {
+        if (!remoteVersion) return;
+        const latest = readUpdateState();
+        // 已忽略的版本不再提示，直到更新的版本出现。
+        if (latest.ignoredVersion === remoteVersion) return;
+        if (compareVersions(remoteVersion, getScriptVersion()) > 0) showUpdateNotice(remoteVersion);
+      });
+    } catch (e) {}
+  }
+
   // ---------- 初始化 ----------
   function initRoom() {
     const list = document.querySelector('.chat-history-list');
@@ -2931,6 +3150,8 @@
     tryInit();
     watchSpa();
     guardianObserveOnce();
+    // 延迟检查更新，避开页面首屏渲染高峰
+    setTimeout(checkForUpdate, 2500);
   }
 
   function watchSpa() {
