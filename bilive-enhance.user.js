@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.1.1
+// @version      1.1.2
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停后可快捷 +1 回复；② 收藏夹——收藏、搜索、编辑与跨设备迁移常用弹幕；③ 评论区——聊天区弹幕悬停显示 +1/收藏/复制按钮；④ 小尾巴——发送弹幕自动追加自定义文字；⑤ 一键点赞——连续点赞 30 次点亮粉丝团灯牌；⑥ 自动检查更新——发现新版本时在悬浮球旁提醒，可一键更新。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -1072,6 +1072,7 @@
         item._bilivexOrigParent = origParent;
         item._bilivexAnimProgress = progress;
         item._bilivexAnimationSnapshot = animationSnapshot;
+        item._bilivexOrigOpacity = origOpacity;
         // 悬停时显示弹幕文字与高亮，不影响原始弹幕的滚动。
         const residentHost = getResidentLayer();
         if (!residentHost) return null;
@@ -1103,12 +1104,16 @@
             if (value) textLayer.style.setProperty(name, value, 'important');
           });
         } catch (e) {}
-        textLayer.style.setProperty('opacity', '1', 'important');
         clone.appendChild(textLayer);
         clone._bilivexTextLayer = textLayer;
         item.classList.add('bili-danmaku-x-paused');
         item.style.backgroundColor = currentTheme.highlight;
         item.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
+        // 悬停的弹幕与画面中的弹幕透明度保持一致（画面上下/边缘区域本身较淡，
+        // 悬停后不应变得更醒目），观感自然统一。
+        const opacityValue = origOpacity && origOpacity !== '1' ? origOpacity : '';
+        if (opacityValue) clone.style.setProperty('opacity', opacityValue, 'important');
+        clone._bilivexOrigOpacity = origOpacity;
         const rect = overlayDocument === item.ownerDocument ? sourceRect : toUiRect(sourceRect);
         const playerRectUi = getPlayerRect();
         const frameOffset = getFrameOffset();
@@ -1158,10 +1163,12 @@
         cFav.dataset.bilivexAction = 'favorite';
         const viewportWidth = overlayDocument.documentElement.clientWidth || overlayDocument.defaultView.innerWidth;
         const viewportHeight = overlayDocument.documentElement.clientHeight || overlayDocument.defaultView.innerHeight;
-        const rightLimit = playerRect ? Math.min(playerRect.right, viewportWidth) : viewportWidth;
-        const leftLimit = playerRect ? Math.max(playerRect.left, 0) : 0;
-        const topLimit = playerRect ? Math.max(playerRect.top, 0) : 0;
-        const bottomLimit = playerRect ? Math.min(playerRect.bottom, viewportHeight) : viewportHeight;
+        // 操作栏始终限制在视口范围内：即使弹幕贴近画面上/左/右边缘，
+        // 操作栏也保证在屏幕内完整露出，不会被画面边界裁切或遮挡。
+        const rightLimit = viewportWidth;
+        const leftLimit = 0;
+        const topLimit = 0;
+        const bottomLimit = viewportHeight;
         // 操作组保留可见的 6px 留白；热区判定会单独连通这段空隙，避免为了可操作性牺牲视觉间距。
         const actionJoin = -6;
         actionGroup.style.cssText = 'position:fixed;left:0;top:0;transform:none;margin:0;display:flex;align-items:center;gap:4px;' +
@@ -1198,7 +1205,8 @@
         clone._bilivexFloatActionGroup = actionGroup;
         actionGroup._bilivexFloatClone = clone;
         residentHost.appendChild(clone);
-        residentHost.appendChild(actionGroup);
+        // 操作栏与悬停弹幕分层展示：弹幕本身不超出直播画面，操作栏则始终完整可见。
+        getUiHost().appendChild(actionGroup);
         const actionRect = actionGroup.getBoundingClientRect();
         const actionWidth = actionRect.width;
         const actionHeight = actionRect.height;
@@ -1206,13 +1214,25 @@
         const leftLeft = rect.left + actionJoin - actionWidth;
         const minLeft = leftLimit;
         const maxLeft = Math.max(minLeft, rightLimit - actionWidth);
-        let actionLeft = rightLeft <= maxLeft ? rightLeft : (leftLeft >= minLeft ? leftLeft : Math.min(maxLeft, Math.max(minLeft, rect.left)));
+        // 候选位置严格落在屏幕范围内：先右后左，两侧都不够时居中收拢，
+        // 避免边缘弹幕把操作栏推出屏幕。
+        let actionLeft;
+        if (rightLeft >= minLeft && rightLeft <= maxLeft) {
+          actionLeft = rightLeft;
+        } else if (leftLeft >= minLeft && leftLeft <= maxLeft) {
+          actionLeft = leftLeft;
+        } else {
+          actionLeft = Math.min(maxLeft, Math.max(minLeft, rect.left));
+        }
         let actionTop = rect.top + (rect.height - actionHeight) / 2;
         if (rightLeft > maxLeft && leftLeft < minLeft) {
           const belowTop = rect.bottom - actionJoin;
           const aboveTop = rect.top + actionJoin - actionHeight;
           actionTop = belowTop + actionHeight <= bottomLimit ? belowTop : Math.max(topLimit, aboveTop);
         }
+        actionTop = Math.min(Math.max(topLimit, actionTop), Math.max(topLimit, bottomLimit - actionHeight));
+        // 兜底：候选区间计算后再夹一次，确保操作组永远落在视口内。
+        actionLeft = Math.min(maxLeft, Math.max(minLeft, actionLeft));
         actionTop = Math.min(Math.max(topLimit, actionTop), Math.max(topLimit, bottomLimit - actionHeight));
         actionGroup.style.left = actionLeft + 'px';
         actionGroup.style.top = actionTop + 'px';
@@ -1686,6 +1706,13 @@
         item.dataset.bilivexFloatInited = '';
       });
       rotate.dataset.bilivexFloatBound = '';
+      // 关闭功能时同步清理悬停操作栏，避免残留
+      const actionHost = residentLayer ? residentLayer.ownerDocument : null;
+      if (actionHost) {
+        $$('.bilivex-float-actions', actionHost).forEach((group) => {
+          if (!group._bilivexFloatClone && group.isConnected) group.remove();
+        });
+      }
       if (residentLayer && residentLayer.ownerDocument.documentElement.contains(residentLayer)) {
         $$('[data-bilivex-resident="1"]', residentLayer).forEach(item => {
           if (typeof item._bilivexFloatCleanup === 'function') {
@@ -1702,9 +1729,6 @@
             } catch (e2) {}
           }
           item.dataset.bilivexFloatInited = '';
-        });
-        $$('.bilivex-float-actions', residentLayer).forEach((group) => {
-          if (!group._bilivexFloatClone && group.isConnected) group.remove();
         });
       }
     }
@@ -3090,6 +3114,7 @@
       // 兜底清理：已滚出视口且非当前悬停的冻结弹幕/按钮（防止残留累积）
       try {
         const layer = uiDocument.getElementById('bilivex-dm-resident');
+        const host = getUiHost();
         if (layer) {
           const hov = FloatingDmEngine.hovered;
           $$('[data-bilivex-resident="1"], .bilivex-float-plus-btn', layer).forEach((el) => {
@@ -3110,6 +3135,13 @@
                 el.remove();
               } catch (e3) {}
             }
+          });
+        }
+        // 兜底清理：移除已失去关联的悬停操作栏，避免残留累积
+        if (host) {
+          $$('.bilivex-float-actions', host).forEach((group) => {
+            if (group._bilivexFloatClone && group._bilivexFloatClone.isConnected) return;
+            try { if (group.isConnected) group.remove(); } catch (e3) {}
           });
         }
       } catch (e2) {}
