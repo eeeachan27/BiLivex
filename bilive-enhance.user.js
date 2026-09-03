@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.1.2
+// @version      1.1.3
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停后可快捷 +1 回复；② 收藏夹——收藏、搜索、编辑与跨设备迁移常用弹幕；③ 评论区——聊天区弹幕悬停显示 +1/收藏/复制按钮；④ 小尾巴——发送弹幕自动追加自定义文字；⑤ 一键点赞——连续点赞 30 次点亮粉丝团灯牌；⑥ 自动检查更新——发现新版本时在悬浮球旁提醒，可一键更新。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -874,30 +874,39 @@
       residentLayer.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;' +
         'pointer-events:none;overflow:hidden;z-index:2147483000;';
     }
+    // 首次进入直播间时，画面坐标还没就绪。如果沿用空白的范围（或最旧的一次），"操作栏被裁剪"的问题会复发——刷新页才能临时恢复。
+    // 改为基于播放画面签名变化主动重算，新直播间一次刷新就生效。
     const playerRectUi = getPlayerRect();
-    if (playerRectUi) {
-      const offset = getFrameOffset();
-      const localRect = host.ownerDocument === uiDocument
-        ? {
-            left: playerRectUi.left - offset.left,
-            top: playerRectUi.top - offset.top,
-            right: playerRectUi.right - offset.left,
-            bottom: playerRectUi.bottom - offset.top
-          }
-        : playerRectUi;
-      const vw = host.ownerDocument.documentElement.clientWidth || host.ownerDocument.defaultView.innerWidth;
-      const vh = host.ownerDocument.documentElement.clientHeight || host.ownerDocument.defaultView.innerHeight;
-      const top = Math.max(0, localRect.top);
-      const right = Math.max(0, vw - localRect.right);
-      const bottom = Math.max(0, vh - localRect.bottom);
-      const left = Math.max(0, localRect.left);
-      residentLayer.style.clipPath = 'inset(' + top + 'px ' + right + 'px ' + bottom + 'px ' + left + 'px)';
-      residentLayer.style.webkitClipPath = residentLayer.style.clipPath;
-    } else {
-      residentLayer.style.clipPath = '';
-      residentLayer.style.webkitClipPath = '';
+    const vw = host.ownerDocument.documentElement.clientWidth || host.ownerDocument.defaultView.innerWidth;
+    const vh = host.ownerDocument.documentElement.clientHeight || host.ownerDocument.defaultView.innerHeight;
+    const hostKey = host === panelDocument.documentElement ? 'doc' : 'fs';
+    const prKey = playerRectUi ? playerRectUi.left.toFixed(0) + ',' + playerRectUi.top.toFixed(0) + ',' + playerRectUi.right.toFixed(0) + ',' + playerRectUi.bottom.toFixed(0) : 'none';
+    const sig = hostKey + '|' + prKey + '|' + vw + 'x' + vh;
+    if (residentLayer._bilivexClipSig !== sig) {
+      if (playerRectUi) {
+        const offset = getFrameOffset();
+        const localRect = host.ownerDocument === uiDocument
+          ? {
+              left: playerRectUi.left - offset.left,
+              top: playerRectUi.top - offset.top,
+              right: playerRectUi.right - offset.left,
+              bottom: playerRectUi.bottom - offset.top
+            }
+          : playerRectUi;
+        const topClip = Math.max(0, localRect.top);
+        const rightClip = Math.max(0, vw - localRect.right);
+        const bottomClip = Math.max(0, vh - localRect.bottom);
+        const leftClip = Math.max(0, localRect.left);
+        const newClip = 'inset(' + topClip + 'px ' + rightClip + 'px ' + bottomClip + 'px ' + leftClip + 'px)';
+        residentLayer.style.clipPath = newClip;
+        residentLayer.style.webkitClipPath = newClip;
+      } else {
+        residentLayer.style.clipPath = '';
+        residentLayer.style.webkitClipPath = '';
+      }
+      residentLayer._bilivexClipSig = sig;
     }
-    host.appendChild(residentLayer);
+    if (residentLayer.parentNode !== host) host.appendChild(residentLayer);
     return residentLayer;
   }
 
@@ -1086,26 +1095,42 @@
         clone._bilivexOrigParent = origParent;
         const residentText = extractFloatingDmText(item);
         const sourceText = item.querySelector('.bili-danmaku-x-text') || item;
-        const textLayer = overlayDocument.createElement('span');
+        // 修复悬停富文本弹幕的"重复 + 错位"问题：
+        // - 悬停副本需要完整保留徽章 / 表情图 / 富文本子节点结构；
+        // - 悬停期间把源弹幕隐藏，避免原弹幕与悬停副本叠加造成"看到两条"，以及文本起点偏到原弹幕特殊格式起始处。
+        const textLayer = overlayDocument.createElement('div');
         textLayer.className = 'bilivex-float-text';
-        textLayer.textContent = residentText;
         textLayer.style.setProperty('display', 'block', 'important');
         textLayer.style.setProperty('width', '100%', 'important');
         textLayer.style.setProperty('height', '100%', 'important');
         textLayer.style.setProperty('overflow', 'visible', 'important');
-        textLayer.style.setProperty('white-space', 'nowrap', 'important');
         textLayer.style.setProperty('pointer-events', 'none', 'important');
         textLayer.style.setProperty('user-select', 'none', 'important');
         try {
+          // 字体 / 颜色 / 行高等从源弹幕读出，复制时仅带走"实际生效"的字体与对齐相关样式；
+          // 尺寸属性走副本自身的占位策略，避免与源坐标冲突。
           const textStyle = getComputedStyle(sourceText);
-          ['color', 'font-family', 'font-size', 'font-weight', 'font-style', 'line-height',
-            'letter-spacing', 'text-shadow'].forEach((name) => {
+          const styleKeys = ['color', 'font-family', 'font-size', 'font-weight', 'font-style', 'line-height',
+            'letter-spacing', 'text-shadow', 'display', 'align-items'];
+          styleKeys.forEach((name) => {
             const value = textStyle.getPropertyValue(name);
             if (value) textLayer.style.setProperty(name, value, 'important');
           });
+          // 复制源弹幕的所有可见子节点到副本，剥离脚本注入的辅助元素后再搬入文本层。
+          const sanitized = item.cloneNode(true);
+          sanitized.querySelectorAll(
+            '.bilivex-float-actions, .bilivex-float-plus-btn, .bilivex-float-favorite-btn,' +
+            '[data-bilivex-resident], [data-bilivex-float-inited], [data-bilivex-hover-paused]'
+          ).forEach((btn) => btn.remove());
+          sanitized.removeAttribute('class');
+          sanitized.removeAttribute('style');
+          while (sanitized.firstChild) textLayer.appendChild(sanitized.firstChild);
         } catch (e) {}
         clone.appendChild(textLayer);
         clone._bilivexTextLayer = textLayer;
+        // 悬停期间隐藏源弹幕，让副本完全代表原画面内容；离开时由现有的恢复逻辑一并还原。
+        // 离开时由现有的弹幕悬停恢复逻辑一并还原 visibility。
+        try { item.style.visibility = 'hidden'; } catch (e) {}
         item.classList.add('bili-danmaku-x-paused');
         item.style.backgroundColor = currentTheme.highlight;
         item.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
@@ -2883,7 +2908,7 @@
   // 油猴更新页（Greasy Fork 安装直链）。
   const UPDATE_CHECK_URL = 'https://cdn.jsdelivr.net/gh/eeeachan27/BiLivex@main/bilive-enhance.user.js';
   const UPDATE_INSTALL_URL = 'https://update.greasyfork.org/scripts/590601/BiLivex%20-%20%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%E7%9B%B4%E6%92%AD%E5%A2%9E%E5%BC%BA.user.js';
-  const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;   // 每 6 小时最多检查一次
+  const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;   // 刷新页面最多每小时检测一次；新版本被发现的延迟最坏为 1 小时
   const UPDATE_STATE_KEY = 'bilivex_update_state';
 
   function getScriptVersion() {
@@ -3055,12 +3080,18 @@
       const state = readUpdateState();
       const now = Date.now();
       if (state.lastCheckAt && now - state.lastCheckAt < UPDATE_CHECK_INTERVAL_MS) return;
-      state.lastCheckAt = now;
-      writeUpdateState(state);
       fetchRemoteVersion((remoteVersion) => {
-        if (!remoteVersion) return;
+        // 网络失败：仅记录 lastFailAt 用于诊断，不锁住后续检查（避免请求瞬时失败导致 6 小时不再提醒）。
+        if (!remoteVersion) {
+          const failState = readUpdateState();
+          failState.lastFailAt = Date.now();
+          writeUpdateState(failState);
+          return;
+        }
+        // 仅在请求成功后才写 lastCheckAt，保证"成功才冷却、失败可立即重试"。
         const latest = readUpdateState();
-        // 已忽略的版本不再提示，直到更新的版本出现。
+        latest.lastCheckAt = Date.now();
+        writeUpdateState(latest);
         if (latest.ignoredVersion === remoteVersion) return;
         if (compareVersions(remoteVersion, getScriptVersion()) > 0) showUpdateNotice(remoteVersion);
       });
