@@ -864,7 +864,6 @@
   function getResidentLayer() {
     const host = getUiHost();
     if (!host) return null;
-    if (residentLayer && residentLayer.parentNode === host) return residentLayer;
     if (residentLayer && residentLayer.ownerDocument !== host.ownerDocument) {
       try {
         $$('[data-bilivex-resident="1"]', residentLayer).forEach((el) => {
@@ -916,6 +915,8 @@
       residentLayer._bilivexClipSig = sig;
     }
     if (residentLayer.parentNode !== host) host.appendChild(residentLayer);
+    // 网页大窗口 / 网页全屏模式下，悬停弹幕展示层始终保持可见。
+    residentLayer.style.setProperty('visibility', 'visible', 'important');
     return residentLayer;
   }
 
@@ -995,30 +996,13 @@
     setTimeout(() => { if (fb.parentNode) fb.parentNode.removeChild(fb); }, 1100);
   }
 
-  function collectOwnChatTexts(ownerDocument) {
-    const texts = new Set();
-    const roots = [ownerDocument, panelDocument, uiDocument];
-    roots.forEach((root) => {
-      if (!root || !root.querySelectorAll) return;
-      root.querySelectorAll('.danmaku-item').forEach((row) => {
-        if (!row.querySelector('.user-name.my-self')) return;
-        const text = (row.dataset.danmaku || (row.querySelector('.danmaku-item-right') || {}).textContent || '').trim();
-        if (text) texts.add(text);
-      });
-    });
-    return texts;
-  }
-
   function markOwnFloatingDanmaku(item) {
     if (!item || !item.classList || !item.classList.contains('bili-danmaku-x-dm')) return false;
     let isOwn = false;
     try {
+      // 漂浮层没有发送者信息时不能按文本匹配：同一句话可能由多人发送。
       isOwn = !!item.querySelector('.my-self, [data-self="1"], [data-self="true"], [data-is-self="1"], [data-is-self="true"]') ||
         item.matches('.my-self, [data-self="1"], [data-self="true"], [data-is-self="1"], [data-is-self="true"]');
-      if (!isOwn) {
-        const text = extractFloatingDmText(item);
-        isOwn = !!text && collectOwnChatTexts(item.ownerDocument).has(text);
-      }
     } catch (e) {}
     item.classList.toggle('bilivex-own-danmaku', isOwn);
     item.style.boxSizing = 'border-box';
@@ -1078,7 +1062,16 @@
       delete source.dataset.bilivexHoverPaused;
       source._bilivexHoverId = null;
       source.classList.remove('bili-danmaku-x-paused');
-      source.style.visibility = '';
+      if (source._bilivexOrigVisibility) {
+        source.style.setProperty(
+          'visibility',
+          source._bilivexOrigVisibility.value,
+          source._bilivexOrigVisibility.priority
+        );
+      } else {
+        source.style.removeProperty('visibility');
+      }
+      source._bilivexOrigVisibility = null;
       source.style.backgroundColor = '';
       source.style.boxShadow = source.dataset.bilivexOwnDanmaku === '1'
         ? 'inset 0 0 0 1px #1E88E5' : '';
@@ -1189,9 +1182,14 @@
         } catch (e) {}
         clone.appendChild(textLayer);
         clone._bilivexTextLayer = textLayer;
-        // 悬停期间隐藏源弹幕，让副本完全代表原画面内容；离开时由现有的恢复逻辑一并还原。
-        // 离开时由现有的弹幕悬停恢复逻辑一并还原 visibility。
-        try { item.style.visibility = 'hidden'; } catch (e) {}
+        // 隐藏源弹幕时使用 important 并保存其原内联值，保证连续多次悬停后原弹幕能按原样恢复滚动。
+        try {
+          item._bilivexOrigVisibility = {
+            value: item.style.getPropertyValue('visibility'),
+            priority: item.style.getPropertyPriority('visibility')
+          };
+          item.style.setProperty('visibility', 'hidden', 'important');
+        } catch (e) {}
         item.classList.add('bili-danmaku-x-paused');
         const floatingBorder = item.dataset.bilivexOwnDanmaku === '1' ? '#1E88E5' : currentTheme.primary;
         item.style.backgroundColor = currentTheme.highlight;
@@ -1282,7 +1280,7 @@
           'padding:3px;border-radius:15px;background:rgba(255,255,255,.62);opacity:.88;' +
           'border:1px solid rgba(255,255,255,.42);box-shadow:0 2px 8px rgba(0,0,0,.14);' +
           'backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);' +
-          'transition:opacity .16s ease;z-index:10000;pointer-events:auto;user-select:none;white-space:nowrap;';
+          'transition:opacity .16s ease;z-index:2147483001;pointer-events:auto;user-select:none;white-space:nowrap;';
         [cBtn, cFav].forEach((button) => {
           button.style.cssText = 'border:none;border-radius:12px;padding:4px 10px;font-size:13px;line-height:18px;' +
             'font-weight:600;cursor:pointer;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);' +
@@ -3230,7 +3228,7 @@
       }
       // 兜底清理：已滚出视口且非当前悬停的冻结弹幕/按钮（防止残留累积）
       try {
-        const layer = uiDocument.getElementById('bilivex-dm-resident');
+        const layer = panelDocument.getElementById('bilivex-dm-resident');
         const host = getUiHost();
         if (layer) {
           const hov = FloatingDmEngine.hovered;
