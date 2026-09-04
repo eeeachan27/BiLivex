@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      1.1.3
+// @version      1.1.8
 // @license      MIT
 // @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停后可快捷 +1 回复；② 收藏夹——收藏、搜索、编辑与跨设备迁移常用弹幕；③ 评论区——聊天区弹幕悬停显示 +1/收藏/复制按钮；④ 小尾巴——发送弹幕自动追加自定义文字；⑤ 一键点赞——连续点赞 30 次点亮粉丝团灯牌；⑥ 自动检查更新——发现新版本时在悬浮球旁提醒，可一键更新。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -848,7 +848,16 @@
     if (localFullscreen && localFullscreen.nodeType === 1) return localFullscreen;
     const topFullscreen = panelDocument.fullscreenElement;
     if (topFullscreen && topFullscreen.nodeType === 1) return topFullscreen;
-    return panelDocument.documentElement;
+    return panelDocument.body || panelDocument.documentElement;
+  }
+
+  // 悬停操作栏需要固定在播放器画面之上展示；
+  // iframe 直播间网页大窗口 / 网页全屏下以 body 为定位基准，保证按钮不被放大后的播放器层遮挡。
+  function getOverlayActionHost(ownerDocument) {
+    if (!ownerDocument) return null;
+    const fullscreen = ownerDocument.fullscreenElement;
+    if (fullscreen && fullscreen.nodeType === 1) return fullscreen;
+    return ownerDocument.body || ownerDocument.documentElement;
   }
 
   let residentLayer = null;
@@ -986,11 +995,48 @@
     setTimeout(() => { if (fb.parentNode) fb.parentNode.removeChild(fb); }, 1100);
   }
 
+  function collectOwnChatTexts(ownerDocument) {
+    const texts = new Set();
+    const roots = [ownerDocument, panelDocument, uiDocument];
+    roots.forEach((root) => {
+      if (!root || !root.querySelectorAll) return;
+      root.querySelectorAll('.danmaku-item').forEach((row) => {
+        if (!row.querySelector('.user-name.my-self')) return;
+        const text = (row.dataset.danmaku || (row.querySelector('.danmaku-item-right') || {}).textContent || '').trim();
+        if (text) texts.add(text);
+      });
+    });
+    return texts;
+  }
+
+  function markOwnFloatingDanmaku(item) {
+    if (!item || !item.classList || !item.classList.contains('bili-danmaku-x-dm')) return false;
+    let isOwn = false;
+    try {
+      isOwn = !!item.querySelector('.my-self, [data-self="1"], [data-self="true"], [data-is-self="1"], [data-is-self="true"]') ||
+        item.matches('.my-self, [data-self="1"], [data-self="true"], [data-is-self="1"], [data-is-self="true"]');
+      if (!isOwn) {
+        const text = extractFloatingDmText(item);
+        isOwn = !!text && collectOwnChatTexts(item.ownerDocument).has(text);
+      }
+    } catch (e) {}
+    item.classList.toggle('bilivex-own-danmaku', isOwn);
+    item.style.boxSizing = 'border-box';
+    item.style.boxShadow = isOwn ? 'inset 0 0 0 1px #1E88E5' : '';
+    item.style.borderRadius = isOwn ? '4px' : '';
+    item.dataset.bilivexOwnDanmaku = isOwn ? '1' : '';
+    return isOwn;
+  }
+
   // 增强单条漂浮弹幕：添加悬停 +1 按钮
   function ensureFloatingDmOverlay(item) {
     if (!item) return;
     if (!item.classList.contains('bili-danmaku-x-dm')) return;
-    if (item.dataset.bilivexFloatInited) return;
+    if (item.dataset.bilivexFloatInited) {
+      markOwnFloatingDanmaku(item);
+      return;
+    }
+    markOwnFloatingDanmaku(item);
     // 跳过被 B 站标记为禁用的弹幕
     if (item.classList.contains('bili-danmaku-x-disable')) return;
     item.dataset.bilivexFloatInited = '1';
@@ -1034,7 +1080,8 @@
       source.classList.remove('bili-danmaku-x-paused');
       source.style.visibility = '';
       source.style.backgroundColor = '';
-      source.style.boxShadow = '';
+      source.style.boxShadow = source.dataset.bilivexOwnDanmaku === '1'
+        ? 'inset 0 0 0 1px #1E88E5' : '';
       snapshots.forEach((snapshot) => {
         try {
           if (snapshot.currentTime != null) snapshot.animation.currentTime = snapshot.currentTime;
@@ -1095,9 +1142,8 @@
         clone._bilivexOrigParent = origParent;
         const residentText = extractFloatingDmText(item);
         const sourceText = item.querySelector('.bili-danmaku-x-text') || item;
-        // 修复悬停富文本弹幕的"重复 + 错位"问题：
-        // - 悬停副本需要完整保留徽章 / 表情图 / 富文本子节点结构；
-        // - 悬停期间把源弹幕隐藏，避免原弹幕与悬停副本叠加造成"看到两条"，以及文本起点偏到原弹幕特殊格式起始处。
+        // 悬停展示与直播间原弹幕外观保持一致：完整保留徽章、表情图等富文本内容，
+        // 避免出现两条弹幕、文字起点错位或表情被放大的观感问题。
         const textLayer = overlayDocument.createElement('div');
         textLayer.className = 'bilivex-float-text';
         textLayer.style.setProperty('display', 'block', 'important');
@@ -1125,6 +1171,21 @@
           sanitized.removeAttribute('class');
           sanitized.removeAttribute('style');
           while (sanitized.firstChild) textLayer.appendChild(sanitized.firstChild);
+          const sourceImages = Array.from(item.querySelectorAll('img'));
+          const cloneImages = Array.from(textLayer.querySelectorAll('img'));
+          cloneImages.forEach((img, index) => {
+            const sourceImg = sourceImages[index];
+            if (!sourceImg) return;
+            const imageRect = sourceImg.getBoundingClientRect();
+            if (imageRect.width > 0 && imageRect.height > 0) {
+              img.style.setProperty('width', imageRect.width + 'px', 'important');
+              img.style.setProperty('height', imageRect.height + 'px', 'important');
+              img.style.setProperty('max-width', imageRect.width + 'px', 'important');
+              img.style.setProperty('max-height', imageRect.height + 'px', 'important');
+              img.style.setProperty('object-fit', 'contain', 'important');
+              img.style.setProperty('vertical-align', 'middle', 'important');
+            }
+          });
         } catch (e) {}
         clone.appendChild(textLayer);
         clone._bilivexTextLayer = textLayer;
@@ -1132,8 +1193,9 @@
         // 离开时由现有的弹幕悬停恢复逻辑一并还原 visibility。
         try { item.style.visibility = 'hidden'; } catch (e) {}
         item.classList.add('bili-danmaku-x-paused');
+        const floatingBorder = item.dataset.bilivexOwnDanmaku === '1' ? '#1E88E5' : currentTheme.primary;
         item.style.backgroundColor = currentTheme.highlight;
-        item.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
+        item.style.boxShadow = 'inset 0 0 0 1px ' + floatingBorder;
         // 悬停的弹幕与画面中的弹幕透明度保持一致（画面上下/边缘区域本身较淡，
         // 悬停后不应变得更醒目），观感自然统一。
         const opacityValue = origOpacity && origOpacity !== '1' ? origOpacity : '';
@@ -1150,15 +1212,29 @@
               bottom: playerRectUi.bottom - frameOffset.top
             }
           : playerRectUi;
+        // 悬停弹幕默认在直播画面范围内展示（不溢出到聊天区）。
+        // 但当弹幕本身已贴近或越过画面边界时，若仍按画面裁剪，
+        // 用户悬停位置（画面外的那部分文字）会被整段裁掉，看起来像"弹幕消失"。
+        // 因此这种情形跳过画面裁剪，让整条弹幕完整显示，悬停永不消失。
+        let hoverUsesResident = false;
         if (playerRect) {
           const clipTop = Math.max(0, playerRect.top - rect.top);
           const clipRight = Math.max(0, rect.right - playerRect.right);
           const clipBottom = Math.max(0, rect.bottom - playerRect.bottom);
           const clipLeft = Math.max(0, playerRect.left - rect.left);
-          textLayer.style.setProperty('clip-path', 'inset(' + clipTop + 'px ' + clipRight + 'px ' + clipBottom + 'px ' + clipLeft + 'px)', 'important');
-          textLayer.style.setProperty('-webkit-clip-path', textLayer.style.clipPath, 'important');
+          // 仅当弹幕整体在画面内（或仅亚像素级贴边 ≤2px）时才做画面内嵌裁剪。
+          const fullyInside = clipTop <= 2 && clipRight <= 2 && clipBottom <= 2 && clipLeft <= 2;
+          if (fullyInside) {
+            hoverUsesResident = true;
+            const clipInset = 'inset(' + clipTop + 'px ' + clipRight + 'px ' + clipBottom + 'px ' + clipLeft + 'px)';
+            textLayer.style.setProperty('clip-path', clipInset, 'important');
+            textLayer.style.setProperty('-webkit-clip-path', clipInset, 'important');
+          } else {
+            textLayer.style.setProperty('clip-path', 'none', 'important');
+            textLayer.style.setProperty('-webkit-clip-path', 'none', 'important');
+          }
         }
-        // 保留弹幕当下的真实坐标；不得向播放器边界钳制，否则左缘弹幕会被搬到左上角并持续命中鼠标。
+        // 悬停弹幕保持原位置完整显示，不被吸附到播放器角落，左缘弹幕也不跳动。
         clone.style.setProperty('position', 'fixed', 'important');
         clone.style.setProperty('left', rect.left + 'px', 'important');
         clone.style.setProperty('top', rect.top + 'px', 'important');
@@ -1172,8 +1248,14 @@
         clone.style.setProperty('z-index', '9999', 'important');
         clone.style.setProperty('pointer-events', 'none', 'important');
         clone.style.backgroundColor = currentTheme.highlight;
-        clone.style.boxShadow = 'inset 0 0 0 1px ' + currentTheme.primary;
+        clone.style.boxShadow = 'inset 0 0 0 1px ' + floatingBorder;
         // 3) 操作组：跟随弹幕显示，优先放在右侧，空间不足时回退左侧。
+        const cloneHost = hoverUsesResident ? residentHost : getUiHost();
+        const actionHost = getOverlayActionHost(overlayDocument);
+        if (!cloneHost || !actionHost || cloneHost.ownerDocument !== overlayDocument || actionHost.ownerDocument !== overlayDocument) {
+          restoreFloatingSource(item, hoverId);
+          return null;
+        }
         const actionGroup = overlayDocument.createElement('div');
         actionGroup.className = 'bilivex-float-actions';
         const cBtn = overlayDocument.createElement('button');
@@ -1229,9 +1311,11 @@
         clone._bilivexFloatBtn = actionGroup;
         clone._bilivexFloatActionGroup = actionGroup;
         actionGroup._bilivexFloatClone = clone;
-        residentHost.appendChild(clone);
-        // 操作栏与悬停弹幕分层展示：弹幕本身不超出直播画面，操作栏则始终完整可见。
-        getUiHost().appendChild(actionGroup);
+        // 悬停弹幕通常在直播画面范围内展示（不溢出到聊天区）；
+        // 贴近画面边界的弹幕则完整显示，保证悬停弹幕不会消失。
+        cloneHost.appendChild(clone);
+        // 操作栏与悬停弹幕同属当前展示层，保证始终完整可见、不被遮挡。
+        actionHost.appendChild(actionGroup);
         const actionRect = actionGroup.getBoundingClientRect();
         const actionWidth = actionRect.width;
         const actionHeight = actionRect.height;
@@ -1280,6 +1364,8 @@
         };
         return clone;
       } catch (e) {
+        // 悬停初始化任一步骤失败时不得留下隐藏源弹幕；立即回滚到原始状态。
+        try { restoreFloatingSource(item, item._bilivexHoverId); } catch (restoreError) {}
         return null;
       }
     };
