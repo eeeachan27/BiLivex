@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      2.0.3
+// @version      2.1.0
 // @license      MIT
-// @description  B站直播间弹幕增强工具：① 弹幕 +1——漂浮弹幕悬停后可快捷 +1 回复；② 收藏夹——收藏、搜索、编辑与跨设备迁移常用弹幕；③ 评论区——聊天区弹幕悬停显示 +1/收藏/复制按钮；④ 小尾巴——发送弹幕自动追加自定义文字；⑤ 一键点赞——连续点赞 30 次点亮粉丝团灯牌；⑥ 自动检查更新——发现新版本时在悬浮球旁提醒，可一键更新。开源地址：https://github.com/eeeachan27/BiLivex
+// @description  B站直播间增强工具：① 弹幕 +1——漂浮弹幕悬停后可快捷 +1 回复；② 收藏夹——收藏、搜索、编辑与跨设备迁移常用弹幕；③ 评论区——聊天区弹幕悬停显示 +1/收藏/复制按钮；④ 小尾巴——发送弹幕自动追加自定义文字；⑤ 一键点赞——连续点赞 30 次点亮粉丝团灯牌；⑥ 自动检查更新——发现新版本时在悬浮球旁提醒，可一键更新；⑦ 同步时间——播放器底栏一键追到当前可播放的最新画面。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
 // @icon         data:image/jpeg;base64,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
 // @match        https://live.bilibili.com/*
@@ -25,6 +25,7 @@
  *   3) 评论区：聊天区弹幕悬停显示 +1 / 收藏 / 复制按钮。
  *   4) 小尾巴：发送弹幕时自动在末尾追加自定义文字。
  *   5) 一键点赞：连续点赞 30 次点亮粉丝团灯牌。
+ *   6) 同步时间：在播放器原生底栏一键跳到当前可播放的最新画面。
  */
 
 (function () {
@@ -3260,7 +3261,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '2.0.3';
+    return '2.1.0';
   }
 
   function compareVersions(a, b) {
@@ -3449,6 +3450,98 @@
     }
   }
 
+  // ---------- 播放器同步时间 ----------
+  const VIDEO_SYNC_SELECTOR = '[data-bilivex-video-sync="1"]';
+  const VIDEO_SYNC_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.343-5.657L4 8"></path><path d="M4 4v4h4"></path><path d="M12 8.5V12l2.5 1.5"></path></svg>';
+
+  function getVideoSyncTarget(video) {
+    if (!video) return null;
+    try {
+      const buffered = video.buffered;
+      const ranges = buffered && buffered.length ? buffered : video.seekable;
+      if (!ranges || !ranges.length) return null;
+      const lastRangeIndex = ranges.length - 1;
+      const rangeStart = Number(ranges.start(lastRangeIndex));
+      const rangeEnd = Number(ranges.end(lastRangeIndex));
+      if (!Number.isFinite(rangeStart) || !Number.isFinite(rangeEnd) || rangeEnd < rangeStart) return null;
+      // 与 DouyuEx 一样以本地最后一段缓冲区为准，并留 50 毫秒余量避免正好卡在 MSE 边界。
+      return Math.max(rangeStart, rangeEnd - 0.05);
+    } catch (e) {
+      // MSE 更新分段时 TimeRanges 可能瞬时失效，本次点击静默退出即可。
+      return null;
+    }
+  }
+
+  function findVideoSyncMount() {
+    const timeNodes = document.querySelectorAll('#live-player .text.time, .live-player-mounter .text.time');
+    for (const timeNode of timeNodes) {
+      const timeText = (timeNode.textContent || '').trim();
+      if (timeText && !/^\d{1,3}:\d{2}(?::\d{2})?$/.test(timeText)) continue;
+      const leftArea = timeNode.closest('.left-area');
+      if (!leftArea) continue;
+      let anchor = timeNode.closest('.tip-wrap') || timeNode;
+      while (anchor.parentElement && anchor.parentElement !== leftArea) anchor = anchor.parentElement;
+      if (anchor.parentElement !== leftArea) continue;
+      const player = leftArea.closest('#live-player, .live-player-mounter') || document.querySelector('#live-player');
+      if (player) return { anchor, leftArea, player };
+    }
+    return null;
+  }
+
+  function findActiveLiveVideo(player) {
+    if (!player) return null;
+    const videos = Array.from(player.querySelectorAll('video'));
+    return videos.find((video) => {
+      const rect = video.getBoundingClientRect();
+      return video.readyState > 0 && rect.width > 0 && rect.height > 0;
+    }) || videos.find((video) => video.readyState > 0) || videos[0] || null;
+  }
+
+  function syncVideoToLiveEdge(button) {
+    const player = button && button.closest('#live-player, .live-player-mounter');
+    const video = findActiveLiveVideo(player || document.querySelector('#live-player, .live-player-mounter'));
+    const target = getVideoSyncTarget(video);
+    if (!video || target === null) return { status: 'unavailable' };
+    const before = Number(video.currentTime) || 0;
+    try {
+      // 只调整播放位置，不调用 play/pause，保留用户原来的播放状态。
+      video.currentTime = target;
+      return { status: 'synced', before, target };
+    } catch (e) {
+      return { status: 'unavailable' };
+    }
+  }
+
+  function bindVideoSync() {
+    const mount = findVideoSyncMount();
+    if (!mount) return null;
+    let button = mount.leftArea.querySelector(VIDEO_SYNC_SELECTOR);
+    if (!button) {
+      button = document.createElement('span');
+      const nativeIcon = Array.from(mount.leftArea.children).find((child) => child.classList.contains('icon'));
+      button.className = nativeIcon ? nativeIcon.className : 'icon';
+      button.classList.add('icon', 'bilivex-video-sync');
+      button.dataset.bilivexVideoSync = '1';
+      button.setAttribute('role', 'button');
+      button.setAttribute('tabindex', '0');
+      button.setAttribute('aria-label', '同步到最新直播画面');
+      button.title = '同步时间';
+      button.innerHTML = VIDEO_SYNC_ICON;
+      const activate = () => {
+        const result = syncVideoToLiveEdge(button);
+        button.dataset.bilivexVideoSyncStatus = result.status;
+      };
+      button.addEventListener('click', activate);
+      button.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        activate();
+      });
+    }
+    if (mount.anchor.nextElementSibling !== button) mount.anchor.after(button);
+    return button;
+  }
+
   // ---------- 初始化 ----------
   function initRoom() {
     const list = document.querySelector('.chat-history-list');
@@ -3457,6 +3550,7 @@
     }
     rebindInputTailHandler();
     bindLike();
+    bindVideoSync();
     if (cfg.floatDmPlus) {
       const rotate = findFloatingDmContainer();
       if (rotate) attachFloatingDmHover(rotate);
@@ -3465,6 +3559,7 @@
 
   function guardianCheck() {
     try {
+      bindVideoSync();
       const list = document.querySelector('.chat-history-list');
       if (list && list !== boundChatList && (!boundChatList || !boundChatList.isConnected)) {
         list.dataset.bilivexHoverBound = '';
@@ -3614,7 +3709,8 @@
     let lastUrl = location.href;
     let queued = false;
     const lifecycleSelector = '#bilivex-panel, iframe, .chat-history-list, .chat-control-panel,' +
-      '.bili-danmaku-x-dm-rotate, .danmaku-item-container, .web-player-danmaku, #live-player';
+      '.bili-danmaku-x-dm-rotate, .danmaku-item-container, .web-player-danmaku, #live-player,' +
+      '.live-web-player-controller, #live-player .left-area, #live-player video';
     const touchesLifecycle = (records) => records.some((record) => {
       const nodes = Array.from(record.addedNodes).concat(Array.from(record.removedNodes));
       return nodes.some((node) => node.nodeType === 1 &&
