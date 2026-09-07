@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      2.2.0
+// @version      2.1.0
 // @license      MIT
-// @description  B站直播间增强工具：弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间，以及可选的自动最高画质、自动网页模式和防止 P2P 上传。开源地址：https://github.com/eeeachan27/BiLivex
+// @description  B站直播间增强工具：① 弹幕 +1——漂浮弹幕悬停后可快捷 +1 回复；② 收藏夹——收藏、搜索、编辑与跨设备迁移常用弹幕；③ 评论区——聊天区弹幕悬停显示 +1/收藏/复制按钮；④ 小尾巴——发送弹幕自动追加自定义文字；⑤ 一键点赞——连续点赞 30 次点亮粉丝团灯牌；⑥ 自动检查更新——发现新版本时在悬浮球旁提醒，可一键更新；⑦ 同步时间——播放器底栏一键追到当前可播放的最新画面。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
 // @icon         data:image/jpeg;base64,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
 // @match        https://live.bilibili.com/*
@@ -12,9 +12,8 @@
 // @grant        GM_addValueChangeListener
 // @grant        GM_removeValueChangeListener
 // @grant        GM_xmlhttpRequest
-// @grant        unsafeWindow
 // @connect      cdn.jsdelivr.net
-// @run-at       document-start
+// @run-at       document-idle
 // ==/UserScript==
 
 /*
@@ -27,7 +26,6 @@
  *   4) 小尾巴：发送弹幕时自动在末尾追加自定义文字。
  *   5) 一键点赞：连续点赞 30 次点亮粉丝团灯牌。
  *   6) 同步时间：在播放器原生底栏一键跳到当前可播放的最新画面。
- *   7) 更多设置：可选自动最高画质、自动网页模式和 B 站原生 P2P 禁用路径。
  */
 
 (function () {
@@ -80,9 +78,6 @@
     plusOneEnabled: true,      // 聊天区 +1 功能开关
     floatDmPlus: true,         // 漂浮弹幕 +1 功能开关
     copyEnabled: true,         // 复制按钮开关
-    autoHighestQuality: false, // 播放器就绪后选择当前账号可用的最高固定画质
-    autoWebMode: false,        // 播放器就绪后自动进入 B 站网页模式
-    blockP2PUpload: false,     // 使用 B 站原生 wpdP2PType=0 初始化路径
     panelCollapsed: false,     // 侧边菜单折叠
     panelPos: null,            // 拖拽后的面板位置 {left,top}，null 表示未拖拽过，使用默认+避让
     panelAnchor: null,         // 面板沿 left/right 一侧锚定，尺寸变化时保持同侧
@@ -96,9 +91,6 @@
   // 收藏列表独立于面板开关、位置和主题配置保存。顶层面板与 iframe 内弹幕脚本会并行运行，
   // 独立存储可避免任一旧 cfg 快照在收起菜单时覆盖刚新增的收藏。
   const FAVORITES_STORAGE_KEY = 'bilivex_favorites';
-  const BOOLEAN_CFG_KEYS = ['autoHighestQuality', 'autoWebMode', 'blockP2PUpload'];
-  const P2P_URL_MARKER_KEY = 'bilivex_p2p_url_marker_v1';
-  const P2P_RELOAD_MARKER_KEY = 'bilivex_p2p_reload_marker_v1';
 
   function normalizeFavoriteText(value) {
     if (typeof value !== 'string') return '';
@@ -145,17 +137,10 @@
     return normalized;
   }
 
-  function normalizeBooleanSettings(value) {
-    const normalized = value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
-    BOOLEAN_CFG_KEYS.forEach((key) => { normalized[key] = normalized[key] === true; });
-    return normalized;
-  }
-
   function loadCfg() {
     try {
       const raw = GM_getValue('bilivex_cfg');
-      const parsed = raw ? JSON.parse(raw) : {};
-      const obj = normalizeBooleanSettings(parsed);
+      const obj = raw ? JSON.parse(raw) : {};
       if (!obj.theme || (obj.theme !== 'blue' && obj.theme !== 'pink')) obj.theme = 'blue';
       if (obj.panelAnchor !== 'left' && obj.panelAnchor !== 'right') obj.panelAnchor = null;
       // 兼容旧版本嵌在 cfg 内的收藏；首次读到旧列表时迁移到独立存储，
@@ -212,113 +197,7 @@
     return latest.tailEnabled && latest.tailText ? latest.tailText : '';
   }
 
-  function isP2PManagedPage(href) {
-    try {
-      const url = new URL(href, location.href);
-      if (url.hostname !== 'live.bilibili.com') return false;
-      return /^\/(?:blanc\/)?\d+(?:\/|$)/.test(url.pathname) ||
-        /^\d+$/.test(url.searchParams.get('room_id') || url.searchParams.get('roomid') || '');
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function p2pPageKey(href) {
-    try {
-      const url = new URL(href, location.href);
-      return url.origin + url.pathname;
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function readSessionJson(storage, key) {
-    try {
-      const raw = storage.getItem(key);
-      const value = raw ? JSON.parse(raw) : null;
-      return value && typeof value === 'object' ? value : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function writeSessionJson(storage, key, value) {
-    try {
-      if (value) storage.setItem(key, JSON.stringify(value));
-      else storage.removeItem(key);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function getP2PTargetUrl(href, enabled, marker) {
-    if (!isP2PManagedPage(href)) return href;
-    const url = new URL(href, location.href);
-    if (enabled) {
-      url.searchParams.set('wpdP2PType', '0');
-    } else if (marker && marker.pageKey === p2pPageKey(href)) {
-      if (marker.hadValue) url.searchParams.set('wpdP2PType', marker.value);
-      else url.searchParams.delete('wpdP2PType');
-    }
-    return url.href;
-  }
-
-  function prepareP2PUrl(href, enabled, storage) {
-    if (!isP2PManagedPage(href)) return { changed: false, href };
-    const url = new URL(href, location.href);
-    const pageKey = p2pPageKey(href);
-    const stored = readSessionJson(storage, P2P_URL_MARKER_KEY);
-    const markers = stored && stored.pages && typeof stored.pages === 'object' ? stored.pages : {};
-    if (stored && stored.pageKey && !markers[stored.pageKey]) markers[stored.pageKey] = stored;
-    let marker = markers[pageKey];
-    if (enabled) {
-      if (url.searchParams.get('wpdP2PType') === '0') {
-        return { changed: false, href: url.href };
-      }
-      if (!marker) {
-        marker = {
-          pageKey,
-          hadValue: url.searchParams.has('wpdP2PType'),
-          value: url.searchParams.get('wpdP2PType') || '',
-        };
-        markers[pageKey] = marker;
-        writeSessionJson(storage, P2P_URL_MARKER_KEY, { pages: markers });
-      }
-      return { changed: true, href: getP2PTargetUrl(url.href, true) };
-    }
-    if (!marker) {
-      return { changed: false, href: url.href };
-    }
-    const nextHref = url.searchParams.get('wpdP2PType') === '0'
-      ? getP2PTargetUrl(url.href, false, marker)
-      : url.href;
-    delete markers[pageKey];
-    writeSessionJson(storage, P2P_URL_MARKER_KEY, Object.keys(markers).length ? { pages: markers } : null);
-    return { changed: nextHref !== url.href, href: nextHref };
-  }
-
-  function clearSatisfiedP2PReloadMarker(storage, href) {
-    const marker = readSessionJson(storage, P2P_RELOAD_MARKER_KEY);
-    if (marker && marker.href === href) writeSessionJson(storage, P2P_RELOAD_MARKER_KEY, null);
-  }
-
-  function applyEarlyP2PSetting(enabled) {
-    try {
-      const currentHref = location.href;
-      clearSatisfiedP2PReloadMarker(sessionStorage, currentHref);
-      const target = prepareP2PUrl(currentHref, enabled, sessionStorage);
-      if (!target.changed) return false;
-      history.replaceState(history.state, '', target.href);
-      clearSatisfiedP2PReloadMarker(sessionStorage, target.href);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
   let cfg = loadCfg();
-  applyEarlyP2PSetting(cfg.blockP2PUpload);
   // 当前主题色板
   let currentTheme = THEMES[cfg.theme] || THEMES.blue;
 
@@ -807,14 +686,6 @@
       b.style.background = currentTheme.accentGradient;
     });
 
-    Array.from(panelDocument.querySelectorAll('#bilivex-panel button[data-bilivex-more-settings="1"]')).forEach((b) => {
-      b.style.background = currentTheme.primary;
-    });
-    Array.from(panelDocument.querySelectorAll('#bilivex-panel [data-bilivex-more-settings-menu="1"]')).forEach((menu) => {
-      menu.style.background = 'rgba(' + currentTheme.primaryRgb + ',.05)';
-      menu.style.borderColor = 'rgba(' + currentTheme.primaryRgb + ',.16)';
-    });
-
     // 5. 聊天区已悬浮弹幕上的 +1 按钮（ensureDanmakuOverlay 创建）
     $$('.bilivex-dm-btn').forEach((b) => {
       if (b.dataset.bilivexAction === 'plus1') {
@@ -1019,21 +890,6 @@
     }
     if (previous.floatDmPlus !== next.floatDmPlus) toggleFloatingDmEnabled();
     if (previous.theme !== next.theme) applyTheme();
-    syncMoreSettingsInputs();
-    if (previous.autoHighestQuality !== next.autoHighestQuality) resetPlayerEnhancementSchedule('quality');
-    if (previous.autoWebMode !== next.autoWebMode) resetPlayerEnhancementSchedule('web');
-    if (previous.autoHighestQuality !== next.autoHighestQuality || previous.autoWebMode !== next.autoWebMode) {
-      schedulePlayerEnhancements();
-    }
-    if (previous.blockP2PUpload !== next.blockP2PUpload && document === panelDocument) {
-      reloadPlayerForP2P(next.blockP2PUpload);
-    }
-  }
-
-  function changeBooleanConfig(key, value) {
-    const previous = cfg;
-    const next = updateCfg({ [key]: value === true });
-    applyConfigChange(previous, next);
   }
 
   try {
@@ -2482,8 +2338,7 @@
 
     const body = panelDocument.createElement('div');
     body.className = 'bilivex-panel-body';
-    body.style.cssText = 'padding:10px 12px 12px;box-sizing:border-box;' +
-      'max-height:calc(100vh - 74px);overflow-y:auto;' + (collapsed ? 'display:none;' : '');
+    body.style.cssText = 'padding:10px 12px 12px;' + (collapsed ? 'display:none;' : '');
     panel.appendChild(body);
 
     // ---- 通用构造器 ----
@@ -2647,64 +2502,6 @@
     const favoriteMenuBtn = btn('收藏', currentTheme.primary, openFavoritesPanel);
     favoriteMenuBtn.style.cssText += 'width:100%;box-sizing:border-box;margin-top:2px;';
     row([favoriteMenuBtn], { mb: 2 });
-
-    const moreSettingsId = 'bilivex-more-settings-menu';
-    const moreSettingsBtn = btn('更多设置  ▸', currentTheme.primary, () => {
-      const expanded = moreSettingsBtn.getAttribute('aria-expanded') !== 'true';
-      moreSettingsBtn.setAttribute('aria-expanded', String(expanded));
-      moreSettingsArrow.textContent = expanded ? '▾' : '▸';
-      moreSettingsMenu.style.display = expanded ? 'block' : 'none';
-      const savedTransition = panel.style.transition;
-      panel.style.transition = 'none';
-      ensurePanelVisible(panel, getUiHost());
-      avoidChatCollision(panel);
-      void panel.offsetWidth;
-      panel.style.transition = savedTransition;
-    });
-    moreSettingsBtn.type = 'button';
-    moreSettingsBtn.dataset.bilivexMoreSettings = '1';
-    moreSettingsBtn.setAttribute('aria-expanded', 'false');
-    moreSettingsBtn.setAttribute('aria-controls', moreSettingsId);
-    moreSettingsBtn.style.cssText += 'width:100%;box-sizing:border-box;margin-top:2px;' +
-      'display:flex;align-items:center;justify-content:space-between;text-align:left;';
-    moreSettingsBtn.textContent = '';
-    const moreSettingsText = panelDocument.createElement('span');
-    moreSettingsText.textContent = '更多设置';
-    const moreSettingsArrow = panelDocument.createElement('span');
-    moreSettingsArrow.textContent = '▸';
-    moreSettingsArrow.setAttribute('aria-hidden', 'true');
-    moreSettingsBtn.appendChild(moreSettingsText);
-    moreSettingsBtn.appendChild(moreSettingsArrow);
-    row([moreSettingsBtn], { mb: 2 }).dataset.bilivexMoreSettingsTrigger = '1';
-
-    const moreSettingsMenu = panelDocument.createElement('div');
-    moreSettingsMenu.id = moreSettingsId;
-    moreSettingsMenu.dataset.bilivexMoreSettingsMenu = '1';
-    moreSettingsMenu.style.cssText = 'display:none;margin:2px 0 6px;padding:6px 8px 1px;' +
-      'background:rgba(' + currentTheme.primaryRgb + ',.05);border:1px solid rgba(' +
-      currentTheme.primaryRgb + ',.16);border-radius:7px;';
-    currentSection.appendChild(moreSettingsMenu);
-    const settingsSection = currentSection;
-    currentSection = moreSettingsMenu;
-    const addSettingRow = (key, text, onChange) => {
-      const settingRow = row([lbl(text), sw(cfg[key], onChange)], { mb: 4 });
-      settingRow.dataset.bilivexSetting = key;
-      const input = settingRow.querySelector('input[type="checkbox"]');
-      if (input) input.setAttribute('aria-label', text);
-    };
-    addSettingRow('autoHighestQuality', '自动最高画质', (value) => {
-      changeBooleanConfig('autoHighestQuality', value);
-      showToast(value ? '已开启自动最高画质' : '已关闭自动最高画质');
-    });
-    addSettingRow('autoWebMode', '自动网页模式', (value) => {
-      changeBooleanConfig('autoWebMode', value);
-      showToast(value ? '已开启自动网页模式' : '已关闭自动网页模式');
-    });
-    addSettingRow('blockP2PUpload', '防止 P2P 上传', (value) => {
-      showToast('正在按新设置重载播放器');
-      changeBooleanConfig('blockP2PUpload', value);
-    });
-    currentSection = settingsSection;
 
     // 分组 2：点赞
     currentSection = section('点赞');
@@ -3464,7 +3261,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '2.2.0';
+    return '2.1.0';
   }
 
   function compareVersions(a, b) {
@@ -3653,276 +3450,6 @@
     }
   }
 
-  // ---------- 更多设置：播放器功能 ----------
-  const PLAYER_RETRY_DELAYS = [0, 150, 300, 600, 950, 1300, 1500, 150];
-  const playerEnhancementState = {
-    timer: null,
-    sequence: 0,
-    retryIndex: 0,
-    playerSequence: 0,
-    running: false,
-    rerunRequested: false,
-    qualityDone: new Set(),
-    qualityReadyAt: new Map(),
-    webDone: new Set(),
-  };
-
-  function syncMoreSettingsInputs() {
-    try {
-      BOOLEAN_CFG_KEYS.forEach((key) => {
-        const input = panelDocument.querySelector('[data-bilivex-setting="' + key + '"] input[type="checkbox"]');
-        if (!input || input.checked === cfg[key]) return;
-        input.checked = cfg[key];
-        const slider = input.nextElementSibling;
-        const knob = slider && slider.firstElementChild;
-        if (slider) slider.style.background = input.checked ? currentTheme.primary : '#cfd5db';
-        if (knob) knob.style.left = input.checked ? '16px' : '2px';
-      });
-    } catch (e) {}
-  }
-
-  function selectHighestQualityCandidate(candidates) {
-    if (!Array.isArray(candidates)) return null;
-    const ranked = candidates.map((candidate) => ({
-      candidate,
-      qnNumber: Number(candidate && candidate.qn),
-    })).filter((item) => Number.isFinite(item.qnNumber) && item.qnNumber >= 0)
-      .sort((left, right) => right.qnNumber - left.qnNumber);
-    return ranked.length ? ranked[0].candidate : null;
-  }
-
-  function currentQualityNumber(info) {
-    if (!info || typeof info !== 'object') return null;
-    const value = info.quality && typeof info.quality === 'object' ? info.quality.qn :
-      (info.quality != null ? info.quality : info.currentQuality);
-    const number = Number(value);
-    return Number.isFinite(number) ? number : null;
-  }
-
-  function playUrlQualityNumber(info) {
-    const match = /[?&]qn=([^&]+)/.exec(String(info && info.playurl || ''));
-    if (!match) return null;
-    const number = Number(decodeURIComponent(match[1]));
-    return Number.isFinite(number) ? number : null;
-  }
-
-  function isInitialPlaybackStable(instanceKey) {
-    const video = document.querySelector('#live-player video, .live-player-mounter video');
-    if (!video || video.readyState < 4 || video.videoWidth <= 0 || video.videoHeight <= 0) {
-      playerEnhancementState.qualityReadyAt.delete(instanceKey);
-      return false;
-    }
-    const readyState = playerEnhancementState.qualityReadyAt.get(instanceKey);
-    if (!readyState || readyState.video !== video) {
-      playerEnhancementState.qualityReadyAt.set(instanceKey, { video, at: Date.now() });
-      return false;
-    }
-    return Date.now() - readyState.at >= 1800;
-  }
-
-  function qualitySwitchSucceeded(result) {
-    return result === 0 || result === true || !!(result && typeof result === 'object' &&
-      (result.code === 0 || result.status === 0 || result.success === true));
-  }
-
-  function getPageLivePlayer() {
-    try {
-      if (typeof unsafeWindow === 'undefined' || !unsafeWindow) return null;
-      return unsafeWindow.livePlayer ||
-        (unsafeWindow.EmbedPlayer && unsafeWindow.EmbedPlayer.instance) || null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function getLivePlayerInfo(player) {
-    try {
-      return player && typeof player.getPlayerInfo === 'function' ? player.getPlayerInfo() : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function getPlayerInstanceKey(info) {
-    const root = document.querySelector('#live-player, .live-player-mounter');
-    if (!root) return '';
-    if (!root.dataset.bilivexPlayerInstance) {
-      root.dataset.bilivexPlayerInstance = String(++playerEnhancementState.playerSequence);
-    }
-    const playerId = info && (info.playerId || info.player_id || info.cid) || root.dataset.bilivexPlayerInstance;
-    const streamName = info && (info.streamName || info.stream_name || info.stream) || '';
-    return [findRoomId(), String(playerId), String(streamName)].join(':');
-  }
-
-  async function applyHighestQuality(instanceKey, player, info) {
-    if (player && info && Array.isArray(info.qualityCandidates)) {
-      const highest = selectHighestQualityCandidate(info.qualityCandidates);
-      if (!highest) return 'terminal';
-      const highestQnNumber = Number(highest.qn);
-      if (currentQualityNumber(info) === highestQnNumber) {
-        const playUrlQuality = playUrlQualityNumber(info);
-        return playUrlQuality === null || playUrlQuality === highestQnNumber ? 'done' : 'pending';
-      }
-      if (!isInitialPlaybackStable(instanceKey)) return 'pending';
-      if (typeof player.switchQualityAsync !== 'function') return 'terminal';
-      try {
-        const result = await player.switchQualityAsync(
-          highest.qn,
-          highest.hdrType,
-          false,
-          'bilivex-auto-highest-quality'
-        );
-        if (!qualitySwitchSucceeded(result)) return 'terminal';
-        const verified = getLivePlayerInfo(player);
-        if (currentQualityNumber(verified) !== highestQnNumber) return 'terminal';
-        const verifiedPlayUrlQuality = playUrlQualityNumber(verified);
-        if (verifiedPlayUrlQuality !== null && verifiedPlayUrlQuality !== highestQnNumber) return 'pending';
-        showToast('已切换至' + String(highest.desc || '最高画质').slice(0, 24));
-        return 'done';
-      } catch (e) {
-        return 'terminal';
-      }
-    }
-    return 'pending';
-  }
-
-  function isWebMode() {
-    return !!document.body && document.body.classList.contains('player-full-win');
-  }
-
-  function isPlayerReadyForWebMode() {
-    const video = document.querySelector('#live-player video, .live-player-mounter video');
-    return !!video && video.readyState >= 3 && video.videoWidth > 0 && video.videoHeight > 0;
-  }
-
-  function isBrowserFullscreen(info) {
-    return Number(info && info.playerStatus) === 2 || !!(document.fullscreenElement || document.webkitFullscreenElement);
-  }
-
-  async function applyWebMode(player, info, sequence) {
-    if (isWebMode()) return 'done';
-    if (isBrowserFullscreen(info)) return 'pending';
-    if (!isPlayerReadyForWebMode()) return 'pending';
-    if (!player || typeof player.setFullscreenStatus !== 'function') return 'pending';
-    try {
-      // 慢网时播放器可能只把状态写成 1，却没有真正建立网页模式布局。
-      // 先留出一次完整的状态回落，再重新进入，避免连续调用被播放器吞掉。
-      if (Number(info && info.playerStatus) === 1) {
-        player.setFullscreenStatus(0);
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        if (sequence !== playerEnhancementState.sequence || !cfg.autoWebMode) return 'terminal';
-      }
-      player.setFullscreenStatus(1);
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      return isWebMode() ? 'done' : 'pending';
-    } catch (e) {
-      return 'terminal';
-    }
-  }
-
-  function resetPlayerEnhancementSchedule(feature) {
-    clearTimeout(playerEnhancementState.timer);
-    playerEnhancementState.timer = null;
-    playerEnhancementState.retryIndex = 0;
-    playerEnhancementState.sequence += 1;
-    if (!feature || feature === 'quality') {
-      playerEnhancementState.qualityDone.clear();
-      playerEnhancementState.qualityReadyAt = new Map();
-    }
-    if (!feature || feature === 'web') playerEnhancementState.webDone.clear();
-  }
-
-  async function runPlayerEnhancements(sequence) {
-    playerEnhancementState.timer = null;
-    if (playerEnhancementState.running) {
-      playerEnhancementState.rerunRequested = true;
-      return;
-    }
-    if (sequence !== playerEnhancementState.sequence || (!cfg.autoHighestQuality && !cfg.autoWebMode)) return;
-    playerEnhancementState.running = true;
-    let pending = false;
-    try {
-      const player = getPageLivePlayer();
-      const info = getLivePlayerInfo(player);
-      const instanceKey = getPlayerInstanceKey(info);
-      if (!instanceKey) {
-        pending = true;
-        return;
-      }
-      if (cfg.autoHighestQuality && !playerEnhancementState.qualityDone.has(instanceKey)) {
-        const result = await applyHighestQuality(instanceKey, player, info);
-        if (sequence !== playerEnhancementState.sequence) return;
-        if (result === 'pending') pending = true;
-        else {
-          playerEnhancementState.qualityDone.add(instanceKey);
-          playerEnhancementState.qualityReadyAt.delete(instanceKey);
-        }
-      }
-      const currentInfo = getLivePlayerInfo(player);
-      if (cfg.autoWebMode && !playerEnhancementState.webDone.has(instanceKey)) {
-        const result = await applyWebMode(player, currentInfo, sequence);
-        if (sequence !== playerEnhancementState.sequence) return;
-        if (result === 'pending') pending = true;
-        else playerEnhancementState.webDone.add(instanceKey);
-      }
-    } finally {
-      playerEnhancementState.running = false;
-      const rerunRequested = playerEnhancementState.rerunRequested;
-      playerEnhancementState.rerunRequested = false;
-      if (rerunRequested) schedulePlayerEnhancements(true);
-      else if (pending) schedulePlayerEnhancements();
-    }
-  }
-
-  function schedulePlayerEnhancements(restartRetry) {
-    if (!cfg.autoHighestQuality && !cfg.autoWebMode) return;
-    if (playerEnhancementState.running) {
-      playerEnhancementState.rerunRequested = true;
-      return;
-    }
-    if (restartRetry) playerEnhancementState.retryIndex = 0;
-    if (playerEnhancementState.timer !== null || playerEnhancementState.retryIndex >= PLAYER_RETRY_DELAYS.length) return;
-    const delay = PLAYER_RETRY_DELAYS[playerEnhancementState.retryIndex++];
-    const sequence = playerEnhancementState.sequence;
-    playerEnhancementState.timer = setTimeout(() => { runPlayerEnhancements(sequence); }, delay);
-  }
-
-  function reloadP2PWindow(targetWindow, enabled) {
-    try {
-      const currentHref = targetWindow.location.href;
-      const target = prepareP2PUrl(currentHref, enabled, targetWindow.sessionStorage);
-      if (!target.changed) return false;
-      const recent = readSessionJson(targetWindow.sessionStorage, P2P_RELOAD_MARKER_KEY);
-      if (recent && recent.enabled === enabled && recent.href === target.href && Date.now() - recent.at < 10000) return false;
-      writeSessionJson(targetWindow.sessionStorage, P2P_RELOAD_MARKER_KEY, {
-        enabled,
-        href: target.href,
-        at: Date.now(),
-      });
-      targetWindow.location.replace(target.href);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function reloadPlayerForP2P(enabled) {
-    if (document !== panelDocument) return false;
-    const frames = Array.from(panelDocument.querySelectorAll('iframe'));
-    for (const frame of frames) {
-      try {
-        if (!frame.contentWindow || !isP2PManagedPage(frame.contentWindow.location.href) ||
-            !/\/blanc\/\d+/.test(frame.contentWindow.location.pathname)) continue;
-        const reloading = reloadP2PWindow(frame.contentWindow, enabled);
-        if (reloading) showToast('正在按新设置重载播放器');
-        return reloading;
-      } catch (e) {}
-    }
-    const reloading = reloadP2PWindow(panelWindow, enabled);
-    if (reloading) showToast('正在按新设置重载播放器');
-    return reloading;
-  }
-
   // ---------- 播放器同步时间 ----------
   const VIDEO_SYNC_SELECTOR = '[data-bilivex-video-sync="1"]';
   const VIDEO_SYNC_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.343-5.657L4 8"></path><path d="M4 4v4h4"></path><path d="M12 8.5V12l2.5 1.5"></path></svg>';
@@ -4024,7 +3551,6 @@
     rebindInputTailHandler();
     bindLike();
     bindVideoSync();
-    schedulePlayerEnhancements();
     if (cfg.floatDmPlus) {
       const rotate = findFloatingDmContainer();
       if (rotate) attachFloatingDmHover(rotate);
@@ -4120,9 +3646,9 @@
   let initTimer = null;
   let spaWatching = false;
   const lifecycleCleanups = [];
-  function listenLifecycle(target, type, handler, options) {
-    target.addEventListener(type, handler, options);
-    lifecycleCleanups.push(() => target.removeEventListener(type, handler, options));
+  function listenLifecycle(target, type, handler) {
+    target.addEventListener(type, handler);
+    lifecycleCleanups.push(() => target.removeEventListener(type, handler));
   }
   function tryInit() {
     // 面板属于顶层页面，不应依赖聊天区是否已完成异步渲染。
@@ -4133,22 +3659,11 @@
 
   function start() {
     try {
-      const onFullscreenChange = () => {
-        syncFullscreenUi();
-        schedulePlayerEnhancements(true);
-      };
-      const onPlayerReady = (event) => {
-        if (!event.target || event.target.tagName !== 'VIDEO') return;
-        if (!event.target.closest('#live-player, .live-player-mounter')) return;
-        schedulePlayerEnhancements(true);
-      };
-      listenLifecycle(document, 'fullscreenchange', onFullscreenChange);
-      listenLifecycle(document, 'webkitfullscreenchange', onFullscreenChange);
-      listenLifecycle(document, 'canplay', onPlayerReady, true);
-      listenLifecycle(document, 'playing', onPlayerReady, true);
+      listenLifecycle(document, 'fullscreenchange', syncFullscreenUi);
+      listenLifecycle(document, 'webkitfullscreenchange', syncFullscreenUi);
       if (panelDocument !== document) {
-        listenLifecycle(panelDocument, 'fullscreenchange', onFullscreenChange);
-        listenLifecycle(panelDocument, 'webkitfullscreenchange', onFullscreenChange);
+        listenLifecycle(panelDocument, 'fullscreenchange', syncFullscreenUi);
+        listenLifecycle(panelDocument, 'webkitfullscreenchange', syncFullscreenUi);
       }
     } catch (e) {}
     window.addEventListener('pagehide', () => {
@@ -4158,7 +3673,6 @@
       if (boundTailCtl && boundTailCtl._bilivexTailMO) boundTailCtl._bilivexTailMO.disconnect();
       if (guardianTimer) clearInterval(guardianTimer);
       if (initTimer) clearTimeout(initTimer);
-      resetPlayerEnhancementSchedule();
       FloatingDmEngine.stop();
       lifecycleCleanups.splice(0).forEach((cleanup) => {
         try { cleanup(); } catch (e) {}
@@ -4196,8 +3710,7 @@
     let queued = false;
     const lifecycleSelector = '#bilivex-panel, iframe, .chat-history-list, .chat-control-panel,' +
       '.bili-danmaku-x-dm-rotate, .danmaku-item-container, .web-player-danmaku, #live-player,' +
-      '.live-web-player-controller, #web-player-controller-wrap-el .right-area, .quality-wrap,' +
-      '#live-player .left-area, #live-player video';
+      '.live-web-player-controller, #live-player .left-area, #live-player video';
     const touchesLifecycle = (records) => records.some((record) => {
       const nodes = Array.from(record.addedNodes).concat(Array.from(record.removedNodes));
       return nodes.some((node) => node.nodeType === 1 &&
@@ -4213,17 +3726,12 @@
         const currentUrlChanged = location.href !== lastUrl;
         const panelMissing = !panelDocument.getElementById('bilivex-panel');
         if (currentUrlChanged || panelMissing) {
-          if (currentUrlChanged) {
-            resetPlayerEnhancementSchedule();
-            if (cfg.blockP2PUpload) applyEarlyP2PSetting(true);
-            lastUrl = location.href;
-          }
+          lastUrl = location.href;
           clearTimeout(initTimer);
           initTimer = setTimeout(tryInit, currentUrlChanged ? 800 : 300);
           if (currentUrlChanged && document === panelDocument) checkForUpdate(true);
         } else {
           initRoom();
-          schedulePlayerEnhancements(true);
         }
         guardianCheck();
       });
