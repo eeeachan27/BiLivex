@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      2.2.0
+// @version      2.3.0
 // @license      MIT
 // @description  B站直播间增强工具：弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间，以及可选的自动最高画质、自动网页模式和防止 P2P 上传。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -21,9 +21,9 @@
  * BiLivex - 哔哩哔哩直播增强
  *
  * 核心功能：
- *   1) 弹幕 +1：悬停弹幕后快捷发送同内容弹幕。
+ *   1) 弹幕 +1：点击评论弹幕后在原生菜单中快捷发送同内容弹幕。
  *   2) 收藏夹：收藏、搜索、编辑、导入和导出常用弹幕。
- *   3) 评论区：聊天区弹幕悬停显示 +1 / 收藏 / 复制按钮。
+ *   3) 评论区：原生弹幕菜单中常驻弹幕+1 / 复制 / 收藏。
  *   4) 小尾巴：发送弹幕时自动在末尾追加自定义文字。
  *   5) 一键点赞：连续点赞 30 次点亮粉丝团灯牌。
  *   6) 同步时间：在播放器原生底栏一键跳到当前可播放的最新画面。
@@ -77,9 +77,7 @@
   const DEFAULT_CFG = {
     tailEnabled: true,         // 小尾巴开关
     tailText: '喵',            // 小尾巴文本
-    plusOneEnabled: true,      // 聊天区 +1 功能开关
     floatDmPlus: true,         // 漂浮弹幕 +1 功能开关
-    copyEnabled: true,         // 复制按钮开关
     autoHighestQuality: false, // 播放器就绪后选择当前账号可用的最高固定画质
     autoWebMode: false,        // 播放器就绪后自动进入 B 站网页模式
     blockP2PUpload: false,     // 使用 B 站原生 wpdP2PType=0 初始化路径
@@ -807,6 +805,9 @@
       b.style.background = currentTheme.accentGradient;
     });
 
+    Array.from(panelDocument.querySelectorAll('#bilivex-panel button[data-bilivex-favorites="1"]')).forEach((b) => {
+      b.style.background = currentTheme.primary;
+    });
     Array.from(panelDocument.querySelectorAll('#bilivex-panel button[data-bilivex-more-settings="1"]')).forEach((b) => {
       b.style.background = currentTheme.primary;
     });
@@ -815,14 +816,7 @@
       menu.style.borderColor = 'rgba(' + currentTheme.primaryRgb + ',.16)';
     });
 
-    // 5. 聊天区已悬浮弹幕上的 +1 按钮（ensureDanmakuOverlay 创建）
-    $$('.bilivex-dm-btn').forEach((b) => {
-      if (b.dataset.bilivexAction === 'plus1') {
-        b.style.background = currentTheme.primary;
-      }
-    });
-
-    // 6. 漂浮弹幕已绑定的操作按钮（ensureFloatingDmOverlay 创建）
+    // 5. 漂浮弹幕已绑定的操作按钮（ensureFloatingDmOverlay 创建）
     Array.from(uiDocument.querySelectorAll('.bilivex-float-plus-btn')).forEach((b) => {
       b.style.background = currentTheme.primary;
       b.style.boxShadow = '0 2px 6px ' + currentTheme.primaryShadow;
@@ -834,152 +828,225 @@
       group.style.boxShadow = '0 2px 8px ' + currentTheme.primaryShadow;
     });
 
-    // 7. 刷新反馈动画样式，使 +1 浮字使用新主题色
+    // 6. 刷新反馈动画样式，使 +1 浮字使用新主题色
     bilivexAnimInjected = false;
     injectFloatingDmAnim();
   }
 
-  // ---------- 聊天区弹幕悬停按钮 ----------
-  // 通过在每条弹幕上添加悬浮操作按钮实现 +1 / 复制
+  // ---------- 评论区弹幕原生菜单 ----------
+  const COMMENT_MENU_WAIT_DELAYS = [16, 50, 120, 240];
+  let boundChatList = null;
+  let commentMenuSequence = 0;
+  let commentMenuWaitTimers = [];
+  let mountedCommentMenuCleanup = null;
 
-  function ensureDanmakuOverlay(item) {
-    if (!item || item.dataset.bilivexInited) return;
-    if (!item.classList.contains('danmaku-item')) return;
-    item.dataset.bilivexInited = '1';
-    item.style.position = item.style.position || 'relative';
-    // 操作按钮容器：置于弹幕行右侧垂直居中（right:4px + top:50% + translateY(-50%)），
-    const bar = document.createElement('div');
-    bar.className = 'bilivex-dm-bar';
-    bar.style.cssText = 'position:absolute;right:4px;top:50%;transform:translateY(-50%);' +
-      'display:none;gap:6px;z-index:10;pointer-events:auto;align-items:center;';
-    const mkBtn = (label, bg) => {
-      const b = document.createElement('button');
-      b.textContent = label;
-      b.className = 'bilivex-dm-btn';
-      if (label === '+1') b.dataset.bilivexAction = 'plus1';
-      // 按钮增大（padding:5px 14px / font-size:14px / border-radius:12px），
-      // line-height:18px 保持总高约 28px，适配弹幕行高不撑破布局；mousedown 按压反馈
-      b.style.cssText = 'border:none;border-radius:12px;padding:5px 14px;cursor:pointer;' +
-        `background:${bg};color:#fff;font-size:14px;line-height:18px;font-weight:600;` +
-        'white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.25);' +
-        'transition:transform .1s ease,filter .1s ease;';
-      b.addEventListener('mousedown', () => { b.style.transform = 'scale(0.95)'; });
-      b.addEventListener('mouseup', () => { b.style.transform = ''; });
-      b.addEventListener('mouseleave', () => { b.style.transform = ''; });
-      return b;
-    };
-    const plusBtn = mkBtn('+1', currentTheme.primary);
-    const copyBtn = mkBtn('复制', 'rgba(0,0,0,0.55)');
-    const favoriteBtn = mkBtn('收藏', '#6c7a89');
-    favoriteBtn.dataset.bilivexAction = 'favorite';
-    if (cfg.plusOneEnabled) bar.appendChild(plusBtn);
-    bar.appendChild(favoriteBtn);
-    if (cfg.copyEnabled) bar.appendChild(copyBtn);
-    item.appendChild(bar);
+  function extractChatDanmakuText(item) {
+    if (!item || typeof item.matches !== 'function' || !item.matches('.chat-item.danmaku-item')) return '';
+    const dataText = item.dataset && item.dataset.danmaku;
+    const fallbackNode = !String(dataText || '').trim()
+      ? item.querySelector('.danmaku-content, .danmaku-item-right') : null;
+    const text = String(dataText || (fallbackNode && fallbackNode.textContent) || '').trim();
+    if (!text) return '';
+    const replyMid = String(item.dataset && item.dataset.replymid || '0').trim();
+    if (!replyMid || replyMid === '0') return text;
+    const replyNode = item.querySelector('[data-uname]');
+    const replyName = String(replyNode && (replyNode.dataset && replyNode.dataset.uname || replyNode.getAttribute('data-uname')) || '').trim();
+    return replyName ? '@' + replyName + ' ' + text : '';
+  }
 
-    const text = item.dataset.danmaku || (item.querySelector('.danmaku-item-right') || {}).textContent || '';
-    plusBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); e.preventDefault();
-      runPlusButtonAction(plusBtn, () => sendPlusOne(text));
-    });
-    favoriteBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); e.preventDefault();
-      const result = addFavorite(text);
-      showToast(result.status === 'added' ? '已收藏' : result.status === 'duplicate' ? '已在收藏夹中' : result.status === 'limit' ? '收藏夹已达上限' : '该弹幕无文本内容');
-    });
-    copyBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); e.preventDefault();
-      copyToClipboard(text);
-      showToast('已复制');
-    });
+  function isCommentMenuVisible(menu) {
+    if (!menu || !menu.isConnected || menu.hidden || menu.getAttribute('aria-hidden') === 'true') return false;
+    const ownerWindow = menu.ownerDocument && menu.ownerDocument.defaultView;
+    if (!ownerWindow) return false;
+    const style = ownerWindow.getComputedStyle(menu);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    const rect = menu.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
 
-    let hoverTimer = null;
-    item._bilivexOnEnter = () => {
-      clearTimeout(hoverTimer);
-      // 聊天行的背景、边框和本人标记全部交给 B 站原生组件处理。
-      bar.style.display = 'flex';
-    };
-    item._bilivexOnLeave = () => {
-      hoverTimer = setTimeout(() => {
-        bar.style.display = 'none';
-      }, 80);
-    };
-    item._bilivexCleanup = () => {
-      clearTimeout(hoverTimer);
-      item._bilivexOnEnter = null;
-      item._bilivexOnLeave = null;
-      item._bilivexCleanup = null;
+  function findCommentMenuMount(ownerDocument) {
+    if (!ownerDocument) return null;
+    const menus = Array.from(ownerDocument.querySelectorAll('.danmaku-menu')).filter(isCommentMenuVisible);
+    if (menus.length !== 1) return null;
+    const containers = Array.from(menus[0].children).filter((child) => child.classList.contains('none-select'));
+    return containers.length === 1 ? { menu: menus[0], container: containers[0] } : null;
+  }
+
+  function clearCommentMenuWaitTimers() {
+    commentMenuWaitTimers.splice(0).forEach((timer) => clearTimeout(timer));
+  }
+
+  function clearMountedCommentMenu() {
+    const cleanup = mountedCommentMenuCleanup;
+    mountedCommentMenuCleanup = null;
+    if (cleanup) cleanup();
+  }
+
+  function resetCommentMenuState() {
+    commentMenuSequence += 1;
+    clearCommentMenuWaitTimers();
+    clearMountedCommentMenu();
+  }
+
+  function closeCommentMenu(menu) {
+    if (!menu || !menu.ownerDocument) return;
+    const ownerDocument = menu.ownerDocument;
+    const ownerWindow = ownerDocument.defaultView;
+    if (!ownerWindow) return;
+    ownerDocument.documentElement.dispatchEvent(new ownerWindow.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: ownerWindow,
+    }));
+    if (menu.isConnected) menu.style.display = 'none';
+  }
+
+  function showCommentActionFeedback(ownerDocument, point, text) {
+    if (!ownerDocument || !point || !text) return;
+    const ownerWindow = ownerDocument.defaultView;
+    const host = ownerDocument.fullscreenElement || ownerDocument.body || ownerDocument.documentElement;
+    if (!ownerWindow || !host) return;
+    injectFloatingDmAnim();
+    const safeX = Math.max(52, Math.min(ownerWindow.innerWidth - 52, point.x));
+    const safeY = Math.max(36, Math.min(ownerWindow.innerHeight - 12, point.y));
+    const feedback = ownerDocument.createElement('div');
+    feedback.className = 'bilivex-comment-action-fb';
+    feedback.textContent = text;
+    feedback.style.cssText = 'position:fixed;' +
+      'left:' + safeX + 'px;top:' + safeY + 'px;transform:translate(-50%,-50%);' +
+      `background:${currentTheme.feedbackGradient};` +
+      'color:#fff;font-weight:700;font-size:13px;line-height:1;' +
+      'padding:6px 12px;border-radius:14px;white-space:nowrap;' +
+      `box-shadow:0 4px 12px ${currentTheme.feedbackShadow};` +
+      'pointer-events:none;z-index:2147483647;' +
+      'animation:bilivex-float-plus 1s ease-out forwards;';
+    host.appendChild(feedback);
+    setTimeout(() => feedback.remove(), 1100);
+  }
+
+  function createCommentMenuButton(ownerDocument, label, action, onActivate) {
+    const button = ownerDocument.createElement('button');
+    button.type = 'button';
+    button.className = 'bilivex-comment-action clickable bili-link pointer';
+    button.dataset.bilivexCommentAction = action;
+    button.textContent = label;
+    button.style.cssText = 'display:block;width:100%;box-sizing:border-box;border:0;margin:0;padding:10px;' +
+      'background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer;';
+    button.addEventListener('mouseenter', () => { button.style.background = 'rgba(255,255,255,.1)'; });
+    button.addEventListener('mouseleave', () => { button.style.background = 'transparent'; });
+    button.addEventListener('focus', () => { button.style.background = 'rgba(255,255,255,.1)'; });
+    button.addEventListener('blur', () => { button.style.background = 'transparent'; });
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const rect = button.getBoundingClientRect();
+      const point = event.clientX || event.clientY
+        ? { x: event.clientX, y: event.clientY }
+        : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      try {
+        onActivate(button, point);
+      } finally {
+        closeCommentMenu(button.closest('.danmaku-menu'));
+      }
+    });
+    return button;
+  }
+
+  function keepCommentMenuInViewport(menu) {
+    const ownerWindow = menu && menu.ownerDocument && menu.ownerDocument.defaultView;
+    if (!ownerWindow) return () => {};
+    const rect = menu.getBoundingClientRect();
+    const viewportHeight = ownerWindow.innerHeight || menu.ownerDocument.documentElement.clientHeight || 0;
+    const safeMargin = 8;
+    const overflow = rect.bottom - (viewportHeight - safeMargin);
+    if (!viewportHeight || overflow <= 0) return () => {};
+    const currentTop = Number.parseFloat(menu.style.top || ownerWindow.getComputedStyle(menu).top);
+    if (!Number.isFinite(currentTop)) return () => {};
+    const originalTop = menu.style.top;
+    const adjustedTop = Math.max(safeMargin, currentTop - overflow) + 'px';
+    menu.style.top = adjustedTop;
+    return () => {
+      if (menu.isConnected && menu.style.top === adjustedTop) menu.style.top = originalTop;
     };
   }
 
-  let boundChatList = null;
-  function attachDanmakuHover(list) {
-    if (!list) return;
-    if (list.dataset.bilivexHoverBound) { boundChatList = list; return; }
-    list.dataset.bilivexHoverBound = '1';
-    boundChatList = list;
-    const refresh = () => {
-      $$('.chat-item.danmaku-item', list).forEach((item) => {
-        ensureDanmakuOverlay(item);
-      });
-    };
-    refresh();
-    let refreshQueued = false;
-    const enhanceAddedNodes = (records) => {
-      if (refreshQueued) return;
-      refreshQueued = true;
-      requestAnimationFrame(() => {
-        refreshQueued = false;
-        records.forEach((record) => record.addedNodes.forEach((node) => {
-          if (node.nodeType !== 1) return;
-          if (node.matches('.chat-item.danmaku-item')) ensureDanmakuOverlay(node);
-          node.querySelectorAll('.chat-item.danmaku-item').forEach(ensureDanmakuOverlay);
-        }));
-      });
-    };
-    const mo = new MutationObserver(enhanceAddedNodes);
-    mo.observe(list, { childList: true, subtree: true });
-    list._bilivexHoverMO = mo;
+  function mountCommentMenuActions(mount, capturedText) {
+    const { menu, container } = mount;
+    container.querySelectorAll('[data-bilivex-comment-action]').forEach((node) => node.remove());
+    const buttons = [
+      createCommentMenuButton(menu.ownerDocument, '弹幕+1', 'plus1', (button, point) => {
+        runPlusButtonAction(button, () => sendPlusOne(capturedText), (result) => {
+          if (result.status === 'confirmed') {
+            showCommentActionFeedback(menu.ownerDocument, point, '✓ +1');
+          }
+        });
+      }),
+      createCommentMenuButton(menu.ownerDocument, '复制', 'copy', (_button, point) => {
+        copyToClipboard(capturedText).then((copied) => {
+          if (copied) showCommentActionFeedback(menu.ownerDocument, point, '✓ 已复制');
+          else showToast('复制失败，请手动复制');
+        });
+      }),
+      createCommentMenuButton(menu.ownerDocument, '收藏', 'favorite', (_button, point) => {
+        const result = addFavorite(capturedText);
+        if (result.status === 'added') showCommentActionFeedback(menu.ownerDocument, point, '✓ 已收藏');
+        else if (result.status === 'duplicate') showCommentActionFeedback(menu.ownerDocument, point, '已在收藏夹中');
+        else showToast(result.status === 'limit' ? '收藏夹已达上限' : '该弹幕无文本内容');
+      }),
+    ];
+    buttons.forEach((button) => container.appendChild(button));
+    const restoreMenuPosition = keepCommentMenuInViewport(menu);
 
-    const findDmItem = (e) => {
-      let n = e.target;
-      while (n && n !== list) {
-        if (n.classList && n.classList.contains('chat-item') && n.classList.contains('danmaku-item')) return n;
-        n = n.parentElement;
-      }
-      return null;
+    const observer = new MutationObserver(() => {
+      if (!isCommentMenuVisible(menu)) clearMountedCommentMenu();
+    });
+    observer.observe(menu, { attributes: true, attributeFilter: ['style', 'class', 'hidden', 'aria-hidden'] });
+    if (menu.parentNode) observer.observe(menu.parentNode, { childList: true });
+    mountedCommentMenuCleanup = () => {
+      observer.disconnect();
+      buttons.forEach((button) => { if (button.isConnected) button.remove(); });
+      restoreMenuPosition();
     };
-    $$('.chat-item.danmaku-item[data-bilivex-inited="1"]', list).forEach((item) => {
-      if (typeof item._bilivexOnEnter === 'function') return;
-      const oldBar = item.querySelector('.bilivex-dm-bar');
-      if (oldBar) oldBar.remove();
-      delete item._bilivexChatStyleSnapshot;
-      delete item.dataset.bilivexInited;
-      ensureDanmakuOverlay(item);
+  }
+
+  function scheduleCommentMenuMount(ownerDocument, capturedText) {
+    const sequence = commentMenuSequence;
+    const attempt = () => {
+      if (sequence !== commentMenuSequence) return;
+      const mount = findCommentMenuMount(ownerDocument);
+      if (!mount) return;
+      clearCommentMenuWaitTimers();
+      mountCommentMenuActions(mount, capturedText);
+    };
+    COMMENT_MENU_WAIT_DELAYS.forEach((delay) => {
+      commentMenuWaitTimers.push(setTimeout(attempt, delay));
     });
-    let currentItem = null;
-    list.addEventListener('mouseover', (e) => {
-      const item = findDmItem(e);
-      if (!item) return;
-      if (!item.dataset.bilivexInited) ensureDanmakuOverlay(item);
-      // 若鼠标移到 bar 按钮上（已经是 currentItem 的子元素），不要重置
-      if (currentItem === item) return;
-      // 上一个 hover 项触发 onLeave
-      if (currentItem && currentItem._bilivexOnLeave) currentItem._bilivexOnLeave();
-      currentItem = item;
-      if (item._bilivexOnEnter) item._bilivexOnEnter();
-    });
-    list.addEventListener('mouseout', (e) => {
-      if (!currentItem) return;
-      // 若鼠标移到 currentItem 的子元素（如按钮），不触发 onLeave
-      const related = e.relatedTarget;
-      if (related && currentItem.contains(related)) return;
-      if (currentItem._bilivexOnLeave) currentItem._bilivexOnLeave();
-      currentItem = null;
-    });
-    list._bilivexCleanup = () => {
-      if (list._bilivexHoverMO) { list._bilivexHoverMO.disconnect(); list._bilivexHoverMO = null; }
-      delete list._bilivexCleanup;
+  }
+
+  function attachDanmakuMenu(list) {
+    if (!list) return;
+    if (list === boundChatList && list.dataset.bilivexCommentMenuBound === '1') return;
+    if (boundChatList && boundChatList !== list && typeof boundChatList._bilivexCommentMenuCleanup === 'function') {
+      boundChatList._bilivexCommentMenuCleanup();
+    }
+    const onCommentClick = (event) => {
+      const target = event.target && event.target.closest ? event.target : null;
+      const item = target && target.closest('.chat-item.danmaku-item');
+      if (!item || !list.contains(item)) return;
+      const capturedText = extractChatDanmakuText(item);
+      resetCommentMenuState();
+      if (!capturedText) return;
+      scheduleCommentMenuMount(item.ownerDocument, capturedText);
+    };
+    list.addEventListener('click', onCommentClick);
+    list.dataset.bilivexCommentMenuBound = '1';
+    boundChatList = list;
+    list._bilivexCommentMenuCleanup = () => {
+      list.removeEventListener('click', onCommentClick);
+      delete list.dataset.bilivexCommentMenuBound;
+      delete list._bilivexCommentMenuCleanup;
+      if (boundChatList === list) boundChatList = null;
+      resetCommentMenuState();
     };
   }
 
@@ -1014,9 +1081,6 @@
 
   function applyConfigChange(previous, next) {
     cfg = next;
-    if (previous.plusOneEnabled !== next.plusOneEnabled || previous.copyEnabled !== next.copyEnabled) {
-      toggleDmBarVisibility();
-    }
     if (previous.floatDmPlus !== next.floatDmPlus) toggleFloatingDmEnabled();
     if (previous.theme !== next.theme) applyTheme();
     syncMoreSettingsInputs();
@@ -1950,7 +2014,7 @@
           // panelDocument 使用顶层坐标；uiDocument（iframe）必须使用换算后的局部坐标。
           const panelEl = panelDocument.elementFromPoint(px, py);
           const sourceEl = uiDocument === panelDocument ? panelEl : uiDocument.elementFromPoint(local.x, local.y);
-          if ([panelEl, sourceEl].some((el) => el && el.closest && el.closest('#bilivex-panel, .bilivex-dm-bar'))) {
+          if ([panelEl, sourceEl].some((el) => el && el.closest && el.closest('#bilivex-panel'))) {
             if (cur) this.leave(cur);
             this._cand = null;
             this._candHits = 0;
@@ -2637,14 +2701,11 @@
     tailInput.style.cssText += 'box-sizing:border-box;max-width:100%;';
     tailWrap.appendChild(tailInput);
     currentSection.appendChild(tailWrap);
-    // +1（聊天区）
-    row([lbl('+1（聊天区）'), sw(cfg.plusOneEnabled, v => { updateCfg({ plusOneEnabled: v }); toggleDmBarVisibility(); })]);
     // +1（漂浮弹幕）
-    row([lbl('+1（弹幕）'), sw(cfg.floatDmPlus, v => { updateCfg({ floatDmPlus: v }); toggleFloatingDmEnabled(); showToast(v ? '已开启弹幕 +1' : '已关闭弹幕 +1'); })]);
-    // 复制按钮
-    row([lbl('复制按钮'), sw(cfg.copyEnabled, v => { updateCfg({ copyEnabled: v }); toggleDmBarVisibility(); })]);
+    row([lbl('弹幕+1'), sw(cfg.floatDmPlus, v => { updateCfg({ floatDmPlus: v }); toggleFloatingDmEnabled(); showToast(v ? '已开启弹幕 +1' : '已关闭弹幕 +1'); })]);
 
     const favoriteMenuBtn = btn('收藏', currentTheme.primary, openFavoritesPanel);
+    favoriteMenuBtn.dataset.bilivexFavorites = '1';
     favoriteMenuBtn.style.cssText += 'width:100%;box-sizing:border-box;margin-top:2px;';
     row([favoriteMenuBtn], { mb: 2 });
 
@@ -3009,20 +3070,6 @@
     } catch (e) {}
   }
 
-  function toggleDmBarVisibility() {
-    $$('.bilivex-dm-bar').forEach(bar => {
-      const item = bar.parentElement;
-      if (!item) return;
-      if (typeof item._bilivexCleanup === 'function') {
-        try { item._bilivexCleanup(); } catch (e) {}
-      }
-      bar.remove();
-      item.dataset.bilivexInited = '';
-      if (!item.isConnected) return;
-      ensureDanmakuOverlay(item);
-    });
-  }
-
   // ---------- 面板交互（点击整个区域弹菜单 + 长按/快速拖动 + 边缘吸附） ----------
   // 页面顶层的面板拖拽状态全局共享，保证同一页面上只有一个控制器在工作。
   const panelController = panelWindow._bilivexPanelController || (panelWindow._bilivexPanelController = {
@@ -3227,21 +3274,25 @@
 
   // ---------- 剪贴板 ----------
   function copyToClipboard(text) {
-    if (!text) return;
+    if (!text) return Promise.resolve(false);
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-    } else {
-      fallbackCopy(text);
+      return Promise.resolve().then(() => navigator.clipboard.writeText(text))
+        .then(() => true)
+        .catch(() => fallbackCopy(text));
     }
+    return Promise.resolve(fallbackCopy(text));
   }
   function fallbackCopy(text) {
+    if (!document.body) return false;
     const ta = document.createElement('textarea');
     ta.value = text;
     ta.style.cssText = 'position:fixed;left:-9999px;';
     document.body.appendChild(ta);
     ta.select();
-    try { document.execCommand('copy'); } catch (e) {}
+    let copied = false;
+    try { copied = document.execCommand('copy') === true; } catch (e) {}
     ta.remove();
+    return copied;
   }
 
   function favoriteButton(text, kind, onClick) {
@@ -4019,7 +4070,9 @@
   function initRoom() {
     const list = document.querySelector('.chat-history-list');
     if (list) {
-      attachDanmakuHover(list);
+      attachDanmakuMenu(list);
+    } else if (boundChatList && !boundChatList.isConnected && typeof boundChatList._bilivexCommentMenuCleanup === 'function') {
+      boundChatList._bilivexCommentMenuCleanup();
     }
     rebindInputTailHandler();
     bindLike();
@@ -4035,13 +4088,10 @@
     try {
       bindVideoSync();
       const list = document.querySelector('.chat-history-list');
-      if (list && list !== boundChatList && (!boundChatList || !boundChatList.isConnected)) {
-        list.dataset.bilivexHoverBound = '';
-        if (boundChatList && boundChatList._bilivexHoverMO) {
-          try { boundChatList._bilivexHoverMO.disconnect(); } catch (e) {}
-          boundChatList._bilivexHoverMO = null;
-        }
-        attachDanmakuHover(list);
+      if (list && list !== boundChatList) {
+        attachDanmakuMenu(list);
+      } else if (!list && boundChatList && !boundChatList.isConnected && typeof boundChatList._bilivexCommentMenuCleanup === 'function') {
+        boundChatList._bilivexCommentMenuCleanup();
       }
       if (cfg.floatDmPlus) {
         const rotate = findFloatingDmContainer();
@@ -4153,7 +4203,11 @@
     } catch (e) {}
     window.addEventListener('pagehide', () => {
       if (window._bilivexSpaMO) window._bilivexSpaMO.disconnect();
-      if (boundChatList && boundChatList._bilivexHoverMO) boundChatList._bilivexHoverMO.disconnect();
+      if (boundChatList && typeof boundChatList._bilivexCommentMenuCleanup === 'function') {
+        boundChatList._bilivexCommentMenuCleanup();
+      } else {
+        resetCommentMenuState();
+      }
       if (boundFloatContainer && boundFloatContainer._bilivexFloatMO) boundFloatContainer._bilivexFloatMO.disconnect();
       if (boundTailCtl && boundTailCtl._bilivexTailMO) boundTailCtl._bilivexTailMO.disconnect();
       if (guardianTimer) clearInterval(guardianTimer);
