@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      2.4.0
+// @version      2.3.0
 // @license      MIT
-// @description  B站直播间增强工具：独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间，以及可选的自动最高画质、自动网页模式和防止 P2P 上传。开源地址：https://github.com/eeeachan27/BiLivex
+// @description  B站直播间增强工具：弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间，以及可选的自动最高画质、自动网页模式和防止 P2P 上传。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
 // @icon         data:image/jpeg;base64,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
 // @match        https://live.bilibili.com/*
@@ -73,172 +73,6 @@
   // 内置压缩 logo，面向大陆网络环境稳定显示。
   const LOGO_DATA_URI = 'data:image/jpeg;base64,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';
 
-  // Twemoji v17.0.3 图形，CC BY 4.0；来源和原始 SHA-256 见 THIRD_PARTY_NOTICES.md。
-  const WHEEL_ICON_URI = 'data:image/svg+xml,' + '%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2036%2036%22%3E%3Cg%20fill%3D%22%23DD2E44%22%3E%3Cpath%20d%3D%22M11.83%2026.822l11.18.981c.274.024.518-.18.542-.454l.003-.03c.024-.274-.181-.518-.455-.542l-11.18-.981c-.274-.024-.518.18-.542.455l-.003.03c-.024.273.181.517.455.541z%22%2F%3E%3Cpath%20d%3D%22M23.01%2027.803l-.03-.003c-.274-.024-.478-.268-.455-.542l.452-5.161c.024-.274.268-.478.542-.455l.03.003c.274.024.478.268.455.542l-.452%205.161c-.024.274-.268.479-.542.455zm-11.062-7.809l-.03-.003c-.274-.024-.518.181-.542.454l-1.048%2011.977c-.024.274.181.518.455.542l.03.003c.274.024.518-.181.542-.454l1.048-11.977c.023-.274-.181-.518-.455-.542z%22%2F%3E%3C%2Fg%3E%3Cpath%20fill%3D%22%23292F33%22%20d%3D%22M22.207%2020.128c1.475-.212%202.919-.152%202.416.56-.504.713-1.623%201.963-3.521%201.759-1.899-.204.191-2.188%201.105-2.319z%22%2F%3E%3Cpath%20fill%3D%22%23292F33%22%20d%3D%22M21.101%2022.447l-10.262-.898c-1.026-.09-1.026-.09-.936-1.116.049-.564.552-.986%201.116-.936l10.262.898c.564.049.986.552.936%201.116-.089%201.025-.089%201.025-1.116.936z%22%2F%3E%3Cpath%20fill%3D%22%23DD2E44%22%20d%3D%22M21.645%2022.75l-11.318-.99c-.274-.024-.478-.268-.455-.542l.003-.03c.024-.274.268-.478.542-.455l11.318.99c.274.024.478.268.455.542l-.003.03c-.024.274-.268.479-.542.455z%22%2F%3E%3Cpath%20fill%3D%22%23292F33%22%20d%3D%22M26.074%208.654l-.898%2010.262c-.09%201.026-.09%201.026-1.116.936-.564-.049-.986-.552-.936-1.116l.898-10.262c.049-.564.552-.986%201.116-.936%201.026.09%201.026.09.936%201.116z%22%2F%3E%3Cpath%20fill%3D%22%23DD2E44%22%20d%3D%22M26.525%208.167l-.99%2011.318c-.024.274-.268.478-.542.455l-.03-.003c-.274-.024-.478-.268-.455-.542l.99-11.318c.024-.274.268-.478.542-.455l.03.003c.274.025.479.268.455.542z%22%2F%3E%3Cpath%20fill%3D%22%23292F33%22%20d%3D%22M23.337%2017.992l-7.78-.681c-.778-.068-.778-.068-.711-.836.037-.423.417-.738.845-.7l7.78.681c.428.037.748.414.711.836-.067.768-.067.768-.845.7z%22%2F%3E%3Cpath%20fill%3D%22%23DD2E44%22%20d%3D%22M21.207%2021.677c1.035.091%203.079.269%203.348-2.809s1.296-2.989%201.026.09-1.966%203.964-4.464%203.746c-2.052-.18-1.963-1.206.09-1.027zm-10.764-.941c2.053.171%202.464%201.255.412%201.07-.909-.082-.991.305-1.198%201.095-.195.743-.469%201.858-.884%203.418-.304%201.146-1.258.734-1.006-.265.423-1.679.822-3.142%201.083-4.072.267-.95.517-1.336%201.593-1.246z%22%2F%3E%3Cg%20fill%3D%22%2366757F%22%3E%3Ccircle%20cx%3D%2223.213%22%20cy%3D%2227.244%22%20r%3D%221.545%22%2F%3E%3Cpath%20d%3D%22M30.161%2030.661l-6.245-3.606%203.606-6.245-.892-.515-3.606%206.245-6.245-3.605-.515.892%206.245%203.605-3.605%206.245.892.515%203.605-6.245%206.245%203.606z%22%2F%3E%3Cpath%20d%3D%22M25.71%2034.573l-1.866-6.965%206.965-1.866-.267-.995-6.965%201.866-1.866-6.965-.995.266%201.866%206.966-6.965%201.866.266.995%206.966-1.866%201.866%206.965z%22%2F%3E%3C%2Fg%3E%3Cpath%20fill%3D%22%23292F33%22%20d%3D%22M23.213%2018.488c-4.836%200-8.756%203.92-8.756%208.756S18.377%2036%2023.213%2036s8.756-3.92%208.756-8.756-3.92-8.756-8.756-8.756zm0%2015.452c-3.698%200-6.696-2.998-6.696-6.696s2.998-6.696%206.696-6.696%206.696%202.998%206.696%206.696-2.998%206.696-6.696%206.696z%22%2F%3E%3Cpath%20fill%3D%22%2366757F%22%20d%3D%22M23.213%2019.518c-4.267%200-7.726%203.459-7.726%207.726s3.459%207.726%207.726%207.726%207.726-3.459%207.726-7.726-3.459-7.726-7.726-7.726zm0%2014.422c-3.698%200-6.696-2.998-6.696-6.696s2.998-6.696%206.696-6.696%206.696%202.998%206.696%206.696-2.998%206.696-6.696%206.696zm-9.428-.446l-2.23-1.288%201.287-2.23-.892-.515-1.287%202.23-2.231-1.288-.515.892%202.231%201.288-1.288%202.23.892.515%201.288-2.23%202.23%201.288z%22%2F%3E%3Cpath%20fill%3D%22%23292F33%22%20d%3D%22M10.851%2028.789c-1.991%200-3.605%201.614-3.605%203.605S8.86%2036%2010.851%2036s3.605-1.614%203.605-3.605-1.614-3.606-3.605-3.606zm0%206.181c-1.422%200-2.575-1.153-2.575-2.575%200-1.422%201.153-2.575%202.575-2.575s2.575%201.153%202.575%202.575c.001%201.422-1.152%202.575-2.575%202.575z%22%2F%3E%3Cpath%20fill%3D%22%23DD2E44%22%20d%3D%22M8.587%2025.046l-.029-.008c-.266-.071-.541.088-.612.354l-1.608%205.999c-.071.266.088.541.354.612l.029.008c.266.071.541-.088.612-.354l1.608-5.999c.07-.265-.089-.54-.354-.612z%22%2F%3E%3Cpath%20fill%3D%22%2366757F%22%20d%3D%22M6.72%2032.012l-4.009-1.074c-.266-.071-.425-.347-.354-.612l.008-.029c.071-.266.347-.425.612-.354l4.009%201.074c.266.071.425.347.354.612l-.008.029c-.07.266-.346.425-.612.354z%22%2F%3E%3Cpath%20fill%3D%22%23DD2E44%22%20d%3D%22M29%209.187l-3.073-.542c-.271-.048-.453-.308-.406-.579l.005-.03c.048-.271.308-.453.579-.406l3.073.542c.271.048.453.308.406.579l-.005.03c-.048.272-.309.454-.579.406z%22%2F%3E%3Cpath%20fill%3D%22%23292F33%22%20d%3D%22M29.999%209.364l-2.694-.482c-.279-.049-.268-.283-.219-.562.049-.279.119-.502.398-.453l2.694.482c.279.049.467.318.418.597-.049.279-.318.467-.597.418z%22%2F%3E%3C%2Fsvg%3E';
-
-  // ---------- 独轮车内容编译：预览和执行共用 ----------
-  function wheelInteger(value, fallback, min, max) {
-    const number = Number(value);
-    return Number.isFinite(number) ? Math.min(max, Math.max(min, Math.floor(number))) : fallback;
-  }
-
-  function wheelTiming(value) {
-    const v = value || {};
-    const min = wheelInteger(v.intervalMinSec, 5, 5, 3600);
-    return { intervalMinSec: min, intervalMaxSec: wheelInteger(v.intervalMaxSec, min, min, 3600), randomize: v.randomize === true, timeLimitSec: wheelInteger(v.timeLimitSec, 0, 0, 86400) };
-  }
-
-  function normalizeWheelConfig(value) {
-    const v = value && typeof value === 'object' ? value : {};
-    const selectedByRoom = {};
-    Object.entries(v.emotion && v.emotion.selectedByRoom || {}).slice(0, 100).forEach(([room, ids]) => {
-      if (/^\d+$/.test(room) && Array.isArray(ids)) selectedByRoom[room] = [...new Set(ids.filter(id => typeof id === 'string' && id.length < 160 && decodeWheelEmotionId(id)))].slice(0, 100);
-    });
-    const byRoom = {};
-    Object.entries(v.resume && v.resume.byRoom || {}).slice(0, 100).forEach(([room, mode]) => {
-      if (/^\d+$/.test(room) && ['text', 'emotion'].includes(mode)) byRoom[room] = mode;
-    });
-    return {
-      schemaVersion: 1,
-      activeSource: ['text', 'emotion'].includes(v.activeSource) ? v.activeSource : 'text',
-      text: { ...wheelTiming(v.text), content: String(v.text && v.text.content || '').slice(0, 20000), maxLength: v.text && v.text.maxLength !== 'auto' && v.text.maxLength != null ? wheelInteger(v.text.maxLength, 20, 2, 200) : 'auto' },
-      emotion: { ...wheelTiming(v.emotion), selectedByRoom },
-      resume: { enabled: !!(v.resume && v.resume.enabled === true), byRoom },
-      riskAccepted: v.riskAccepted === true,
-    };
-  }
-
-  function wheelGraphemes(text) {
-    if (typeof Intl.Segmenter !== 'function') throw new Error('当前浏览器不支持安全文字切分');
-    return Array.from(new Intl.Segmenter('zh', { granularity: 'grapheme' }).segment(text), item => item.segment);
-  }
-
-  function wheelLength(text) {
-    return wheelGraphemes(text).reduce((total, part) => total + (/\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3/u.test(part) ? 2 : 1), 0);
-  }
-
-  function compileWheelText(text, limit, tail) {
-    const available = limit - wheelLength(tail);
-    if (available < 1) throw new Error('小尾巴已达到长度上限，请在主面板调整');
-    const messages = [];
-    String(text).replace(/\r\n?/g, '\n').split('\n').filter(line => line.trim()).forEach(line => {
-      let chunk = '', length = 0;
-      wheelGraphemes(line).forEach(part => {
-        const size = wheelLength(part);
-        if (size > available) throw new Error('单个表情超过剩余长度，请调整单条长度或小尾巴');
-        if (length + size > available) { messages.push(chunk + tail); chunk = ''; length = 0; }
-        chunk += part; length += size;
-      });
-      if (chunk) messages.push(chunk + tail);
-    });
-    if (!messages.length) throw new Error('请先准备有效内容');
-    if (messages.length > 5000) throw new Error('切分后的内容过多，请缩短文字');
-    return messages;
-  }
-
-  function wheelDelay(timing, random) {
-    const t = wheelTiming(timing);
-    return 1000 * (t.randomize ? t.intervalMinSec + Math.floor(Math.min(0.999999999, Math.max(0, random())) * (t.intervalMaxSec - t.intervalMinSec + 1)) : t.intervalMinSec);
-  }
-
-  function decodeWheelEmotionId(id) {
-    const value = String(id || '');
-    if (value.startsWith('text:')) {
-      const text = value.slice(5);
-      return /^\[[^\]\r\n]{1,80}\]$/.test(text) ? { type: 'text', text } : null;
-    }
-    const match = value.match(/^special:([0-9a-f]{8,128})$/i);
-    return match ? { type: 'emoji-special', hash: match[1].toLowerCase() } : null;
-  }
-
-  function wheelEmotionLabel(message) {
-    if (!message) return '';
-    return message.type === 'emoji-special' ? (message.label || '房间专属表情') : String(message.text || message);
-  }
-
-  function filterFavoriteItems(items, query, roomOnly, roomId) {
-    const needle = String(query || '').trim().toLocaleLowerCase();
-    return items.filter(item => (!roomOnly || (roomId && item.sourceRoomIds.includes(roomId))) && (!needle || item.text.toLocaleLowerCase().includes(needle)));
-  }
-
-  function normalizeFavoriteLibrary(value) {
-    const legacy = Array.isArray(value);
-    if (!legacy && (!value || value.schemaVersion !== 2 || !Array.isArray(value.items))) throw new Error('收藏数据损坏，已停止写入');
-    const rawItems = legacy ? value : value.items;
-    if (rawItems.length > FAVORITES_MAX_COUNT) throw new Error('收藏数量超过 1000 条');
-    const items = [], texts = new Map(), ids = new Set();
-    rawItems.forEach(raw => {
-      const text = typeof raw === 'string' ? raw.trim() : String(raw && raw.text || '').trim();
-      if (text.length > FAVORITE_TEXT_MAX_LENGTH) throw new Error('单条收藏不能超过 200 字符');
-      if (!text) return;
-      const old = typeof raw === 'object' ? raw : {};
-      let hash = 2166136261;
-      for (const char of text) hash = Math.imul(hash ^ char.codePointAt(0), 16777619);
-      const item = makeFavorite(text, { createdAt: 0, updatedAt: 0, ...old, id: old.id || 'legacy-' + (hash >>> 0).toString(36) + '-' + text.length });
-      const duplicate = texts.get(text);
-      if (duplicate) {
-        duplicate.sourceRoomIds = [...new Set(duplicate.sourceRoomIds.concat(item.sourceRoomIds))];
-        return;
-      }
-      if (ids.has(item.id)) throw new Error('收藏 ID 重复，请修复导入文件');
-      ids.add(item.id); texts.set(text, item); items.push(item);
-    });
-    return { schemaVersion: 2, revision: legacy ? 0 : wheelInteger(value.revision, 0, 0, Number.MAX_SAFE_INTEGER), items };
-  }
-
-  function readFavoriteLibrary() {
-    const raw = GM_getValue(FAVORITES_STORAGE_KEY);
-    if (raw) return normalizeFavoriteLibrary(JSON.parse(raw));
-    const legacy = JSON.parse(GM_getValue('bilivex_cfg') || '{}');
-    return normalizeFavoriteLibrary(legacy.favorites || []);
-  }
-
-  // Web Locks 在同源标签页间提供真正互斥；不可用时拒绝写入，保留旧数据和编辑草稿。
-  async function commitFavoriteLibrary(change, expectedRevision) {
-    const locks = panelWindow.navigator.locks;
-    if (!locks) throw new Error('当前页面不支持安全收藏写入，请在 HTTPS 直播页面重试');
-    return locks.request('bilivex-favorites-write-v2', async () => {
-      const library = readFavoriteLibrary();
-      if (expectedRevision != null && library.revision !== expectedRevision) throw new Error('收藏已在其他页面修改，草稿已保留，请取消后重载');
-      const raw = GM_getValue(FAVORITES_STORAGE_KEY);
-      if (!GM_getValue('bilivex_favorites_backup_v1')) {
-        GM_setValue('bilivex_favorites_backup_v1', JSON.stringify({ favorites: raw || null, config: GM_getValue('bilivex_cfg') || null }));
-        if (!GM_getValue('bilivex_favorites_backup_v1')) throw new Error('收藏备份失败，未迁移');
-      }
-      const next = normalizeFavoriteLibrary(change(library) || library);
-      next.revision = library.revision + 1;
-      const encoded = JSON.stringify(next);
-      GM_setValue(FAVORITES_STORAGE_KEY, encoded);
-      if (GM_getValue(FAVORITES_STORAGE_KEY) !== encoded) throw new Error('收藏保存校验失败，请保留草稿');
-      cfg = { ...cfg, favorites: next.items };
-      favoriteLibraryChanged();
-      return next;
-    });
-  }
-
-  async function saveFavoritePatch(base, visibleIds, rows, merge) {
-    const room = currentWheelRoom();
-    return commitFavoriteLibrary(library => {
-      const visible = new Set(visibleIds), existing = new Map(library.items.map(item => [item.id, item]));
-      const edited = rows.filter(row => row.text.trim()).map(row => ({ ...existing.get(row.id), ...row, sourceRoomIds: existing.has(row.id) ? existing.get(row.id).sourceRoomIds : room ? [room] : [], updatedAt: Date.now() }));
-      const items = library.items.filter(item => !visible.has(item.id)).concat(edited);
-      if (!merge && new Set(items.map(item => item.text.trim())).size !== items.length) throw new Error('文本重复：再次点击“合并并保存”合并来源，或取消');
-      library.items = items;
-      return library;
-    }, base.revision);
-  }
-
-  async function normalizeStoredFavoriteLibrary() {
-    const raw = GM_getValue(FAVORITES_STORAGE_KEY);
-    if (!raw) return;
-    try {
-      const normalized = normalizeFavoriteLibrary(JSON.parse(raw));
-      if (JSON.stringify(normalized) !== raw) await commitFavoriteLibrary(library => library);
-    } catch (error) {
-      console.warn('[BiLivex] 收藏数据整理失败：' + String(error && error.message || error).slice(0, 160));
-    }
-  }
-
   // ---------- 默认设置 ----------
   const DEFAULT_CFG = {
     tailEnabled: true,         // 小尾巴开关
@@ -276,8 +110,7 @@
       id: old && old.id ? String(old.id) : 'fav-' + now + '-' + Math.random().toString(36).slice(2, 8),
       text,
       createdAt: old && Number.isFinite(old.createdAt) ? old.createdAt : now,
-      updatedAt: old && Number.isFinite(old.updatedAt) ? old.updatedAt : now,
-      sourceRoomIds: [...new Set((old && Array.isArray(old.sourceRoomIds) ? old.sourceRoomIds : []).filter(id => typeof id === 'string' && /^\d+$/.test(id)))].slice(0, 100),
+      updatedAt: now,
     };
   }
 
@@ -295,7 +128,19 @@
   }
 
   function readStoredFavorites() {
-    try { return readFavoriteLibrary().items; } catch (e) { return []; }
+    try {
+      const raw = GM_getValue(FAVORITES_STORAGE_KEY);
+      if (!raw) return null;
+      return normalizeFavorites(JSON.parse(raw));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeStoredFavorites(favorites) {
+    const normalized = normalizeFavorites(favorites);
+    try { GM_setValue(FAVORITES_STORAGE_KEY, JSON.stringify(normalized)); } catch (e) {}
+    return normalized;
   }
 
   function normalizeBooleanSettings(value) {
@@ -316,7 +161,7 @@
       const storedFavorites = readStoredFavorites();
       const legacyFavorites = normalizeFavorites(obj.favorites);
       const favorites = storedFavorites === null ? legacyFavorites : storedFavorites;
-      // 收藏迁移只在互斥写入事务中执行，读取配置不写数据。
+      if (storedFavorites === null && legacyFavorites.length) writeStoredFavorites(legacyFavorites);
       return { ...DEFAULT_CFG, ...obj, favorites };
     } catch (e) {
       const storedFavorites = readStoredFavorites();
@@ -340,25 +185,22 @@
     return storedFavorites === null ? normalizeFavorites(loadCfg().favorites) : storedFavorites;
   }
 
-  async function addFavorite(text, sourceDocument) {
-    const clean = typeof text === 'string' ? text.trim() : '';
-    const room = canonicalRoom(sourceDocument || document);
-    if (!clean || clean.length > FAVORITE_TEXT_MAX_LENGTH) return { status: 'invalid' };
-    let result;
-    try {
-      await commitFavoriteLibrary(library => {
-        const duplicate = library.items.find(item => item.text === clean);
-        if (duplicate) {
-          const added = room && !duplicate.sourceRoomIds.includes(room);
-          if (added) duplicate.sourceRoomIds.push(room);
-          result = { status: added ? 'associated' : 'duplicate' }; return library;
-        }
-        if (library.items.length >= FAVORITES_MAX_COUNT) throw new Error('收藏夹已达上限');
-        const item = makeFavorite(clean, { sourceRoomIds: room ? [room] : [] });
-        library.items.push(item); result = { status: 'added', item }; return library;
-      });
-      return result;
-    } catch (error) { showToast(error.message); return { status: 'error' }; }
+  function addFavorite(text) {
+    const clean = normalizeFavoriteText(text);
+    if (!clean) return { status: 'invalid' };
+    const favorites = getFavorites();
+    if (favorites.some((item) => item.text === clean)) return { status: 'duplicate' };
+    if (favorites.length >= FAVORITES_MAX_COUNT) return { status: 'limit' };
+    favorites.push(makeFavorite(clean));
+    const savedFavorites = writeStoredFavorites(favorites);
+    cfg = { ...cfg, favorites: savedFavorites };
+    return { status: 'added', item: savedFavorites[savedFavorites.length - 1] };
+  }
+
+  function replaceFavorites(favorites) {
+    const savedFavorites = writeStoredFavorites(favorites);
+    cfg = { ...cfg, favorites: savedFavorites };
+    return savedFavorites;
   }
 
   // 面板在顶层、聊天控件在 iframe 时，各自的运行时配置不会自动同步。
@@ -542,11 +384,9 @@
   }
 
   function enqueuePlusSend(task) {
-    const previous = sharedRuntime.nativeSendTail || plusSendTail;
-    const run = previous.then(task, task);
+    const run = plusSendTail.then(task, task);
     // ponytail：当前使用全局串行队列；只有实测吞吐不足时才按直播间或账号拆分。
     plusSendTail = run.catch(() => {});
-    sharedRuntime.nativeSendTail = plusSendTail;
     return run;
   }
 
@@ -730,7 +570,10 @@
     }) || null;
   }
 
-  async function clickNativeSpecialEmoji(ownerDocument, hash, requestId, canClick) {
+  async function sendSpecialEmoji(hash, requestId) {
+    const input = await waitForNativeChatInput();
+    if (!input) return { status: 'failed', message: '未找到原生聊天输入框，请稍后重试' };
+    const ownerDocument = input.ownerDocument;
     const scope = ownerDocument.fullscreenElement || ownerDocument;
     const panelButton = scope.querySelector('.emoticons-panel[title="表情包"], .icon-right-part .emoticons-panel, .emoticons-panel') ||
       ownerDocument.querySelector('.emoticons-panel[title="表情包"], .icon-right-part .emoticons-panel, .emoticons-panel');
@@ -746,70 +589,13 @@
     await new Promise((resolve) => setTimeout(resolve, 60));
     const readyItem = findEmoticonItem(ownerDocument, hash);
     if (!readyItem) return { status: 'failed', message: '特殊表情面板已关闭，请重试' };
-    if (typeof canClick === 'function' && !canClick()) return { status: 'cancelled', message: '任务已停止或直播间已变化' };
     readyItem.click();
     tracePlus('dom-emoticon-click', { requestId, hash });
     return { status: 'triggered', message: '已触发原生表情发送，无法确认服务端结果' };
   }
 
-  async function sendSpecialEmoji(hash, requestId) {
-    const input = await waitForNativeChatInput();
-    if (!input) return { status: 'failed', message: '未找到原生聊天输入框，请稍后重试' };
-    return clickNativeSpecialEmoji(input.ownerDocument, hash, requestId);
-  }
-
-  function collectNativeEmoticons(ownerDocument) {
-    const seen = new Set();
-    const panes = Array.from(ownerDocument.querySelectorAll('.img-pane'));
-    const packages = new Map(panes.map((pane, index) => {
-      const siblings = Array.from(pane.parentElement.children).filter(node => node.matches('.img-pane'));
-      const tab = pane.parentElement.querySelectorAll('.tab-pane-item')[siblings.indexOf(pane)];
-      const cover = tab && tab.querySelector('img');
-      const title = pane.querySelector('.title, .panel-title, .emoticon-title, .package-title');
-      const labels = [pane.getAttribute('aria-label'), tab && tab.title, tab && tab.getAttribute('aria-label'), cover && cover.title, cover && cover.alt, title && title.textContent];
-      const name = labels.map(value => String(value || '').trim()).find(value => value && !/^(?:https?:)?\/\//i.test(value)) || (pane.querySelector('.emoji-wrap') ? '常用表情' : '表情包 ' + (index + 1));
-      const icon = (cover && (cover.currentSrc || cover.src)) || '';
-      return [pane, { packageId: emojiHashFromSrc(icon) || 'pane-' + index, packageName: name, packageIcon: icon }];
-    }));
-    return Array.from(ownerDocument.querySelectorAll('.emoticon-item')).map(item => {
-      const image = item.querySelector('img');
-      const hash = image && emojiHashFromSrc(image.getAttribute('src') || image.src);
-      if (!hash || seen.has(hash) || item.matches('[aria-disabled=true],.disabled,.locked') || item.querySelector('.locked,[aria-label*="未解锁"]')) return null;
-      seen.add(hash);
-      const name = resolveEmojiNameFromImg(image);
-      const explicit = String(item.getAttribute('aria-label') || item.title || image.getAttribute('aria-label') || image.title || '').trim().replace(/^\[|\]$/g, '');
-      return {
-        id: 'special:' + hash,
-        ...packages.get(item.closest('.img-pane')),
-        hash,
-        label: name ? '[' + name + ']' : (explicit || '房间专属表情'),
-        inputText: name ? '[' + name + ']' : '',
-        src: image.currentSrc || image.src || '',
-      };
-    }).filter(Boolean);
-  }
-
-  async function discoverNativeEmoticons() {
-    const controls = strictWheelControls();
-    if (!controls || !controls.room) throw new Error('暂无法读取当前直播间表情');
-    const ownerDocument = controls.input.ownerDocument;
-    const scope = ownerDocument.fullscreenElement || ownerDocument;
-    const panelButton = scope.querySelector('.emoticons-panel[title="表情包"], .icon-right-part .emoticons-panel, .emoticons-panel') ||
-      ownerDocument.querySelector('.emoticons-panel[title="表情包"], .icon-right-part .emoticons-panel, .emoticons-panel');
-    let items = collectNativeEmoticons(ownerDocument);
-    if (!items.length && panelButton) panelButton.click();
-    for (let attempt = 0; attempt < 10 && !items.length; attempt += 1) {
-      await new Promise(resolve => setTimeout(resolve, 150));
-      items = collectNativeEmoticons(ownerDocument);
-    }
-    if (!items.length) throw new Error(panelButton ? '当前没有可用表情，请确认已登录或已解锁' : '未找到 B 站原生表情入口');
-    return { room: controls.room, items };
-  }
-
   function appendTailForManualSend(ta) {
     const originalText = ta && ta.value;
-    // 自动任务已按启动快照编译尾巴，原生点击阶段不能再追加新配置。
-    if (ta && ta._bilivexWheelText === originalText) return;
     const tailText = getTailText();
     if (!ta || !tailText || !originalText || originalText.endsWith(tailText)) {
       return;
@@ -869,7 +655,6 @@
     opts = opts || {};
     const ta = await waitForNativeChatInput();
     if (!ta) return { status: 'no-input', message: '未找到原生聊天输入框，请稍后重试' };
-    if (opts.roomId && canonicalRoom(ta.ownerDocument) !== opts.roomId) return { status: 'cancelled', message: '已换房，取消发送' };
     try { ta.focus(); } catch (e) {}
     const tailText = getTailText();
     const finalText = opts.finalText || (tailText && !text.endsWith(tailText)
@@ -886,10 +671,6 @@
       ? ownerWindow.requestAnimationFrame.bind(ownerWindow)
       : (cb) => ownerWindow.setTimeout(cb, 0);
     return new Promise((resolve) => schedule(() => {
-      if (opts.roomId && canonicalRoom(ta.ownerDocument) !== opts.roomId) {
-        if (ta.value === finalText) setReactLikeValue(ta, '');
-        resolve({ status: 'cancelled', message: '已换房，取消发送' }); return;
-      }
       const btn = findSendBtn(ta);
       if (btn && !btn.disabled && btn.getAttribute('aria-disabled') !== 'true') {
         try {
@@ -927,7 +708,6 @@
       return Promise.resolve({ status: 'invalid', message: '该弹幕无文本内容' });
     }
     const requestId = nextPlusRequestId();
-    const roomId = canonicalRoom(document);
     tracePlus('queued', { requestId, textLength: cleanText.length, payloadType: normalized.type || 'text' });
     return enqueuePlusSend(async () => {
       if (normalized.type === 'emoji-special' && normalized.hash) {
@@ -939,7 +719,7 @@
       // 始终使用原生控件，让播放器沿用 B 站的本人弹幕状态与蓝色标识。
       const finalText = getTailText() && !cleanText.endsWith(getTailText())
         ? cleanText + getTailText() : cleanText;
-      const domResult = await fillAndSend(finalText, { requestId, finalText, roomId });
+      const domResult = await fillAndSend(finalText, { requestId, finalText });
       if (domResult.status === 'triggered') {
         const confirmed = await confirmTriggeredSend(domResult.input, finalText);
         tracePlus('dom-result', { requestId, status: confirmed.status });
@@ -988,7 +768,6 @@
   // ---------- 主题应用 ----------
   function applyTheme() {
     currentTheme = THEMES[cfg.theme] || THEMES.blue;
-    syncWheelTheme();
 
     // 1. 面板标题渐变 + 阴影（折叠态固定 logo 圆形按钮，不随主题切换）
     const panel = panelDocument.getElementById('bilivex-panel');
@@ -1208,10 +987,9 @@
           else showToast('复制失败，请手动复制');
         });
       }),
-      createCommentMenuButton(menu.ownerDocument, '收藏', 'favorite', async (_button, point) => {
-        const result = await addFavorite(capturedText, menu.ownerDocument);
+      createCommentMenuButton(menu.ownerDocument, '收藏', 'favorite', (_button, point) => {
+        const result = addFavorite(capturedText);
         if (result.status === 'added') showCommentActionFeedback(menu.ownerDocument, point, '✓ 已收藏');
-        else if (result.status === 'associated') showCommentActionFeedback(menu.ownerDocument, point, '已关联当前直播间');
         else if (result.status === 'duplicate') showCommentActionFeedback(menu.ownerDocument, point, '已在收藏夹中');
         else showToast(result.status === 'limit' ? '收藏夹已达上限' : '该弹幕无文本内容');
       }),
@@ -1330,311 +1108,13 @@
         applyConfigChange(previous, loadCfg());
       });
       const favoritesListenerId = GM_addValueChangeListener(FAVORITES_STORAGE_KEY, (_key, _oldValue, _newValue, remote) => {
-        if (remote) { cfg = { ...cfg, favorites: getFavorites() }; favoriteLibraryChanged(); }
+        if (remote) cfg = { ...cfg, favorites: getFavorites() };
       });
       if (configListenerId != null) valueChangeListenerIds.push(configListenerId);
       if (favoritesListenerId != null) valueChangeListenerIds.push(favoritesListenerId);
     }
   } catch (e) {
     console.warn('[BiLivex] 配置同步监听不可用：' + String(e && e.message || e).slice(0, 160));
-  }
-
-  // ---------- 独轮车运行状态：顶层面板只持有一个任务 ----------
-  const WHEEL_CONFIG_KEY = 'bilivex_wheel_cfg_v1';
-  const wheelOwnerId = 'wheel-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-  let wheelConfig;
-  try { wheelConfig = normalizeWheelConfig(JSON.parse(GM_getValue(WHEEL_CONFIG_KEY) || '{}')); }
-  catch (e) { wheelConfig = normalizeWheelConfig({}); }
-  let wheelState = { status: 'idle', reason: '尚未开始', triggered: 0, confirmed: 0, unconfirmed: 0 };
-  let wheelToken = 0, wheelTimer = null, wheelDeadlineTimer = null, wheelHeartbeatTimer = null, wheelRelease = null;
-  let wheelEntry = null, wheelControl = null, wheelControlObserver = null;
-  let wheelResumeTimer = null, wheelResumeRoom = '', favoriteRoomOnly = false;
-  let wheelChatDocument = null;
-  const wheelEmotionCatalog = new Map();
-  const wheelEmotionExpanded = new Map();
-  const composingInputs = sharedRuntime.composingInputs || (sharedRuntime.composingInputs = new WeakSet());
-  let wheelLastToast = { reason: '', at: 0 };
-  if (document === panelDocument) {
-    sharedRuntime.openWheelPanel = openWheelPanel;
-    sharedRuntime.favoriteLibraryChanged = favoriteLibraryChanged;
-    sharedRuntime.bindWheelEntry = bindWheelEntry;
-    normalizeStoredFavoriteLibrary();
-  }
-
-  function saveWheelConfig() {
-    wheelConfig = normalizeWheelConfig(wheelConfig);
-    GM_setValue(WHEEL_CONFIG_KEY, JSON.stringify(wheelConfig));
-  }
-
-  function canonicalRoom(root) {
-    const doc = root || document, view = doc.defaultView;
-    try {
-      const live = view === window ? unsafeWindow.BilibiliLive : view.BilibiliLive;
-      if (live && /^\d+$/.test(String(live.ROOMID || ''))) return String(live.ROOMID);
-      const node = doc.querySelector('[data-room-id], [data-roomid]');
-      const id = node && (node.getAttribute('data-room-id') || node.getAttribute('data-roomid'));
-      if (/^\d+$/.test(id || '')) return id;
-      // URL 仅作普通长号兜底；短号未解析成功时失败关闭。
-      const urlRoom = roomIdFromUrl(view.location.href);
-      return urlRoom.length >= 5 ? urlRoom : '';
-    } catch (e) { return ''; }
-  }
-
-  function currentWheelRoom() {
-    const input = wheelChatDocument ? wheelChatDocument.querySelector('textarea.chat-input, input.chat-input') : findChatInput();
-    return canonicalRoom(input ? input.ownerDocument : document);
-  }
-
-  function strictWheelControls() {
-    if (wheelChatDocument) {
-      try { const frame = wheelChatDocument.defaultView.frameElement; if (frame && !frame.isConnected) return null; } catch (e) { return null; }
-    }
-    const input = wheelChatDocument ? Array.from(wheelChatDocument.querySelectorAll('textarea.chat-input, input.chat-input, .chat-control-panel textarea')).find(node => !node.disabled && node.getBoundingClientRect().width > 0) : findChatInput();
-    if (!input || !input.isConnected || input.readOnly) return null;
-    const control = input.closest('.chat-control-panel, #fullscreen-danmaku-vm, .chat-input-outer, .chat-input-panel');
-    if (!control) return null;
-    const buttons = [...new Set(CHAT_SEND_SELECTORS.flatMap(selector => Array.from(control.querySelectorAll(selector))))].filter(button => isEnabledChatSendButton(button, input) && button.getBoundingClientRect().width > 0);
-    if (buttons.length !== 1 || buttons[0].ownerDocument !== input.ownerDocument) return null;
-    return { input, button: buttons[0], control, room: canonicalRoom(input.ownerDocument) };
-  }
-
-  function wheelNotify(reason) {
-    if (wheelLastToast.reason !== reason || Date.now() - wheelLastToast.at >= 5000) {
-      wheelLastToast = { reason, at: Date.now() }; showToast(reason);
-    }
-  }
-
-  function wheelRuntimeKey(room) { return 'bilivex_wheel_runtime_v1_' + room; }
-
-  function wheelPublish() {
-    if (!wheelState.room || !wheelRelease) return;
-    GM_setValue(wheelRuntimeKey(wheelState.room), JSON.stringify({ ownerId: wheelOwnerId, mode: wheelState.mode, status: wheelState.status, startedAt: wheelState.startedAt, updatedAt: Date.now(), nextSendAt: wheelState.nextSendAt || 0 }));
-  }
-
-  function stopWheel(reason, preserveResume) {
-    wheelToken += 1;
-    [wheelTimer, wheelDeadlineTimer, wheelHeartbeatTimer, wheelResumeTimer].forEach(timer => clearTimeout(timer));
-    wheelTimer = wheelDeadlineTimer = wheelHeartbeatTimer = wheelResumeTimer = null;
-    if (wheelRelease) {
-      const release = wheelRelease; wheelRelease = null;
-      try { GM_setValue(wheelRuntimeKey(wheelState.room), ''); } catch (e) {}
-      finally { release(); }
-    }
-    if (!preserveResume && wheelState.room) { delete wheelConfig.resume.byRoom[wheelState.room]; try { saveWheelConfig(); } catch (e) {} }
-    wheelState = { ...wheelState, status: /异常|未确认|不可用|禁言|失败/.test(reason || '') ? 'error' : 'idle', reason: reason || '已手动停止', nextSendAt: 0 };
-    renderWheelStatus();
-  }
-
-  function wheelSnapshot() {
-    const controls = strictWheelControls();
-    if (!controls || !controls.room) throw new Error('暂无法确定直播间或原生发送控件');
-    const mode = wheelConfig.activeSource;
-    const tail = getTailText();
-    const nativeLimit = Number(controls.input.getAttribute('maxlength'));
-    const limit = nativeLimit > 1 ? Math.min(200, nativeLimit) : 20;
-    const actualLimit = mode === 'text' && wheelConfig.text.maxLength !== 'auto' ? Math.min(limit, wheelConfig.text.maxLength) : limit;
-    const emotionIds = wheelConfig.emotion.selectedByRoom[controls.room] || [];
-    const emotionCatalog = new Map((wheelEmotionCatalog.get(controls.room) || []).map(item => [item.id, item]));
-    if (mode === 'emotion' && !wheelEmotionCatalog.has(controls.room)) throw new Error('正在读取当前直播间表情，请稍候');
-    if (mode === 'emotion' && emotionIds.some(id => !emotionCatalog.has(id))) throw new Error('所选表情在当前直播间不可用，请刷新后重新选择');
-    const groups = mode === 'text' ? [{ id: 'text', ...wheelConfig.text, messages: compileWheelText(wheelConfig.text.content, actualLimit, tail), cursor: 0 }] : [{
-      id: 'emotion', ...wheelConfig.emotion,
-      messages: emotionIds.map(id => ({ ...decodeWheelEmotionId(id), label: (emotionCatalog.get(id) || {}).label || '房间专属表情', inputText: (emotionCatalog.get(id) || {}).inputText || '' })).filter(message => message.type), cursor: 0,
-    }];
-    if (mode === 'emotion' && !groups[0].messages.length) throw new Error('请先选择至少一个表情');
-    return { room: controls.room, mode, groups, groupIndex: 0, timeLimitSec: wheelConfig[mode].timeLimitSec, limit: actualLimit, compatibleLimit: !(nativeLimit > 1) };
-  }
-
-  function favoriteLibraryChanged() {
-    if (document !== panelDocument && sharedRuntime.favoriteLibraryChanged) { sharedRuntime.favoriteLibraryChanged(); return; }
-    const view = panelDocument.querySelector('.bilivex-favorites-view');
-    if (view && view.style.display !== 'none' && view.dataset.mode !== 'edit') renderFavoritesView('browse');
-  }
-
-  async function sendWheelMessage(message, token, room) {
-    return enqueuePlusSend(async () => {
-      if (token !== wheelToken || !wheelRelease) return { status: 'cancelled' };
-      let controls = strictWheelControls();
-      if (!controls) return { status: 'missing' };
-      if (controls.room !== room) return { status: 'room-changed' };
-      const input = controls.input;
-      if (input.value || composingInputs.has(input)) return { status: 'user-busy' };
-      const payload = typeof message === 'string' ? { type: 'text', text: message } : message;
-      if (payload && payload.type === 'emoji-special' && payload.hash) {
-        const warning = Array.from(controls.control.querySelectorAll('[role=alert], .input-limit-anchor, .chat-input-warning')).find(node => node.getBoundingClientRect().width && /禁言|频繁|频率|稍后再发/.test(node.textContent));
-        if (warning) return { status: 'restricted' };
-        const before = new Set(input.ownerDocument.querySelectorAll('.my-self'));
-        const clicked = await clickNativeSpecialEmoji(input.ownerDocument, payload.hash, 'wheel-' + token, () => token === wheelToken && !!wheelRelease && canonicalRoom(input.ownerDocument) === room);
-        if (clicked.status === 'cancelled') return { status: token !== wheelToken ? 'cancelled' : 'room-changed' };
-        if (clicked.status !== 'triggered') return { status: 'emotion-missing' };
-        await new Promise(resolve => setTimeout(resolve, 80));
-        controls = strictWheelControls();
-        if (token !== wheelToken || !wheelRelease || !controls || controls.input !== input || controls.room !== room) return { status: token !== wheelToken ? 'cancelled' : 'room-changed' };
-        // 普通表情点击后会写入输入框；房间专属表情通常由原生面板直接发送。
-        if (input.value) {
-          const inserted = input.value;
-          if (!payload.inputText || inserted !== payload.inputText) return { status: 'user-busy' };
-          input._bilivexWheelText = inserted;
-          try { controls.button.click(); } finally { delete input._bilivexWheelText; }
-        }
-        const deadline = Date.now() + 2000;
-        while (Date.now() < deadline && token === wheelToken) {
-          if (Array.from(input.ownerDocument.querySelectorAll('.my-self')).some(node => !before.has(node))) return { status: 'confirmed' };
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        return { status: 'unconfirmed' };
-      }
-      const text = String(payload && payload.text || '');
-      if (!setReactLikeValue(input, text)) return { status: 'user-busy' };
-      await new Promise(resolve => (input.ownerDocument.defaultView || window).requestAnimationFrame(resolve));
-      controls = strictWheelControls();
-      if (token !== wheelToken || !wheelRelease || !controls || controls.input !== input || controls.room !== room) {
-        if (input.value === text) setReactLikeValue(input, '');
-        return { status: token !== wheelToken ? 'cancelled' : controls && controls.room !== room ? 'room-changed' : 'missing' };
-      }
-      if (input.value !== text || composingInputs.has(input)) return { status: 'user-busy' };
-      const warning = Array.from(controls.control.querySelectorAll('[role=alert], .input-limit-anchor, .chat-input-warning')).find(node => node.getBoundingClientRect().width && /禁言|频繁|频率|稍后再发/.test(node.textContent));
-      if (warning) { if (input.value === text) setReactLikeValue(input, ''); return { status: 'restricted' }; }
-      const before = new Set(input.ownerDocument.querySelectorAll('.my-self'));
-      input._bilivexWheelText = text;
-      try { controls.button.click(); } finally { delete input._bilivexWheelText; }
-      const deadline = Date.now() + 2000;
-      while (Date.now() < deadline && token === wheelToken) {
-        const newOwn = Array.from(input.ownerDocument.querySelectorAll('.my-self')).some(node => !before.has(node) && node.textContent.includes(text));
-        // 空输入仅代表原生控件消耗文本；不把旧弹幕或任意输入变化当成确认。
-        if (newOwn || input.value === '') return { status: 'confirmed' };
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      return { status: 'unconfirmed' };
-    });
-  }
-
-  async function startWheel() {
-    if (!wheelConfig.riskAccepted || wheelRelease || wheelState.status === 'starting') return;
-    let snapshot;
-    try { snapshot = wheelSnapshot(); } catch (error) { wheelState.reason = error.message; renderWheelStatus(); return; }
-    const locks = panelWindow.navigator.locks;
-    if (!locks) { wheelState.reason = '当前页面不支持跨标签互斥，无法开始'; renderWheelStatus(); return; }
-    const token = ++wheelToken;
-    wheelState = { ...snapshot, status: 'starting', reason: '正在检查运行权限', triggered: 0, confirmed: 0, unconfirmed: 0, failures: 0, missingAt: 0, startedAt: Date.now() };
-    renderWheelStatus();
-    // 独立房间锁比 GM 读后写租约可靠；锁会在标签页关闭时由浏览器自动释放。
-    locks.request('bilivex-wheel-room-' + snapshot.room, { ifAvailable: true }, async lock => {
-      if (token !== wheelToken) return;
-      if (!lock) { stopWheel('该房间已在另一标签页运行'); return; }
-      await locks.request('bilivex-wheel-room-index', () => {
-        let rooms; try { rooms = JSON.parse(GM_getValue('bilivex_wheel_rooms_v1') || '[]'); } catch (e) { rooms = []; }
-        GM_setValue('bilivex_wheel_rooms_v1', JSON.stringify([...new Set(rooms.filter(room => /^\d+$/.test(room)).concat(snapshot.room))].slice(-100)));
-      });
-      if (token !== wheelToken) return;
-      await new Promise(resolve => {
-        wheelRelease = resolve;
-        wheelState.status = 'running'; wheelState.reason = '运行中';
-        if (wheelConfig.resume.enabled) { const latest = normalizeWheelConfig(JSON.parse(GM_getValue(WHEEL_CONFIG_KEY) || '{}')); wheelConfig.resume.byRoom = { ...latest.resume.byRoom, [snapshot.room]: snapshot.mode }; saveWheelConfig(); }
-        if (snapshot.timeLimitSec) wheelDeadlineTimer = setTimeout(() => stopWheel('已达到运行时限'), Math.max(0, wheelState.startedAt + snapshot.timeLimitSec * 1000 - Date.now()));
-        const heartbeat = () => {
-          if (token !== wheelToken) return;
-          if (currentWheelRoom() !== snapshot.room) { stopWheel('已换房，独轮车已停止'); return; }
-          if (snapshot.timeLimitSec && Date.now() >= wheelState.startedAt + snapshot.timeLimitSec * 1000) { stopWheel('已达到运行时限'); return; }
-          wheelPublish(); renderWheelStatus();
-          wheelHeartbeatTimer = setTimeout(heartbeat, 5000);
-        };
-        heartbeat();
-        scheduleWheel(token, 0);
-      });
-    }).catch(error => { if (token === wheelToken) stopWheel('运行失败：' + error.message); });
-  }
-
-  function scheduleWheel(token, delay) {
-    if (token !== wheelToken || !wheelRelease) return;
-    wheelState.nextSendAt = Date.now() + delay;
-    renderWheelStatus();
-    wheelTimer = setTimeout(async () => {
-      if (token !== wheelToken || !wheelRelease) return;
-      if (wheelState.timeLimitSec && Date.now() >= wheelState.startedAt + wheelState.timeLimitSec * 1000) { stopWheel('已达到运行时限'); return; }
-      const group = wheelState.groups[wheelState.groupIndex];
-      try {
-        // 同账号跨房间自动任务共享串行锁与 5 秒点击间隔，手动 +1 不被限流。
-        const result = await panelWindow.navigator.locks.request('bilivex-wheel-native-send', async () => {
-          if (token !== wheelToken) return { status: 'cancelled' };
-          const last = Number(GM_getValue('bilivex_wheel_last_send_v1')) || 0;
-          if (Date.now() - last < 5000) return { status: 'cooldown' };
-          const sent = await sendWheelMessage(group.messages[group.cursor], token, wheelState.room);
-          if (['confirmed', 'unconfirmed'].includes(sent.status)) GM_setValue('bilivex_wheel_last_send_v1', Date.now());
-          return sent;
-        });
-        if (token !== wheelToken) return;
-        if (result.status === 'restricted') { stopWheel('原生控件提示禁言或发送频率限制，已停止'); return; }
-        if (result.status === 'emotion-missing') { stopWheel('所选表情在当前直播间不可用，已停止'); return; }
-        if (result.status === 'room-changed') { stopWheel('已换房，独轮车已停止'); return; }
-        if (result.status === 'cancelled') return;
-        if (['confirmed', 'unconfirmed'].includes(result.status)) {
-          wheelState.triggered++; wheelState[result.status]++;
-          wheelState.failures = result.status === 'unconfirmed' ? wheelState.failures + 1 : 0;
-          group.cursor = (group.cursor + 1) % group.messages.length;
-          wheelState.groupIndex = (wheelState.groupIndex + 1) % wheelState.groups.length;
-          wheelState.missingAt = 0;
-          if (wheelState.failures >= 2) { stopWheel('连续两次发送未确认，已停止'); return; }
-        } else if (result.status === 'missing') {
-          wheelState.missingAt = wheelState.missingAt || Date.now();
-          if (Date.now() - wheelState.missingAt >= 15000) { stopWheel('原生控件持续不可用，已停止'); return; }
-        }
-        wheelState.status = ['user-busy', 'missing', 'cooldown'].includes(result.status) ? 'paused' : 'running';
-        wheelState.reason = result.status === 'user-busy' ? '等待用户输入完成' : result.status === 'missing' ? '等待原生控件恢复' : result.status === 'cooldown' ? '等待发送间隔' : result.status === 'unconfirmed' ? '已触发，未确认结果' : '运行中';
-        if (wheelState.status === 'paused') wheelNotify(wheelState.reason);
-        scheduleWheel(token, wheelDelay(wheelState.groups[wheelState.groupIndex], Math.random));
-      } catch (error) { if (token === wheelToken) stopWheel('发送异常，已停止：' + error.message); }
-    }, delay);
-  }
-
-  function bindWheelEntry() {
-    // 活动页的顶层和同源 iframe 都会运行脚本。轮椅入口必须只由顶层实例维护，
-    // 否则两个控件观察器会在同一个发送栏中反复移动各自按钮，造成页面卡死。
-    if (document !== panelDocument) {
-      if (typeof sharedRuntime.bindWheelEntry === 'function') sharedRuntime.bindWheelEntry();
-      return;
-    }
-    const controls = strictWheelControls();
-    if (wheelEntry && (!controls || wheelEntry.parentElement !== controls.button.parentElement)) { wheelEntry.remove(); wheelEntry = null; }
-    if (!controls) return;
-    const { button, control } = controls;
-    if (control !== wheelControl) {
-      if (wheelControlObserver) wheelControlObserver.disconnect();
-      wheelControl = control;
-      wheelControlObserver = new MutationObserver(() => bindWheelEntry());
-      wheelControlObserver.observe(control, { childList: true, subtree: true });
-    }
-    if (!wheelEntry) {
-      wheelEntry = createWheelButton(button.ownerDocument, false);
-      const rect = button.getBoundingClientRect();
-      wheelEntry.style.cssText = 'display:inline-flex;vertical-align:middle;align-items:center;justify-content:center;box-sizing:border-box;padding:0;margin-right:5px;border:1px solid transparent;border-radius:50%;background:transparent;cursor:pointer;position:relative;';
-      wheelEntry.style.height = rect.height + 'px';
-      wheelEntry.style.width = rect.height + 'px';
-      wheelEntry.style.minWidth = rect.height + 'px';
-      wheelEntry.firstElementChild.width = Math.max(16, Math.round(rect.height * .72));
-      wheelEntry.firstElementChild.height = Math.max(16, Math.round(rect.height * .72));
-      button.before(wheelEntry);
-    }
-    if (wheelEntry.nextElementSibling !== button) button.before(wheelEntry);
-    if (wheelRelease && currentWheelRoom() !== wheelState.room) stopWheel('已换房，独轮车已停止');
-    if (document === panelDocument && !wheelRelease && wheelConfig.resume.enabled && controls.room && wheelResumeRoom !== controls.room) {
-      wheelResumeRoom = controls.room;
-      const mode = wheelConfig.resume.byRoom[controls.room];
-      if (mode && wheelConfig.riskAccepted) {
-        wheelConfig.activeSource = mode;
-        try { wheelSnapshot(); } catch (e) { return; }
-        openWheelPanel(); wheelState.reason = '3 秒后恢复，可点击暂停取消'; renderWheelStatus();
-        wheelResumeTimer = setTimeout(() => { wheelResumeTimer = null; startWheel(); }, 3000);
-      }
-    }
-  }
-
-  function disposeWheel() {
-    if (document === panelDocument) { const view = panelDocument.getElementById('bilivex-wheel-window'); if (view) view.remove(); const style = panelDocument.getElementById('bilivex-wheel-window-style'); if (style) style.remove(); }
-    stopWheel('页面已离开', true);
-    if (wheelControlObserver) wheelControlObserver.disconnect();
-    if (wheelEntry) wheelEntry.remove();
-    wheelControlObserver = wheelControl = wheelEntry = null;
   }
 
   function getFrameTransform() {
@@ -1735,23 +1215,9 @@
     return ownerDocument.body || ownerDocument.documentElement;
   }
 
-  function ensureFloatingUiGuardStyle(ownerDocument) {
-    if (!ownerDocument) return null;
-    let style = ownerDocument.getElementById('bilivex-floating-ui-guard-style');
-    if (style) return style;
-    style = ownerDocument.createElement('style');
-    style.id = 'bilivex-floating-ui-guard-style';
-    // 超出播放器边界的长弹幕副本会直接挂到顶层 body，以免被画面裁剪。
-    // 活动页网页模式会隐藏这类附加节点，因此只锁定 visibility；opacity 仍继承原弹幕。
-    style.textContent = '#bilivex-dm-resident,.bilivex-float-highlight,.bilivex-float-actions{visibility:visible!important}';
-    (ownerDocument.head || ownerDocument.documentElement).appendChild(style);
-    return style;
-  }
-
   function getResidentLayer() {
     const host = getUiHost();
     if (!host) return null;
-    ensureFloatingUiGuardStyle(host.ownerDocument || panelDocument);
     let residentLayer = sharedRuntime.residentLayer;
     if (residentLayer && residentLayer.ownerDocument !== host.ownerDocument) {
       try {
@@ -2177,11 +1643,11 @@
             if (result.status === 'confirmed' || result.status === 'triggered' || result.status === 'timeout') showFloatingPlusFeedback(clone);
           });
         });
-        cFav.addEventListener('click', async (e) => {
+        cFav.addEventListener('click', (e) => {
           e.stopPropagation(); e.preventDefault();
           const payload = clone._bilivexPayload || extractFloatingDmPayload(item);
-          const result = await addFavorite(payload.type === 'emoji-special' ? '' : payload.text, item.ownerDocument);
-          showToast(result.status === 'added' ? '已收藏' : result.status === 'associated' ? '已关联当前直播间' : result.status === 'duplicate' ? '已在收藏夹中' : result.status === 'limit' ? '收藏夹已达上限' : '该弹幕无文本内容');
+          const result = addFavorite(payload.type === 'emoji-special' ? '' : payload.text);
+          showToast(result.status === 'added' ? '已收藏' : result.status === 'duplicate' ? '已在收藏夹中' : result.status === 'limit' ? '收藏夹已达上限' : '该弹幕无文本内容');
         });
         actionGroup.appendChild(cBtn);
         actionGroup.appendChild(cFav);
@@ -2189,7 +1655,6 @@
         clone._bilivexFloatActionGroup = actionGroup;
         clone._bilivexFloatActionHost = actionHost;
         actionGroup._bilivexFloatClone = clone;
-        ensureFloatingUiGuardStyle(overlayDocument);
         // 悬停弹幕通常在直播画面范围内展示（不溢出到聊天区）；
         // 贴近画面边界的弹幕则完整显示，保证悬停弹幕不会消失。
         cloneHost.appendChild(clone);
@@ -2970,24 +2435,11 @@
   }
 
   // ---------- 悬浮主菜单 ----------
-  function ensurePanelGuardStyle() {
-    let style = panelDocument.getElementById('bilivex-panel-guard-style');
-    if (style) return style;
-    style = panelDocument.createElement('style');
-    style.id = 'bilivex-panel-guard-style';
-    // 活动页进入网页模式时会给 body 的附加子节点写入 visibility:hidden。
-    // 样式表中的 important 规则用于抵抗这次外部内联改写，面板自身没有隐藏状态。
-    style.textContent = '#bilivex-panel{display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483647!important}';
-    (panelDocument.head || panelDocument.documentElement).appendChild(style);
-    return style;
-  }
-
   function ensurePanelVisible(panel, host) {
     if (!panel || !host) return false;
-    ensurePanelGuardStyle();
     if (panel.parentNode !== host) host.appendChild(panel);
     panel.style.position = 'fixed';
-    panel.style.setProperty('z-index', '2147483647', 'important');
+    panel.style.zIndex = '2147483001';
     panel.style.display = 'block';
     panel.style.visibility = 'visible';
     panel.style.opacity = '1';
@@ -3024,7 +2476,6 @@
     if (document !== panelDocument) return !!existing;
     const host = getUiHost();
     if (!host) return false;
-    ensurePanelGuardStyle();
     if (existing) {
       // SPA/全屏切换可能留下脱离宿主的旧节点，重新挂载并恢复控制器引用。
       if (!ensurePanelVisible(existing, host)) return false;
@@ -3042,7 +2493,7 @@
       (cfg.panelPos && cfg.panelPos.left != null && cfg.panelPos.top != null)
         ? ('left:' + cfg.panelPos.left + 'px;top:' + cfg.panelPos.top + 'px;right:auto')
         : 'right:18px;top:96px;left:auto',
-      'z-index:2147483647',
+      'z-index:2147483001',
       // 折叠态为 56×56 圆形 logo 悬浮球；展开态维持 220px 矩形面板
       collapsed
         ? ('width:' + COLLAPSED_BTN_SIZE + 'px;height:' + COLLAPSED_BTN_SIZE + 'px;' +
@@ -3055,8 +2506,6 @@
       // 原位折叠/展开时同步过渡尺寸与位置；右侧锚点需要 left 与 width 同步变化以保持右缘不跳动。
       'transition:width .25s ease,height .25s ease,left .25s ease,top .25s ease,border-radius .25s ease,box-shadow .25s ease,background .25s ease',
     ].join(';');
-    // B 站 iframe 网页模式可能把播放器提升到最大层级；面板后挂载在同层即可保持可见。
-    panel.style.setProperty('z-index', '2147483647', 'important');
 
     // 标题栏：展开态使用当前主题渐变色；折叠态 head 仅承载 logo（视觉由 img 主导）
     const head = panelDocument.createElement('div');
@@ -3793,16 +3242,7 @@
     if (old) old.remove();
     const style = uiDocument.createElement('style');
     style.id = 'bilivex-float-dm-anim';
-    style.textContent = '[data-bilivex-wheel-entry]:focus-visible,.bilivex-wheel-view button:focus-visible{outline:2px solid ' + currentTheme.primary + ';outline-offset:2px;}' +
-      '[data-bilivex-wheel-entry]{border-radius:50%!important;background:transparent!important;}' +
-      '[data-bilivex-wheel-entry]:hover{border-color:' + currentTheme.primary + '!important;}' +
-      '[data-bilivex-wheel-entry][data-wheel-status=running]{background:rgba(52,180,128,.22)!important;border-color:rgba(52,180,128,.65)!important;}' +
-      '[data-bilivex-wheel-entry][data-wheel-status=paused]{background:rgba(225,166,57,.22)!important;border-color:rgba(225,166,57,.65)!important;}' +
-      '[data-bilivex-wheel-entry][data-wheel-status=error]{background:rgba(222,101,101,.18)!important;border-color:rgba(222,101,101,.6)!important;}' +
-      '.bilivex-wheel-view button:disabled{opacity:.55;cursor:not-allowed;}' +
-      '.bilivex-wheel-view fieldset{min-inline-size:0;}' +
-      '@media(prefers-reduced-motion:reduce){[data-bilivex-wheel-entry],.bilivex-wheel-view *{animation:none!important;transition:none!important;}}' +
-      '@keyframes bilivex-float-plus{' +
+    style.textContent = '@keyframes bilivex-float-plus{' +
       '0%{opacity:0;transform:translate(-50%,-50%) scale(0.5);}' +
       '18%{opacity:1;transform:translate(-50%,-90%) scale(1.25);}' +
       '70%{opacity:0.95;transform:translate(-50%,-160%) scale(1);}' +
@@ -3855,338 +3295,6 @@
     return copied;
   }
 
-  // ---------- 独轮车视图：复用主面板、收藏按钮和提示 ----------
-  function createWheelButton(doc, favorites) {
-    const button = doc.createElement('button');
-    button.type = 'button'; button.id = favorites ? 'bilivex-favorites-wheel-entry' : 'bilivex-wheel-entry';
-    button.dataset.bilivexWheelEntry = '1';
-    button.setAttribute('aria-label', '打开独轮车面板'); button.title = '打开独轮车面板';
-    const icon = doc.createElement('img'); icon.src = WHEEL_ICON_URI; icon.alt = ''; icon.width = 20; icon.height = 20;
-    button.appendChild(icon);
-    button.addEventListener('click', () => {
-      const open = sharedRuntime.openWheelPanel;
-      if (typeof open === 'function') open(undefined, favorites ? null : doc);
-    });
-    button.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:30px;height:30px;min-width:30px;margin-left:auto;border:1px solid transparent;border-radius:50%;background:transparent;padding:0;cursor:pointer;';
-    button.dataset.wheelStatus = 'idle';
-    return button;
-  }
-
-  function wheelField(parent, name, value, onChange, type) {
-    const label = panelDocument.createElement('label'); label.className = 'wheel-field'; label.style.cssText = 'display:block;margin:8px 0;';
-    const caption = panelDocument.createElement('span'); caption.textContent = ({'间隔秒数':'发送间隔 · 秒','运行时限（秒，0 为不限时）':'自动停止 · 秒（0 为不限）','单条长度（auto 为自动）':'单条长度 · auto 为自动'})[name] || name; label.appendChild(caption);
-    const input = panelDocument.createElement(type === 'textarea' ? 'textarea' : 'input');
-    if (type !== 'textarea') input.type = type || 'number';
-    if (type === 'checkbox') input.checked = value; else input.value = value;
-    input.setAttribute('aria-label', name);
-    input.style.cssText = type === 'checkbox' ? 'margin-left:8px;' : 'display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:5px;border:1px solid #cbd5df;border-radius:6px;color:inherit;background:transparent;font:inherit;';
-    if (type === 'textarea') { input.rows = 4; input.maxLength = 20000; }
-    input.addEventListener('input', () => { onChange(type === 'checkbox' ? input.checked : input.value); saveWheelConfig(); renderWheelPreview(); });
-    label.appendChild(input); parent.appendChild(label); return input;
-  }
-
-  function renderWheelStatus() {
-    const view = panelDocument.querySelector('.bilivex-wheel-view');
-    const running = !!wheelRelease || wheelState.status === 'starting' || !!wheelResumeTimer;
-    if (view) {
-      const editor = view.querySelector('fieldset'); if (editor) editor.disabled = running;
-      const summary = view.querySelector('[data-wheel-summary]');
-      if (summary) summary.textContent = wheelState.reason + '\n已触发 ' + wheelState.triggered + ' · 已确认 ' + wheelState.confirmed + ' · 未确认 ' + wheelState.unconfirmed;
-      const start = view.querySelector('[data-wheel-start]');
-      if (start) {
-        start.textContent = running ? '暂停' : '开始';
-        start.title = running ? '停止当前独轮车任务' : '开始发送';
-        start.dataset.running = String(running);
-        start.disabled = !running && !view.dataset.valid;
-      }
-    }
-    [document, panelDocument, wheelChatDocument].filter((doc, index, docs) => doc && docs.indexOf(doc) === index).forEach(doc => {
-      doc.querySelectorAll('[data-bilivex-wheel-entry]').forEach(button => {
-        button.title = '独轮车：' + wheelState.reason + '，房间 ' + (wheelState.room || currentWheelRoom() || '未知');
-        button.setAttribute('aria-busy', String(wheelState.status === 'starting'));
-        button.dataset.wheelStatus = running ? wheelState.status === 'paused' ? 'paused' : 'running' : wheelState.status === 'error' ? 'error' : 'idle';
-        button.style.boxShadow = '';
-      });
-    });
-  }
-
-  function renderWheelPreview() {
-    const view = panelDocument.querySelector('.bilivex-wheel-view');
-    if (!view) return;
-    const preview = view.querySelector('[data-wheel-preview]');
-    try {
-      const snapshot = wheelSnapshot();
-      view.dataset.valid = '1';
-      const timing = snapshot.groups[0];
-      const interval = timing.randomize ? timing.intervalMinSec + '～' + timing.intervalMaxSec : timing.intervalMinSec;
-      preview.textContent = '首条立即发送 · 间隔 ' + interval + ' 秒\n' + snapshot.groups.flatMap(group => group.messages).slice(0, 3).map(wheelEmotionLabel).join('\n');
-      const note = view.querySelector('[data-wheel-length-note]');
-      if (note) note.textContent = (snapshot.compatibleLimit ? '当前使用兼容长度 20。' : '当前单条上限 ' + snapshot.limit + '。') + '预览已包含主面板设置的小尾巴，长文本会自动切分。';
-    } catch (error) { view.dataset.valid = ''; preview.textContent = error.message; }
-    renderWheelStatus();
-  }
-
-  function showInlineConfirmation(parent, message, action) {
-    const previous = parent.querySelector('[data-wheel-confirm]'); if (previous) previous.remove();
-    const area = panelDocument.createElement('div'); area.dataset.wheelConfirm = '1';
-    area.style.cssText = 'padding:8px;margin-top:8px;border:1px solid #d99a21;border-radius:6px;';
-    const text = panelDocument.createElement('p'); text.textContent = message; area.appendChild(text);
-    area.appendChild(favoriteButton('取消', 'secondary', () => area.remove()));
-    area.appendChild(favoriteButton('确认', 'primary', async () => {
-      try { await action(); area.remove(); } catch (error) { text.textContent = error.message; }
-    }));
-    parent.appendChild(area);
-  }
-
-  function renderWheelEmotions(editor) {
-    const room = currentWheelRoom();
-    const help = panelDocument.createElement('div'); help.className = 'wheel-help'; help.innerHTML = '<strong>循环发送表情</strong><span>从当前直播间的 B 站表情面板选择，开车后按选择顺序循环。房间专属表情只保存在这个房间。</span>'; editor.appendChild(help);
-    const toolbar = panelDocument.createElement('div'); toolbar.className = 'wheel-emotion-tools'; editor.appendChild(toolbar);
-    const status = panelDocument.createElement('span'); status.textContent = room ? '正在读取房间表情…' : '暂无法确定当前直播间'; toolbar.appendChild(status);
-    const refresh = favoriteButton('刷新表情', 'secondary', load); refresh.disabled = !room; toolbar.appendChild(refresh);
-    const list = panelDocument.createElement('div'); list.className = 'wheel-emotion-list'; list.setAttribute('aria-label', '可选表情'); editor.appendChild(list);
-
-    function render(items, message) {
-      if (!editor.isConnected) return;
-      list.textContent = '';
-      const selected = new Set(wheelConfig.emotion.selectedByRoom[room] || []);
-      const available = new Set(items.map(item => item.id));
-      const rows = items.concat([...selected].filter(id => !available.has(id)).map(id => ({ id, label: '已选表情（当前未加载）', src: '' })));
-      const packages = new Map();
-      rows.forEach(item => {
-        const key = item.packageId || 'other';
-        if (!packages.has(key)) packages.set(key, { name: item.packageName || '其他表情', icon: item.packageIcon || item.src, items: [] });
-        packages.get(key).items.push(item);
-      });
-      let packageIndex = 0;
-      packages.forEach((pack, key) => {
-        const detail = panelDocument.createElement('details'); detail.className = 'wheel-emotion-pack';
-        const stateKey = room + ':' + key;
-        detail.open = wheelEmotionExpanded.has(stateKey) ? wheelEmotionExpanded.get(stateKey) : packageIndex === 0;
-        packageIndex += 1;
-        const summary = panelDocument.createElement('summary');
-        if (pack.icon) { const cover = panelDocument.createElement('img'); cover.src = pack.icon; cover.alt = ''; summary.appendChild(cover); }
-        const title = panelDocument.createElement('strong'); title.textContent = pack.name; summary.appendChild(title);
-        const count = panelDocument.createElement('small'); summary.appendChild(count); detail.appendChild(summary);
-        const grid = panelDocument.createElement('div'); grid.className = 'wheel-emotion-grid'; detail.appendChild(grid);
-        const updateCount = () => { const ids = wheelConfig.emotion.selectedByRoom[room] || []; count.textContent = pack.items.filter(item => ids.includes(item.id)).length + ' 已选 · ' + pack.items.length; };
-        pack.items.forEach(item => {
-          const button = panelDocument.createElement('button'); button.type = 'button'; button.className = 'wheel-emotion'; button.dataset.wheelEmotionId = item.id;
-          const updateButton = () => { const active = (wheelConfig.emotion.selectedByRoom[room] || []).includes(item.id); button.setAttribute('aria-pressed', String(active)); button.setAttribute('aria-label', (active ? '取消选择 ' : '选择 ') + item.label); };
-          updateButton();
-          if (item.src) { const image = panelDocument.createElement('img'); image.src = item.src; image.alt = ''; image.loading = 'lazy'; button.appendChild(image); }
-          const label = panelDocument.createElement('span'); label.textContent = item.label; button.appendChild(label);
-          button.addEventListener('click', () => {
-            const next = new Set(wheelConfig.emotion.selectedByRoom[room] || []);
-            if (next.has(item.id)) next.delete(item.id); else next.add(item.id);
-            wheelConfig.emotion.selectedByRoom[room] = [...next];
-            saveWheelConfig(); updateButton(); updateCount();
-            status.textContent = '已选 ' + next.size + ' 个 · ' + packages.size + ' 个表情包';
-            renderWheelPreview();
-          });
-          grid.appendChild(button);
-        });
-        updateCount();
-        detail.addEventListener('toggle', () => { wheelEmotionExpanded.set(stateKey, detail.open); });
-        list.appendChild(detail);
-      });
-      status.textContent = message || (items.length ? '已选 ' + selected.size + ' 个 · ' + packages.size + ' 个表情包' : '没有读取到可用表情');
-    }
-
-    async function load() {
-      if (!room || refresh.disabled) return;
-      refresh.disabled = true; status.textContent = '正在读取房间表情…';
-      try {
-        const result = await discoverNativeEmoticons();
-        if (result.room !== room) throw new Error('直播间已变化，请重新打开独轮车');
-        wheelEmotionCatalog.set(room, result.items); render(result.items); renderWheelPreview();
-      } catch (error) {
-        if (editor.isConnected) { wheelEmotionCatalog.set(room, []); render([], error.message); renderWheelPreview(); }
-      } finally {
-        if (editor.isConnected) refresh.disabled = false;
-      }
-    }
-
-    const cached = wheelEmotionCatalog.get(room);
-    if (cached) render(cached); else if (room) load(); else render([]);
-    const rhythm = panelDocument.createElement('div'); rhythm.className = 'wheel-rhythm'; editor.appendChild(rhythm);
-    wheelField(rhythm, '间隔秒数', wheelConfig.emotion.intervalMinSec, value => { wheelConfig.emotion.intervalMinSec = value; });
-    wheelField(rhythm, '运行时限（秒，0 为不限时）', wheelConfig.emotion.timeLimitSec, value => { wheelConfig.emotion.timeLimitSec = value; });
-  }
-
-  function ensureWheelWindow() {
-    let view = panelDocument.getElementById('bilivex-wheel-window');
-    if (view) return view;
-    const style = panelDocument.createElement('style');
-    style.id = 'bilivex-wheel-window-style';
-    style.textContent = `
-      #bilivex-wheel-window{--wheel-accent:#00aeec;--wheel-tint:rgba(0,174,236,.10);--wheel-gradient:linear-gradient(90deg,#00aeec,#5cc8ff);--wheel-shadow:rgba(0,174,236,.25);position:fixed;z-index:2147483647!important;right:24px;top:80px;width:360px;max-width:calc(100vw - 24px);max-height:calc(100vh - 32px);display:flex;flex-direction:column;box-sizing:border-box;color:#283543;background:rgba(255,255,255,.9);border:1px solid rgba(224,230,237,.9);border-radius:12px;box-shadow:0 4px 16px var(--wheel-shadow);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);font:13px/1.5 -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;overflow:hidden;isolation:isolate;outline:none}
-      #bilivex-wheel-window[hidden]{display:none!important}
-      #bilivex-wheel-window *{box-sizing:border-box}
-      #bilivex-wheel-window .wheel-head{display:flex;align-items:center;gap:9px;padding:10px 12px;color:#fff;background:var(--wheel-gradient);border-bottom:1px solid rgba(255,255,255,.22);cursor:grab;touch-action:none;user-select:none;flex-shrink:0}
-      #bilivex-wheel-window .wheel-symbol{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.88);display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.1)}
-      #bilivex-wheel-window .wheel-heading{flex:1;min-width:0}
-      #bilivex-wheel-window .wheel-heading strong{display:block;font-size:16px;font-weight:650;letter-spacing:.3px}
-      #bilivex-wheel-window .wheel-heading small{font-size:11px;color:rgba(255,255,255,.82)}
-      #bilivex-wheel-window button{font:inherit!important;border-radius:9px!important;box-shadow:none;transition:background .15s,color .15s,opacity .15s!important;max-width:100%}
-      #bilivex-wheel-window button:focus-visible,#bilivex-wheel-window summary:focus-visible{outline:2px solid var(--wheel-accent);outline-offset:2px}
-      #bilivex-wheel-window .wheel-close{border:0!important;background:rgba(255,255,255,.13)!important;color:#fff!important;width:28px;height:28px;padding:0!important;font-size:20px!important;cursor:pointer}
-      #bilivex-wheel-window .wheel-close:hover{background:rgba(255,255,255,.24)!important}
-      #bilivex-wheel-window .wheel-scroll{overflow:auto;min-height:0;padding:14px 14px 12px;scrollbar-width:thin;scrollbar-color:#cbd5df transparent}
-      #bilivex-wheel-window fieldset{border:0;margin:0;padding:0;min-width:0}
-      #bilivex-wheel-window .wheel-sources{display:flex;gap:3px;padding:4px;background:var(--wheel-tint);border-radius:9px;margin-bottom:12px}
-      #bilivex-wheel-window .wheel-sources button{flex:1;border:0!important;background:transparent!important;color:#83909d!important;padding:7px 0!important;font-size:12px!important}
-      #bilivex-wheel-window .wheel-sources button[aria-pressed=true]{color:#fff!important;background:var(--wheel-accent)!important;box-shadow:0 2px 6px var(--wheel-shadow)}
-      #bilivex-wheel-window .wheel-field{display:block;margin:10px 0!important;color:#5f6c7b;font-size:12px}
-      #bilivex-wheel-window .wheel-field>span{display:block;margin-bottom:7px}
-      #bilivex-wheel-window input:not([type=checkbox]),#bilivex-wheel-window textarea{display:block;width:100%;min-width:0;border:1px solid rgba(154,177,196,.22)!important;background:rgba(255,255,255,.58)!important;border-radius:11px!important;padding:9px 11px!important;font-family:inherit;font-size:13px;line-height:1.65;color:#283543!important;outline:0}
-      #bilivex-wheel-window input:focus,#bilivex-wheel-window textarea:focus{border-color:var(--wheel-accent)!important;box-shadow:0 0 0 3px var(--wheel-tint)}
-      #bilivex-wheel-window textarea{min-height:112px;max-height:220px;resize:vertical;line-height:1.7!important}
-      #bilivex-wheel-window textarea::placeholder,#bilivex-wheel-window input::placeholder{color:#a0aab5}
-      #bilivex-wheel-window .wheel-rhythm{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
-      #bilivex-wheel-window .wheel-rhythm .wheel-field{margin:0!important}
-      #bilivex-wheel-window .wheel-help{display:flex;flex-direction:column;gap:3px;margin:0 0 11px;padding:10px 11px;border:1px solid rgba(154,177,196,.18);border-left:3px solid var(--wheel-accent);border-radius:8px;background:rgba(255,255,255,.42)}
-      #bilivex-wheel-window .wheel-help strong{font-size:13px;color:#334354}
-      #bilivex-wheel-window .wheel-help span{font-size:11px;line-height:1.6;color:#718091}
-      #bilivex-wheel-window .wheel-emotion-tools{display:flex;align-items:center;gap:8px;margin-bottom:9px}
-      #bilivex-wheel-window .wheel-emotion-tools span{flex:1;color:#718091;font-size:11px}
-      #bilivex-wheel-window .wheel-emotion-list{max-height:300px;overflow:auto;padding:2px;margin-bottom:8px}
-      #bilivex-wheel-window .wheel-emotion-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;padding:8px}
-      #bilivex-wheel-window .wheel-emotion-pack{border:1px solid rgba(154,177,196,.20);border-radius:9px;margin:0 0 7px;overflow:hidden}
-      #bilivex-wheel-window .wheel-emotion-pack>summary{padding:8px;background:var(--wheel-tint);gap:8px}
-      #bilivex-wheel-window .wheel-emotion-pack>summary img{width:28px;height:28px;object-fit:contain;flex-shrink:0}
-      #bilivex-wheel-window .wheel-emotion-pack>summary strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
-      #bilivex-wheel-window .wheel-emotion-pack>summary small{font-size:10px;flex-shrink:0}
-      #bilivex-wheel-window [data-bilivex-favorite-button=secondary]{background:var(--wheel-tint)!important;border-color:transparent!important;color:inherit!important}
-      #bilivex-wheel-window [data-bilivex-favorite-button=primary]{background:var(--wheel-accent)!important;border-color:transparent!important;color:#fff!important}
-      #bilivex-wheel-window [data-wheel-start][data-running=true]{background:#d89b36!important}
-      #bilivex-wheel-window .wheel-emotion{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:7px 3px!important;border:1px solid rgba(154,177,196,.22)!important;background:rgba(255,255,255,.48)!important;color:#627181!important;cursor:pointer}
-      #bilivex-wheel-window .wheel-emotion img{width:30px;height:30px;object-fit:contain}
-      #bilivex-wheel-window .wheel-emotion span{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-align:center}
-      #bilivex-wheel-window .wheel-emotion[aria-pressed=true]{border-color:var(--wheel-accent)!important;background:var(--wheel-tint)!important;color:var(--wheel-accent)!important;box-shadow:inset 0 0 0 1px var(--wheel-accent)}
-      #bilivex-wheel-window details{margin:10px 0;color:#7b8795;font-size:12px}
-      #bilivex-wheel-window summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:3px 0}
-      #bilivex-wheel-window summary:before{content:'›';font-size:16px;line-height:1;transition:transform .15s}
-      #bilivex-wheel-window details[open]>summary:before{transform:rotate(90deg)}
-      #bilivex-wheel-window .wheel-preview{margin-top:14px;padding:11px 12px;background:var(--wheel-tint);border-radius:12px;color:#536778;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:125px;overflow:auto}
-      #bilivex-wheel-window .wheel-preview:before{content:'发送预览';display:block;font-size:10px;letter-spacing:.8px;color:#90a0ad;margin-bottom:5px}
-      #bilivex-wheel-window .wheel-footer{flex-shrink:0;padding:11px 14px 13px;border-top:1px solid rgba(153,173,190,.16);background:rgba(255,255,255,.46)}
-      #bilivex-wheel-window [data-wheel-summary]{font-size:11px;line-height:1.7;color:#8793a0;white-space:pre-line;margin-bottom:10px}
-      #bilivex-wheel-window .wheel-actions{display:flex;gap:9px}
-      #bilivex-wheel-window .wheel-actions button{height:38px;border:0!important;padding:0 16px!important}
-      #bilivex-wheel-window [data-wheel-start]{flex:1;color:white!important;background:var(--wheel-accent)!important;font-weight:600!important}
-      #bilivex-wheel-window button:disabled{opacity:.43;cursor:not-allowed!important}
-      #bilivex-wheel-window [data-wheel-confirm]{margin:10px 20px;padding:12px!important;background:rgba(255,249,226,.9);max-height:190px;overflow:auto;flex-shrink:0}
-      #bilivex-wheel-window [data-wheel-confirm] p{margin:0 0 10px}
-      @supports not (backdrop-filter:blur(1px)){#bilivex-wheel-window{background:#f6f9fc}}
-      @media(prefers-reduced-motion:reduce){#bilivex-wheel-window *{transition:none!important;animation:none!important}}
-      :root[lab-style*=dark] #bilivex-wheel-window{background:rgba(30,38,50,.88);color:#e2eaf1;border-color:rgba(255,255,255,.13)}
-      :root[lab-style*=dark] #bilivex-wheel-window input:not([type=checkbox]),:root[lab-style*=dark] #bilivex-wheel-window textarea{background:rgba(255,255,255,.07)!important;color:#e2eaf1!important}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-field{color:#bcc8d2}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-help,:root[lab-style*=dark] #bilivex-wheel-window .wheel-emotion{background:rgba(255,255,255,.05)!important}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-help strong{color:#e2eaf1}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-help span,:root[lab-style*=dark] #bilivex-wheel-window .wheel-emotion-tools span{color:#b7c5d0}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-footer{background:rgba(255,255,255,.02)}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-preview{color:#c4d5e3}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-preview:before,:root[lab-style*=dark] #bilivex-wheel-window [data-wheel-summary],:root[lab-style*=dark] #bilivex-wheel-window details{color:#aebdca}
-      :root[lab-style*=dark] #bilivex-wheel-window [data-wheel-confirm]{background:#3c3525;color:#f4e5bd}
-    `;
-    panelDocument.head.appendChild(style);
-    view = panelDocument.createElement('section'); view.id = 'bilivex-wheel-window'; view.className = 'bilivex-wheel-view';
-    view.setAttribute('role', 'dialog'); view.setAttribute('aria-label', '独轮车'); view.tabIndex = -1;
-    panelDocument.body.appendChild(view);
-    listenLifecycle(panelWindow, 'resize', clampWheelWindow);
-    listenLifecycle(view, 'keydown', event => { if (event.key === 'Escape') { event.preventDefault(); closeWheelWindow(); } });
-    return view;
-  }
-
-  function clampWheelWindow() {
-    const view = panelDocument.getElementById('bilivex-wheel-window'); if (!view || view.hidden) return;
-    const rect = view.getBoundingClientRect();
-    view.style.left = Math.max(12, Math.min(rect.left, panelWindow.innerWidth - rect.width - 12)) + 'px';
-    view.style.top = Math.max(12, Math.min(rect.top, panelWindow.innerHeight - rect.height - 12)) + 'px';
-    view.style.right = 'auto';
-  }
-
-  function closeWheelWindow() {
-    const view = panelDocument.getElementById('bilivex-wheel-window'); if (view) view.hidden = true;
-    const entry = panelDocument.getElementById('bilivex-wheel-entry'); if (entry) entry.focus();
-    if (wheelRelease) wheelNotify('独轮车仍在运行，可从轮椅图标打开并停止');
-  }
-
-  function syncWheelTheme() {
-    const view = panelDocument.getElementById('bilivex-wheel-window'); if (!view) return;
-    view.style.setProperty('--wheel-accent', currentTheme.primary);
-    view.style.setProperty('--wheel-tint', 'rgba(' + currentTheme.primaryRgb + ',.09)');
-    view.style.setProperty('--wheel-gradient', currentTheme.titleGradient);
-    view.style.setProperty('--wheel-shadow', currentTheme.primaryShadow);
-  }
-
-  function openWheelPanel(source, sourceDocument) {
-    if (sourceDocument && !wheelRelease) wheelChatDocument = sourceDocument;
-    if (document !== panelDocument) { if (sharedRuntime.openWheelPanel) sharedRuntime.openWheelPanel(source, sourceDocument); return; }
-    if (source && !wheelRelease) { wheelConfig.activeSource = source; saveWheelConfig(); }
-    const view = ensureWheelWindow();
-    view.hidden = false; view.textContent = ''; syncWheelTheme();
-    const head = panelDocument.createElement('header'); head.className = 'wheel-head';
-    const symbol = panelDocument.createElement('span'); symbol.className = 'wheel-symbol';
-    const icon = panelDocument.createElement('img'); icon.src = WHEEL_ICON_URI; icon.alt = ''; icon.width = 25; icon.height = 25; symbol.appendChild(icon); head.appendChild(symbol);
-    const heading = panelDocument.createElement('div'); heading.className = 'wheel-heading';
-    const title = panelDocument.createElement('strong'); title.textContent = '独轮车';
-    const subtitle = panelDocument.createElement('small'); subtitle.textContent = '房间 ' + (currentWheelRoom() || '待连接');
-    heading.appendChild(title); heading.appendChild(subtitle); head.appendChild(heading);
-    const libraryButton = favoriteButton('☷', 'secondary', () => { closeWheelWindow(); openFavoritesPanel(); }); libraryButton.className = 'wheel-close'; libraryButton.setAttribute('aria-label', '返回收藏'); libraryButton.title = '打开收藏夹'; head.appendChild(libraryButton);
-    const close = favoriteButton('×', 'secondary', closeWheelWindow); close.className = 'wheel-close'; close.setAttribute('aria-label', '收起独轮车'); close.title = '收起窗口，运行任务保持'; head.appendChild(close); view.appendChild(head);
-    let drag = null;
-    head.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || event.target.closest('button')) return;
-      const rect = view.getBoundingClientRect(); drag = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-      head.setPointerCapture(event.pointerId); event.preventDefault();
-    });
-    head.addEventListener('pointermove', event => { if (!drag) return; view.style.left = event.clientX - drag.x + 'px'; view.style.top = event.clientY - drag.y + 'px'; view.style.right = 'auto'; clampWheelWindow(); });
-    head.addEventListener('pointerup', () => { drag = null; }); head.addEventListener('pointercancel', () => { drag = null; });
-    const scroll = panelDocument.createElement('div'); scroll.className = 'wheel-scroll'; view.appendChild(scroll);
-    const editor = panelDocument.createElement('fieldset'); scroll.appendChild(editor);
-    const sources = panelDocument.createElement('div'); sources.className = 'wheel-sources';
-    [['text', '文字'], ['emotion', '表情']].forEach(([key, label]) => {
-      const button = favoriteButton(label, wheelConfig.activeSource === key ? 'primary' : 'secondary', () => openWheelPanel(key)); button.setAttribute('aria-pressed', String(wheelConfig.activeSource === key)); sources.appendChild(button);
-    }); editor.appendChild(sources);
-    const mode = wheelConfig.activeSource;
-    const more = panelDocument.createElement('details'); const moreTitle = panelDocument.createElement('summary'); moreTitle.textContent = '更多发送选项'; more.appendChild(moreTitle);
-    const lengthNote = panelDocument.createElement('p'); lengthNote.dataset.wheelLengthNote = '1'; more.appendChild(lengthNote);
-    if (mode === 'text') {
-      const content = wheelField(editor, '文字内容', wheelConfig.text.content, value => { wheelConfig.text.content = value; }, 'textarea');
-      content.placeholder = '写下想发送的话\n每行一条，按顺序发送'; content.rows = 3;
-      const rhythm = panelDocument.createElement('div'); rhythm.className = 'wheel-rhythm'; editor.appendChild(rhythm);
-      wheelField(rhythm, '间隔秒数', wheelConfig.text.intervalMinSec, value => { wheelConfig.text.intervalMinSec = value; });
-      wheelField(rhythm, '运行时限（秒，0 为不限时）', wheelConfig.text.timeLimitSec, value => { wheelConfig.text.timeLimitSec = value; });
-      wheelField(more, '随机间隔', wheelConfig.text.randomize, value => { wheelConfig.text.randomize = value; }, 'checkbox');
-      wheelField(more, '最大间隔秒数', wheelConfig.text.intervalMaxSec, value => { wheelConfig.text.intervalMaxSec = value; });
-      wheelField(more, '单条长度（auto 为自动）', wheelConfig.text.maxLength, value => { wheelConfig.text.maxLength = value; }, 'text');
-    } else {
-      renderWheelEmotions(editor);
-      wheelField(more, '随机间隔', wheelConfig.emotion.randomize, value => { wheelConfig.emotion.randomize = value; }, 'checkbox');
-      wheelField(more, '最大间隔秒数', wheelConfig.emotion.intervalMaxSec, value => { wheelConfig.emotion.intervalMaxSec = value; });
-    }
-    wheelField(more, '按房间恢复（3 秒倒计时）', wheelConfig.resume.enabled, value => { wheelConfig.resume.enabled = value; if (!value) wheelConfig.resume.byRoom = {}; }, 'checkbox'); editor.appendChild(more);
-    const preview = panelDocument.createElement('div'); preview.dataset.wheelPreview = '1'; preview.className = 'wheel-preview'; editor.appendChild(preview);
-    const footer = panelDocument.createElement('footer'); footer.className = 'wheel-footer';
-    const summary = panelDocument.createElement('div'); summary.dataset.wheelSummary = '1'; summary.setAttribute('role', 'status'); footer.appendChild(summary);
-    const actions = panelDocument.createElement('div'); actions.className = 'wheel-actions'; footer.appendChild(actions);
-    const start = favoriteButton('开始', 'primary', () => {
-      if (wheelRelease || wheelState.status === 'starting' || wheelResumeTimer) { stopWheel('已暂停'); return; }
-      if (!wheelConfig.riskAccepted) showInlineConfirmation(view, '连续发送可能导致禁言或账号限制。请仅发送直播间允许的内容。确认后不再提示。', () => { wheelConfig.riskAccepted = true; saveWheelConfig(); return startWheel(); });
-      else startWheel();
-    }); start.dataset.wheelStart = '1'; actions.appendChild(start);
-    view.appendChild(footer);
-    const rooms = panelDocument.createElement('details'); const roomsTitle = panelDocument.createElement('summary'); roomsTitle.textContent = '其他房间运行状态'; rooms.appendChild(roomsTitle);
-    let roomIds; try { roomIds = JSON.parse(GM_getValue('bilivex_wheel_rooms_v1') || '[]'); } catch (e) { roomIds = []; }
-    roomIds.slice(0, 100).forEach(room => {
-      try { const state = JSON.parse(GM_getValue(wheelRuntimeKey(room)) || 'null'); if (state && Date.now() - state.updatedAt < 15000) { const line = panelDocument.createElement('div'); const modeName = state.mode === 'emotion' ? '表情' : '文字'; line.textContent = '房间 ' + room + ' · ' + modeName + ' · ' + (state.status === 'paused' ? '等待中' : '运行中'); rooms.appendChild(line); } } catch (e) {}
-    }); more.appendChild(rooms);
-    renderWheelPreview(); clampWheelWindow(); view.focus({ preventScroll: true });
-  }
-
   function favoriteButton(text, kind, onClick) {
     const b = panelDocument.createElement('button');
     b.type = 'button';
@@ -4211,7 +3319,7 @@
     const savedTransition = panel.style.transition;
     // 先关闭尺寸过渡取得目标的真实边界，再按既定边锚钳制，避免右侧展开越界或收起反向跳位。
     panel.style.transition = 'none';
-    panel.style.width = expanded ? Math.min(340, panelWindow.innerWidth - 16) + 'px' : '220px';
+    panel.style.width = expanded ? '340px' : '220px';
     panel.style.height = 'auto';
     placePanelAtAnchor(panel, beforeRect, anchor);
     panel.style.transition = savedTransition;
@@ -4223,7 +3331,7 @@
     const body = panel.querySelector('.bilivex-panel-body');
     const view = body && body.querySelector('.bilivex-favorites-view');
     if (!body || !view) return;
-    Array.from(body.children).forEach((child) => { if (child !== view) child.style.display = child.classList.contains('bilivex-wheel-view') ? 'none' : ''; });
+    Array.from(body.children).forEach((child) => { if (child !== view) child.style.display = ''; });
     view.style.display = 'none';
     resizePanelForFavorites(false);
   }
@@ -4231,7 +3339,7 @@
   function saveFavoritesExport() {
     const favorites = getFavorites();
     if (!favorites.length) { showToast('暂无可导出的收藏'); return; }
-    const content = JSON.stringify({ format: 'bilivex-favorites', ...readFavoriteLibrary(), exportedAt: new Date().toISOString() }, null, 2);
+    const content = JSON.stringify({ format: 'bilivex-favorites', schemaVersion: 1, exportedAt: new Date().toISOString(), favorites }, null, 2);
     const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = panelDocument.createElement('a');
@@ -4254,26 +3362,19 @@
     reader.onload = () => {
       try {
         const data = JSON.parse(String(reader.result || ''));
-        if (!data || data.format !== 'bilivex-favorites' || ![1, 2].includes(data.schemaVersion)) throw new Error('请选择有效的收藏文件');
-        const incoming = normalizeFavoriteLibrary(data.schemaVersion === 1 ? data.favorites : data);
-        const base = readFavoriteLibrary();
-        const view = panelDocument.querySelector('.bilivex-favorites-view');
-        showInlineConfirmation(view, '将合并导入 ' + incoming.items.length + ' 条收藏；相同文本会合并来源。', async () => {
-          await commitFavoriteLibrary(library => {
-            incoming.items.forEach(item => {
-              const existing = library.items.find(old => old.text === item.text);
-              if (existing) {
-                existing.sourceRoomIds = [...new Set(existing.sourceRoomIds.concat(item.sourceRoomIds))];
-              } else {
-                const id = library.items.some(old => old.id === item.id) ? makeFavorite(item.text).id : item.id;
-                library.items.push({ ...item, id });
-              }
-            });
-            return library;
-          }, base.revision);
-          if (typeof done === 'function') done(); showToast('收藏导入完成');
-        });
-      } catch (error) { showToast('导入失败：' + error.message); }
+        if (!data || data.format !== 'bilivex-favorites' || data.schemaVersion !== 1 || !Array.isArray(data.favorites)) {
+          throw new Error('invalid');
+        }
+        const before = getFavorites();
+        const combined = normalizeFavorites(before.concat(data.favorites));
+        const added = Math.max(0, combined.length - before.length);
+        const supplied = normalizeFavorites(data.favorites).length;
+        replaceFavorites(combined);
+        if (typeof done === 'function') done();
+        showToast('导入完成：新增 ' + added + ' 条，跳过 ' + Math.max(0, supplied - added) + ' 条');
+      } catch (e) {
+        showToast('导入失败：请选择有效的收藏文件');
+      }
     };
     reader.onerror = () => showToast('导入文件读取失败');
     reader.readAsText(file, 'utf-8');
@@ -4286,7 +3387,6 @@
     if (!view) return;
     const currentQuery = query == null ? (view.dataset.bilivexQuery || '') : query;
     view.dataset.bilivexQuery = currentQuery;
-    view.dataset.mode = mode;
     view.textContent = '';
     const head = panelDocument.createElement('div');
     head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;';
@@ -4294,23 +3394,13 @@
     title.textContent = mode === 'edit' ? '编辑收藏' : '弹幕收藏夹';
     title.style.cssText = 'font-size:13px;color:#303740;';
     head.appendChild(title);
-    head.appendChild(favoriteButton('返回', 'secondary', () => mode === 'edit' ? showInlineConfirmation(view, '返回将放弃未保存草稿。', () => renderFavoritesView('browse', currentQuery)) : closeFavoritesPanel()));
+    head.appendChild(favoriteButton('返回', 'secondary', () => mode === 'edit' ? renderFavoritesView('browse', currentQuery) : closeFavoritesPanel()));
     view.appendChild(head);
-    const filter = panelDocument.createElement('div'); filter.style.cssText = 'display:flex;gap:6px;margin-bottom:8px;';
-    ['全部', '仅当前直播间'].forEach((label, index) => {
-      const button = favoriteButton(label, favoriteRoomOnly === !!index ? 'primary' : 'secondary', () => {
-        const change = () => { favoriteRoomOnly = !!index; renderFavoritesView('browse', currentQuery); };
-        if (mode === 'edit') showInlineConfirmation(view, '切换筛选将放弃未保存草稿。', change); else change();
-      });
-      button.setAttribute('aria-pressed', String(favoriteRoomOnly === !!index)); filter.appendChild(button);
-    }); view.appendChild(filter);
 
     if (mode === 'edit') {
       const list = panelDocument.createElement('div');
       list.style.cssText = 'display:flex;flex-direction:column;gap:7px;max-height:260px;overflow:auto;padding-right:2px;';
-      const base = readFavoriteLibrary();
-      const visible = filterFavoriteItems(base.items, currentQuery, favoriteRoomOnly, currentWheelRoom());
-      visible.forEach((item) => {
+      getFavorites().forEach((item) => {
         const row = panelDocument.createElement('div');
         row.style.cssText = 'display:flex;gap:6px;align-items:flex-start;';
         const input = panelDocument.createElement('textarea');
@@ -4330,29 +3420,13 @@
       const actions = panelDocument.createElement('div');
       actions.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-top:9px;';
       actions.appendChild(favoriteButton('取消', 'secondary', () => renderFavoritesView('browse', currentQuery)));
-      let merge = false;
-      const save = favoriteButton('保存', 'primary', async () => {
-        const rows = Array.from(list.querySelectorAll('textarea')).map(input => ({ id: input.dataset.bilivexFavoriteId, text: input.value }));
-        if (addInput.value.trim()) rows.push({ text: addInput.value });
-        const apply = async () => {
-          const saved = await saveFavoritePatch(base, visible.map(item => item.id), rows, merge);
-          renderFavoritesView('browse', currentQuery); showToast('已保存 ' + saved.items.length + ' 条收藏');
-        };
-        try {
-          await apply();
-        } catch (error) {
-          if (error.message.startsWith('文本重复')) { merge = true; save.textContent = '合并并保存'; }
-          let feedback = view.querySelector('[data-favorite-error]');
-          if (!feedback) { feedback = panelDocument.createElement('p'); feedback.dataset.favoriteError = '1'; view.appendChild(feedback); }
-          feedback.textContent = error.message;
-        }
-      });
-      actions.appendChild(save);
-      const wheel = createWheelButton(panelDocument, true);
-      // 编辑视图离开前就地确认，取消保留草稿。
-      const guardedWheel = wheel.cloneNode(true);
-      guardedWheel.addEventListener('click', () => showInlineConfirmation(view, '打开独轮车将放弃未保存草稿。', () => openWheelPanel()));
-      actions.appendChild(guardedWheel);
+      actions.appendChild(favoriteButton('保存', 'primary', () => {
+        const raw = Array.from(list.querySelectorAll('textarea')).map((input) => ({ id: input.dataset.bilivexFavoriteId, text: input.value }));
+        raw.push({ text: addInput.value });
+        const saved = replaceFavorites(raw);
+        renderFavoritesView('browse', currentQuery);
+        showToast('已保存 ' + saved.length + ' 条收藏');
+      }));
       view.appendChild(actions);
       return;
     }
@@ -4368,10 +3442,11 @@
     view.appendChild(search);
     const list = panelDocument.createElement('div');
     list.style.cssText = 'display:flex;flex-direction:column;gap:6px;max-height:270px;overflow:auto;margin-top:8px;padding-right:2px;';
-    const favorites = filterFavoriteItems(getFavorites(), currentQuery, favoriteRoomOnly, currentWheelRoom());
+    const needle = currentQuery.trim().toLocaleLowerCase();
+    const favorites = getFavorites().filter((item) => !needle || item.text.toLocaleLowerCase().includes(needle));
     if (!favorites.length) {
       const empty = panelDocument.createElement('div');
-      empty.textContent = favoriteRoomOnly && !currentWheelRoom() ? '暂无法确定当前直播间' : currentQuery ? '没有匹配的收藏' : favoriteRoomOnly ? '当前直播间暂无收藏' : '暂无收藏，可在弹幕旁点击“收藏”添加';
+      empty.textContent = getFavorites().length ? '未找到匹配的收藏弹幕' : '暂无收藏，可在弹幕旁点击“收藏”添加';
       empty.style.cssText = 'padding:16px 4px;color:#9099a3;font-size:12px;text-align:center;line-height:1.6;';
       list.appendChild(empty);
     }
@@ -4379,9 +3454,9 @@
       const row = panelDocument.createElement('div');
       row.style.cssText = 'display:flex;align-items:stretch;border:1px solid #edf0f3;border-radius:7px;background:#fff;overflow:hidden;';
       const text = panelDocument.createElement('button');
-      text.type = 'button'; text.textContent = item.text; text.title = item.text + '\n来源房间：' + (item.sourceRoomIds.join('、') || '未知');
+      text.type = 'button'; text.textContent = item.text; text.title = item.text;
       text.style.cssText = 'flex:1;min-width:0;border:none;background:transparent;color:#3a3f45;text-align:left;padding:6px 8px;font:12px/18px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-      text.addEventListener('click', () => { enqueuePlusSend(() => fillAndSend(item.text, { autoSend: false, finalText: item.text })).then((result) => showToast(result.message || '已填入输入框')); });
+      text.addEventListener('click', () => { fillAndSend(item.text, { autoSend: false, finalText: item.text }).then((result) => showToast(result.message || '已填入输入框')); });
       const send = favoriteButton('+1', 'primary', (e) => { e.stopPropagation(); runPlusButtonAction(send, () => sendPlusOne(item.text)); });
       send.style.cssText += 'border-radius:0;border-top:none;border-bottom:none;border-right:none;border-left:1px solid rgba(255,255,255,.55);min-width:48px;';
       row.appendChild(text); row.appendChild(send); list.appendChild(row);
@@ -4395,14 +3470,11 @@
     importer.type = 'file'; importer.accept = 'application/json,.json'; importer.style.display = 'none';
     importer.addEventListener('change', () => importFavoritesFile(importer.files && importer.files[0], () => renderFavoritesView('browse', currentQuery)));
     actions.appendChild(favoriteButton('导入', 'secondary', () => importer.click()));
-    actions.appendChild(createWheelButton(panelDocument, true));
     view.appendChild(actions); view.appendChild(importer);
     try { search.focus(); } catch (e) {}
   }
 
   function openFavoritesPanel() {
-    const wheelView = panelDocument.getElementById('bilivex-wheel-window'); if (wheelView) wheelView.hidden = true;
-    if (cfg.panelCollapsed) { updateCfg({ panelCollapsed: false }); setPanelCollapsed(false); }
     const panel = panelDocument.getElementById('bilivex-panel');
     const body = panel && panel.querySelector('.bilivex-panel-body');
     if (!body) return;
@@ -4429,8 +3501,7 @@
   const UPDATE_STATE_KEY = 'bilivex_update_state';
   let updateCheckInFlight = false;
   let lastUpdateRoomKey = '';
-  let updateInitialTimer = null;
-  let updateIntervalTimer = null;
+  let updateTimerStarted = false;
 
   function getUpdateRoomKey() {
     return findRoomId(panelDocument, panelWindow) ||
@@ -4444,38 +3515,16 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '2.4.0';
+    return '2.2.0';
   }
 
   function compareVersions(a, b) {
-    const parse = (value) => {
-      const match = /^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?$/.exec(String(value || '').trim());
-      if (!match) return { core: [0, 0, 0], prerelease: ['0'] };
-      return {
-        core: [Number(match[1]), Number(match[2] || 0), Number(match[3] || 0)],
-        prerelease: match[4] ? match[4].split('.') : []
-      };
-    };
-    const pa = parse(a);
-    const pb = parse(b);
-    for (let i = 0; i < 3; i++) {
-      if (pa.core[i] !== pb.core[i]) return pa.core[i] - pb.core[i];
-    }
-    if (!pa.prerelease.length || !pb.prerelease.length) {
-      if (pa.prerelease.length === pb.prerelease.length) return 0;
-      return pa.prerelease.length ? -1 : 1;
-    }
-    for (let i = 0; i < Math.max(pa.prerelease.length, pb.prerelease.length); i++) {
-      if (pa.prerelease[i] === undefined) return -1;
-      if (pb.prerelease[i] === undefined) return 1;
-      const left = pa.prerelease[i];
-      const right = pb.prerelease[i];
-      if (left === right) continue;
-      const leftNumeric = /^\d+$/.test(left);
-      const rightNumeric = /^\d+$/.test(right);
-      if (leftNumeric && rightNumeric) return Number(left) - Number(right);
-      if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1;
-      return left.localeCompare(right);
+    const pa = String(a || '').split('.');
+    const pb = String(b || '').split('.');
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const na = parseInt(pa[i], 10) || 0;
+      const nb = parseInt(pb[i], 10) || 0;
+      if (na !== nb) return na - nb;
     }
     return 0;
   }
@@ -5019,7 +4068,6 @@
 
   // ---------- 初始化 ----------
   function initRoom() {
-    bindWheelEntry();
     const list = document.querySelector('.chat-history-list');
     if (list) {
       attachDanmakuMenu(list);
@@ -5038,7 +4086,6 @@
 
   function guardianCheck() {
     try {
-      bindWheelEntry();
       bindVideoSync();
       const list = document.querySelector('.chat-history-list');
       if (list && list !== boundChatList) {
@@ -5145,8 +4192,6 @@
         if (!event.target.closest('#live-player, .live-player-mounter')) return;
         schedulePlayerEnhancements(true);
       };
-      listenLifecycle(document, 'compositionstart', event => composingInputs.add(event.target), true);
-      listenLifecycle(document, 'compositionend', event => composingInputs.delete(event.target), true);
       listenLifecycle(document, 'fullscreenchange', onFullscreenChange);
       listenLifecycle(document, 'webkitfullscreenchange', onFullscreenChange);
       listenLifecycle(document, 'canplay', onPlayerReady, true);
@@ -5157,7 +4202,6 @@
       }
     } catch (e) {}
     window.addEventListener('pagehide', () => {
-      disposeWheel();
       if (window._bilivexSpaMO) window._bilivexSpaMO.disconnect();
       if (boundChatList && typeof boundChatList._bilivexCommentMenuCleanup === 'function') {
         boundChatList._bilivexCommentMenuCleanup();
@@ -5168,14 +4212,6 @@
       if (boundTailCtl && boundTailCtl._bilivexTailMO) boundTailCtl._bilivexTailMO.disconnect();
       if (guardianTimer) clearInterval(guardianTimer);
       if (initTimer) clearTimeout(initTimer);
-      if (updateInitialTimer !== null) {
-        clearTimeout(updateInitialTimer);
-        updateInitialTimer = null;
-      }
-      if (updateIntervalTimer !== null) {
-        clearInterval(updateIntervalTimer);
-        updateIntervalTimer = null;
-      }
       resetPlayerEnhancementSchedule();
       FloatingDmEngine.stop();
       lifecycleCleanups.splice(0).forEach((cleanup) => {
@@ -5198,14 +4234,10 @@
     guardianObserveOnce();
     // 延迟检查更新，避开页面首屏渲染高峰；打开直播间时不受每小时冷却限制。
     if (document === panelDocument) {
-      if (updateInitialTimer === null) {
-        updateInitialTimer = setTimeout(() => {
-          updateInitialTimer = null;
-          checkForUpdate(true);
-        }, 2500);
-      }
-      if (updateIntervalTimer === null) {
-        updateIntervalTimer = setInterval(() => checkForUpdate(false), UPDATE_CHECK_INTERVAL_MS);
+      setTimeout(() => checkForUpdate(true), 2500);
+      if (!updateTimerStarted) {
+        updateTimerStarted = true;
+        setInterval(() => checkForUpdate(false), UPDATE_CHECK_INTERVAL_MS);
       }
     }
   }
@@ -5216,7 +4248,7 @@
     spaWatching = true;
     let lastUrl = location.href;
     let queued = false;
-    const lifecycleSelector = '#bilivex-panel, iframe, .chat-history-list, .chat-control-panel, button.send-btn,' +
+    const lifecycleSelector = '#bilivex-panel, iframe, .chat-history-list, .chat-control-panel,' +
       '.bili-danmaku-x-dm-rotate, .danmaku-item-container, .web-player-danmaku, #live-player,' +
       '.live-web-player-controller, #web-player-controller-wrap-el .right-area, .quality-wrap,' +
       '#live-player .left-area, #live-player video';
@@ -5236,7 +4268,6 @@
         const panelMissing = !panelDocument.getElementById('bilivex-panel');
         if (currentUrlChanged || panelMissing) {
           if (currentUrlChanged) {
-            stopWheel('已换房，独轮车已停止');
             resetPlayerEnhancementSchedule();
             if (cfg.blockP2PUpload) applyEarlyP2PSetting(true);
             lastUrl = location.href;
