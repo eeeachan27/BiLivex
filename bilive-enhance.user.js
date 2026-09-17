@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      2.4.0
+// @version      2.4.1
 // @license      MIT
 // @description  B站直播间增强工具：独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间，以及可选的自动最高画质、自动网页模式和防止 P2P 上传。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -90,6 +90,8 @@
 
   function normalizeWheelConfig(value) {
     const v = value && typeof value === 'object' ? value : {};
+    const favoriteIds = [...new Set((v.text && Array.isArray(v.text.favoriteIds) ? v.text.favoriteIds : [])
+      .filter(id => typeof id === 'string' && id.length > 0 && id.length < 160))].slice(0, FAVORITES_MAX_COUNT);
     const selectedByRoom = {};
     Object.entries(v.emotion && v.emotion.selectedByRoom || {}).slice(0, 100).forEach(([room, ids]) => {
       if (/^\d+$/.test(room) && Array.isArray(ids)) selectedByRoom[room] = [...new Set(ids.filter(id => typeof id === 'string' && id.length < 160 && decodeWheelEmotionId(id)))].slice(0, 100);
@@ -101,7 +103,7 @@
     return {
       schemaVersion: 1,
       activeSource: ['text', 'emotion'].includes(v.activeSource) ? v.activeSource : 'text',
-      text: { ...wheelTiming(v.text), content: String(v.text && v.text.content || '').slice(0, 20000), maxLength: v.text && v.text.maxLength !== 'auto' && v.text.maxLength != null ? wheelInteger(v.text.maxLength, 20, 2, 200) : 'auto' },
+      text: { ...wheelTiming(v.text), content: String(v.text && v.text.content || '').slice(0, 20000), favoriteIds, maxLength: v.text && v.text.maxLength !== 'auto' && v.text.maxLength != null ? wheelInteger(v.text.maxLength, 20, 2, 200) : 'auto' },
       emotion: { ...wheelTiming(v.emotion), selectedByRoom },
       resume: { enabled: !!(v.resume && v.resume.enabled === true), byRoom },
       riskAccepted: v.riskAccepted === true,
@@ -1346,7 +1348,7 @@
   try { wheelConfig = normalizeWheelConfig(JSON.parse(GM_getValue(WHEEL_CONFIG_KEY) || '{}')); }
   catch (e) { wheelConfig = normalizeWheelConfig({}); }
   let wheelState = { status: 'idle', reason: '尚未开始', triggered: 0, confirmed: 0, unconfirmed: 0 };
-  let wheelToken = 0, wheelTimer = null, wheelDeadlineTimer = null, wheelHeartbeatTimer = null, wheelRelease = null;
+  let wheelToken = 0, wheelTimer = null, wheelDeadlineTimer = null, wheelHeartbeatTimer = null, wheelRoomStatusTimer = null, wheelRelease = null;
   let wheelEntry = null, wheelControl = null, wheelControlObserver = null;
   let wheelResumeTimer = null, wheelResumeRoom = '', favoriteRoomOnly = false;
   let wheelChatDocument = null;
@@ -1364,6 +1366,17 @@
   function saveWheelConfig() {
     wheelConfig = normalizeWheelConfig(wheelConfig);
     GM_setValue(WHEEL_CONFIG_KEY, JSON.stringify(wheelConfig));
+  }
+
+  function updateWheelResume(room, mode) {
+    let latest;
+    try { latest = normalizeWheelConfig(JSON.parse(GM_getValue(WHEEL_CONFIG_KEY) || '{}')); }
+    catch (e) { latest = normalizeWheelConfig({}); }
+    if (mode && !latest.resume.enabled) { wheelConfig.resume = latest.resume; return; }
+    if (mode) latest.resume.byRoom[room] = mode;
+    else delete latest.resume.byRoom[room];
+    GM_setValue(WHEEL_CONFIG_KEY, JSON.stringify(latest));
+    wheelConfig.resume = latest.resume;
   }
 
   function canonicalRoom(root) {
@@ -1420,9 +1433,13 @@
       try { GM_setValue(wheelRuntimeKey(wheelState.room), ''); } catch (e) {}
       finally { release(); }
     }
-    if (!preserveResume && wheelState.room) { delete wheelConfig.resume.byRoom[wheelState.room]; try { saveWheelConfig(); } catch (e) {} }
+    if (!preserveResume && wheelState.room) { try { updateWheelResume(wheelState.room, ''); } catch (e) {} }
     wheelState = { ...wheelState, status: /异常|未确认|不可用|禁言|失败/.test(reason || '') ? 'error' : 'idle', reason: reason || '已手动停止', nextSendAt: 0 };
     renderWheelStatus();
+  }
+
+  function stopWheelForRoomChange() {
+    stopWheel('已换房，独轮车已停止', wheelConfig.resume.enabled);
   }
 
   function wheelSnapshot() {
@@ -1437,18 +1454,39 @@
     const emotionCatalog = new Map((wheelEmotionCatalog.get(controls.room) || []).map(item => [item.id, item]));
     if (mode === 'emotion' && !wheelEmotionCatalog.has(controls.room)) throw new Error('正在读取当前直播间表情，请稍候');
     if (mode === 'emotion' && emotionIds.some(id => !emotionCatalog.has(id))) throw new Error('所选表情在当前直播间不可用，请刷新后重新选择');
-    const groups = mode === 'text' ? [{ id: 'text', ...wheelConfig.text, messages: compileWheelText(wheelConfig.text.content, actualLimit, tail), cursor: 0 }] : [{
+    let favoriteItems = [];
+    if (mode === 'text' && wheelConfig.text.favoriteIds.length) {
+      const library = readFavoriteLibrary();
+      const byId = new Map(library.items.map(item => [item.id, item]));
+      const missing = wheelConfig.text.favoriteIds.filter(id => !byId.has(id));
+      if (missing.length) throw new Error('独轮车序列中的收藏已被删除，请在收藏列表中移除');
+      favoriteItems = wheelConfig.text.favoriteIds.map(id => byId.get(id));
+    }
+    const textSources = mode === 'text' ? [wheelConfig.text.content, ...favoriteItems.map(item => item.text)].filter(text => String(text).trim()) : [];
+    const textMessages = mode === 'text' ? textSources.flatMap(text => compileWheelText(text, actualLimit, tail)) : [];
+    if (textMessages.length > 5000) throw new Error('切分后的内容过多，请缩短文字');
+    const groups = mode === 'text' ? [{ id: 'text', ...wheelConfig.text, messages: textMessages, cursor: 0 }] : [{
       id: 'emotion', ...wheelConfig.emotion,
       messages: emotionIds.map(id => ({ ...decodeWheelEmotionId(id), label: (emotionCatalog.get(id) || {}).label || '房间专属表情', inputText: (emotionCatalog.get(id) || {}).inputText || '' })).filter(message => message.type), cursor: 0,
     }];
-    if (mode === 'emotion' && !groups[0].messages.length) throw new Error('请先选择至少一个表情');
-    return { room: controls.room, mode, groups, groupIndex: 0, timeLimitSec: wheelConfig[mode].timeLimitSec, limit: actualLimit, compatibleLimit: !(nativeLimit > 1) };
+    if (!groups[0].messages.length) throw new Error(mode === 'emotion' ? '请先选择至少一个表情' : '请先准备有效内容');
+    return { room: controls.room, mode, groups, groupIndex: 0, timeLimitSec: wheelConfig[mode].timeLimitSec, limit: actualLimit, compatibleLimit: !(nativeLimit > 1), favoriteItems: favoriteItems.map(item => ({ id: item.id, text: item.text })) };
   }
 
   function favoriteLibraryChanged() {
     if (document !== panelDocument && sharedRuntime.favoriteLibraryChanged) { sharedRuntime.favoriteLibraryChanged(); return; }
+    if (wheelRelease && wheelState.mode === 'text' && Array.isArray(wheelState.favoriteItems) && wheelState.favoriteItems.length) {
+      let changed = false;
+      try {
+        const current = new Map(readFavoriteLibrary().items.map(item => [item.id, item.text]));
+        changed = wheelState.favoriteItems.some(item => current.get(item.id) !== item.text);
+      } catch (e) { changed = true; }
+      if (changed) stopWheel('独轮车序列中的收藏已变化，已停止');
+    }
     const view = panelDocument.querySelector('.bilivex-favorites-view');
     if (view && view.style.display !== 'none' && view.dataset.mode !== 'edit') renderFavoritesView('browse');
+    const wheelView = panelDocument.getElementById('bilivex-wheel-window');
+    if (wheelView && !wheelView.hidden && !wheelRelease && wheelConfig.activeSource === 'text') openWheelPanel();
   }
 
   async function sendWheelMessage(message, token, room) {
@@ -1530,11 +1568,11 @@
       await new Promise(resolve => {
         wheelRelease = resolve;
         wheelState.status = 'running'; wheelState.reason = '运行中';
-        if (wheelConfig.resume.enabled) { const latest = normalizeWheelConfig(JSON.parse(GM_getValue(WHEEL_CONFIG_KEY) || '{}')); wheelConfig.resume.byRoom = { ...latest.resume.byRoom, [snapshot.room]: snapshot.mode }; saveWheelConfig(); }
+        if (wheelConfig.resume.enabled) updateWheelResume(snapshot.room, snapshot.mode);
         if (snapshot.timeLimitSec) wheelDeadlineTimer = setTimeout(() => stopWheel('已达到运行时限'), Math.max(0, wheelState.startedAt + snapshot.timeLimitSec * 1000 - Date.now()));
         const heartbeat = () => {
           if (token !== wheelToken) return;
-          if (currentWheelRoom() !== snapshot.room) { stopWheel('已换房，独轮车已停止'); return; }
+          if (currentWheelRoom() !== snapshot.room) { stopWheelForRoomChange(); return; }
           if (snapshot.timeLimitSec && Date.now() >= wheelState.startedAt + snapshot.timeLimitSec * 1000) { stopWheel('已达到运行时限'); return; }
           wheelPublish(); renderWheelStatus();
           wheelHeartbeatTimer = setTimeout(heartbeat, 5000);
@@ -1566,7 +1604,7 @@
         if (token !== wheelToken) return;
         if (result.status === 'restricted') { stopWheel('原生控件提示禁言或发送频率限制，已停止'); return; }
         if (result.status === 'emotion-missing') { stopWheel('所选表情在当前直播间不可用，已停止'); return; }
-        if (result.status === 'room-changed') { stopWheel('已换房，独轮车已停止'); return; }
+        if (result.status === 'room-changed') { stopWheelForRoomChange(); return; }
         if (result.status === 'cancelled') return;
         if (['confirmed', 'unconfirmed'].includes(result.status)) {
           wheelState.triggered++; wheelState[result.status]++;
@@ -1585,6 +1623,25 @@
         scheduleWheel(token, wheelDelay(wheelState.groups[wheelState.groupIndex], Math.random));
       } catch (error) { if (token === wheelToken) stopWheel('发送异常，已停止：' + error.message); }
     }, delay);
+  }
+
+  async function prepareWheelResume(room, mode) {
+    const token = wheelToken;
+    wheelConfig.activeSource = mode;
+    try {
+      if (mode === 'emotion' && !wheelEmotionCatalog.has(room)) {
+        const result = await discoverNativeEmoticons();
+        if (result.room !== room) throw new Error('直播间已变化');
+        wheelEmotionCatalog.set(room, result.items);
+      }
+      if (token !== wheelToken || wheelRelease || wheelResumeRoom !== room || currentWheelRoom() !== room) return;
+      wheelSnapshot();
+      openWheelPanel(); wheelState.reason = '3 秒后恢复，可点击暂停取消'; renderWheelStatus();
+      wheelResumeTimer = setTimeout(() => { wheelResumeTimer = null; startWheel(); }, 3000);
+    } catch (error) {
+      if (token !== wheelToken || wheelResumeRoom !== room || currentWheelRoom() !== room) return;
+      openWheelPanel(); wheelState.reason = '无法自动恢复：' + error.message; renderWheelStatus();
+    }
   }
 
   function bindWheelEntry() {
@@ -1616,20 +1673,17 @@
       button.before(wheelEntry);
     }
     if (wheelEntry.nextElementSibling !== button) button.before(wheelEntry);
-    if (wheelRelease && currentWheelRoom() !== wheelState.room) stopWheel('已换房，独轮车已停止');
+    if (wheelRelease && currentWheelRoom() !== wheelState.room) stopWheelForRoomChange();
     if (document === panelDocument && !wheelRelease && wheelConfig.resume.enabled && controls.room && wheelResumeRoom !== controls.room) {
       wheelResumeRoom = controls.room;
       const mode = wheelConfig.resume.byRoom[controls.room];
-      if (mode && wheelConfig.riskAccepted) {
-        wheelConfig.activeSource = mode;
-        try { wheelSnapshot(); } catch (e) { return; }
-        openWheelPanel(); wheelState.reason = '3 秒后恢复，可点击暂停取消'; renderWheelStatus();
-        wheelResumeTimer = setTimeout(() => { wheelResumeTimer = null; startWheel(); }, 3000);
-      }
+      if (mode && wheelConfig.riskAccepted) prepareWheelResume(controls.room, mode);
     }
   }
 
   function disposeWheel() {
+    if (wheelRoomStatusTimer) clearTimeout(wheelRoomStatusTimer);
+    wheelRoomStatusTimer = null;
     if (document === panelDocument) { const view = panelDocument.getElementById('bilivex-wheel-window'); if (view) view.remove(); const style = panelDocument.getElementById('bilivex-wheel-window-style'); if (style) style.remove(); }
     stopWheel('页面已离开', true);
     if (wheelControlObserver) wheelControlObserver.disconnect();
@@ -3885,6 +3939,95 @@
     label.appendChild(input); parent.appendChild(label); return input;
   }
 
+  function setWheelFavoriteSelected(id, selected) {
+    const favoriteId = String(id || '');
+    if (!favoriteId) return 'missing';
+    const ids = wheelConfig.text.favoriteIds;
+    if (selected) {
+      if (!getFavorites().some(item => item.id === favoriteId)) return 'missing';
+      if (ids.includes(favoriteId)) return 'duplicate';
+      wheelConfig.text.favoriteIds = ids.concat(favoriteId);
+    } else {
+      if (!ids.includes(favoriteId)) return 'missing';
+      wheelConfig.text.favoriteIds = ids.filter(value => value !== favoriteId);
+    }
+    wheelConfig.activeSource = 'text';
+    saveWheelConfig();
+    renderWheelPreview();
+    return selected ? 'added' : 'removed';
+  }
+
+  function renderWheelTextInputs(editor) {
+    const section = panelDocument.createElement('section'); section.className = 'wheel-text-editor'; editor.appendChild(section);
+    const heading = panelDocument.createElement('div'); heading.className = 'wheel-section-heading'; heading.textContent = '文字序列'; section.appendChild(heading);
+    const note = panelDocument.createElement('p'); note.className = 'wheel-section-note'; note.textContent = '每个文本框是一条弹幕；超过直播间上限时会完整切分后依次发送。'; section.appendChild(note);
+    const list = panelDocument.createElement('div'); list.className = 'wheel-text-list'; section.appendChild(list);
+    let lines = String(wheelConfig.text.content || '').replace(/\r\n?/g, '\n').split('\n');
+    if (!lines.length) lines = [''];
+
+    const save = () => {
+      wheelConfig.text.content = lines.join('\n');
+      saveWheelConfig(); renderWheelPreview();
+    };
+    const render = (focusLast) => {
+      list.textContent = '';
+      lines.forEach((value, index) => {
+        const row = panelDocument.createElement('div'); row.className = 'wheel-text-row';
+        const input = panelDocument.createElement('input'); input.type = 'text'; input.value = value; input.maxLength = 20000;
+        input.setAttribute('data-wheel-text-input', '1'); input.setAttribute('aria-label', '文字弹幕 ' + (index + 1));
+        input.placeholder = '输入第 ' + (index + 1) + ' 条弹幕';
+        input.addEventListener('input', () => { lines[index] = input.value; save(); });
+        const remove = favoriteButton('×', 'secondary', () => {
+          lines.splice(index, 1); if (!lines.length) lines.push(''); render(false); save();
+        });
+        remove.className = 'wheel-text-remove'; remove.setAttribute('aria-label', '删除第 ' + (index + 1) + ' 条文字弹幕');
+        row.appendChild(input); row.appendChild(remove); list.appendChild(row);
+      });
+      if (focusLast) {
+        const inputs = list.querySelectorAll('[data-wheel-text-input]');
+        if (inputs.length) inputs[inputs.length - 1].focus();
+      }
+    };
+    render(false);
+    const add = favoriteButton('添加文本', 'secondary', () => { lines.push(''); render(true); save(); });
+    add.className = 'wheel-text-add'; section.appendChild(add);
+  }
+
+  function renderWheelFavoritePicker(editor) {
+    const details = panelDocument.createElement('details'); details.className = 'wheel-favorites-picker'; details.dataset.wheelFavoritesPicker = '1';
+    const summary = panelDocument.createElement('summary'); details.appendChild(summary);
+    const content = panelDocument.createElement('div'); content.className = 'wheel-favorites-picker-content'; details.appendChild(content); editor.appendChild(details);
+
+    const render = () => {
+      const selected = new Set(wheelConfig.text.favoriteIds);
+      summary.textContent = '从收藏夹添加 · 已添加 ' + selected.size;
+      content.textContent = '';
+      const filters = panelDocument.createElement('div'); filters.className = 'wheel-favorite-filters'; content.appendChild(filters);
+      ['全部', '仅当前直播间'].forEach((label, index) => {
+        const button = favoriteButton(label, favoriteRoomOnly === !!index ? 'primary' : 'secondary', () => { favoriteRoomOnly = !!index; render(); });
+        button.setAttribute('aria-pressed', String(favoriteRoomOnly === !!index)); filters.appendChild(button);
+      });
+      const list = panelDocument.createElement('div'); list.className = 'wheel-favorite-list'; content.appendChild(list);
+      const allItems = getFavorites(), byId = new Map(allItems.map(item => [item.id, item]));
+      const visible = filterFavoriteItems(allItems, '', favoriteRoomOnly, currentWheelRoom());
+      if (!favoriteRoomOnly) {
+        wheelConfig.text.favoriteIds.filter(id => !byId.has(id)).forEach(id => visible.push({ id, text: '收藏已删除', sourceRoomIds: [] }));
+      }
+      if (!visible.length) {
+        const empty = panelDocument.createElement('p'); empty.className = 'wheel-favorite-empty';
+        empty.textContent = favoriteRoomOnly && !currentWheelRoom() ? '暂无法确定当前直播间' : favoriteRoomOnly ? '当前直播间暂无收藏' : '暂无收藏'; list.appendChild(empty);
+      }
+      visible.forEach(item => {
+        const row = panelDocument.createElement('div'); row.className = 'wheel-favorite-row'; row.dataset.wheelFavoriteId = item.id;
+        const text = panelDocument.createElement('span'); text.textContent = item.text; text.title = item.text; row.appendChild(text);
+        const active = selected.has(item.id);
+        const button = favoriteButton(active ? '移除' : '添加', active ? 'primary' : 'secondary', () => { setWheelFavoriteSelected(item.id, !active); render(); });
+        button.setAttribute('aria-pressed', String(active)); row.appendChild(button); list.appendChild(row);
+      });
+    };
+    render();
+  }
+
   function renderWheelStatus() {
     const view = panelDocument.querySelector('.bilivex-wheel-view');
     const running = !!wheelRelease || wheelState.status === 'starting' || !!wheelResumeTimer;
@@ -4043,6 +4186,22 @@
       #bilivex-wheel-window input:focus,#bilivex-wheel-window textarea:focus{border-color:var(--wheel-accent)!important;box-shadow:0 0 0 3px var(--wheel-tint)}
       #bilivex-wheel-window textarea{min-height:112px;max-height:220px;resize:vertical;line-height:1.7!important}
       #bilivex-wheel-window textarea::placeholder,#bilivex-wheel-window input::placeholder{color:#a0aab5}
+      #bilivex-wheel-window .wheel-section-heading{font-weight:600;color:#334354;margin-bottom:3px}
+      #bilivex-wheel-window .wheel-section-note{margin:0 0 8px;color:#718091;font-size:11px;line-height:1.6}
+      #bilivex-wheel-window .wheel-text-list{display:flex;flex-direction:column;gap:7px}
+      #bilivex-wheel-window .wheel-text-row{display:flex;align-items:center;gap:7px}
+      #bilivex-wheel-window .wheel-text-row input{white-space:nowrap;overflow-x:auto}
+      #bilivex-wheel-window .wheel-text-remove{flex:0 0 34px;width:34px;height:34px;padding:0!important;font-size:17px!important}
+      #bilivex-wheel-window .wheel-text-add{margin-top:8px;padding:6px 12px!important}
+      #bilivex-wheel-window .wheel-favorites-picker{border:1px solid rgba(154,177,196,.20);border-radius:9px;padding:7px 9px;margin:12px 0!important}
+      #bilivex-wheel-window .wheel-favorites-picker>summary{color:#536778;font-weight:500}
+      #bilivex-wheel-window .wheel-favorite-filters{display:flex;gap:6px;margin:8px 0}
+      #bilivex-wheel-window .wheel-favorite-filters button{padding:5px 9px!important}
+      #bilivex-wheel-window .wheel-favorite-list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;scrollbar-width:thin}
+      #bilivex-wheel-window .wheel-favorite-row{display:flex;align-items:center;gap:7px;min-height:34px;padding:4px 4px 4px 9px;border:1px solid rgba(154,177,196,.16);border-radius:8px;background:rgba(255,255,255,.35)}
+      #bilivex-wheel-window .wheel-favorite-row>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      #bilivex-wheel-window .wheel-favorite-row>button{flex-shrink:0;padding:4px 9px!important}
+      #bilivex-wheel-window .wheel-favorite-empty{margin:8px 0;color:#8793a0;text-align:center}
       #bilivex-wheel-window .wheel-rhythm{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
       #bilivex-wheel-window .wheel-rhythm .wheel-field{margin:0!important}
       #bilivex-wheel-window .wheel-help{display:flex;flex-direction:column;gap:3px;margin:0 0 11px;padding:10px 11px;border:1px solid rgba(154,177,196,.18);border-left:3px solid var(--wheel-accent);border-radius:8px;background:rgba(255,255,255,.42)}
@@ -4086,6 +4245,9 @@
       :root[lab-style*=dark] #bilivex-wheel-window .wheel-help,:root[lab-style*=dark] #bilivex-wheel-window .wheel-emotion{background:rgba(255,255,255,.05)!important}
       :root[lab-style*=dark] #bilivex-wheel-window .wheel-help strong{color:#e2eaf1}
       :root[lab-style*=dark] #bilivex-wheel-window .wheel-help span,:root[lab-style*=dark] #bilivex-wheel-window .wheel-emotion-tools span{color:#b7c5d0}
+      :root[lab-style*=dark] #bilivex-wheel-window .wheel-section-heading,:root[lab-style*=dark] #bilivex-wheel-window .wheel-favorites-picker>summary{color:#e2eaf1}
+      :root[lab-style*=dark] #bilivex-wheel-window .wheel-section-note{color:#b7c5d0}
+      :root[lab-style*=dark] #bilivex-wheel-window .wheel-favorite-row{background:rgba(255,255,255,.04)}
       :root[lab-style*=dark] #bilivex-wheel-window .wheel-footer{background:rgba(255,255,255,.02)}
       :root[lab-style*=dark] #bilivex-wheel-window .wheel-preview{color:#c4d5e3}
       :root[lab-style*=dark] #bilivex-wheel-window .wheel-preview:before,:root[lab-style*=dark] #bilivex-wheel-window [data-wheel-summary],:root[lab-style*=dark] #bilivex-wheel-window details{color:#aebdca}
@@ -4109,9 +4271,41 @@
   }
 
   function closeWheelWindow() {
+    if (wheelRoomStatusTimer) clearTimeout(wheelRoomStatusTimer);
+    wheelRoomStatusTimer = null;
     const view = panelDocument.getElementById('bilivex-wheel-window'); if (view) view.hidden = true;
     const entry = panelDocument.getElementById('bilivex-wheel-entry'); if (entry) entry.focus();
     if (wheelRelease) wheelNotify('独轮车仍在运行，可从轮椅图标打开并停止');
+  }
+
+  function renderOtherWheelRooms(details) {
+    if (wheelRoomStatusTimer) clearTimeout(wheelRoomStatusTimer);
+    wheelRoomStatusTimer = null;
+    if (!details || !details.isConnected || !details.open) return;
+    const list = details.querySelector('[data-wheel-room-status-list]');
+    if (!list) return;
+    list.textContent = '';
+    let roomIds;
+    try { roomIds = JSON.parse(GM_getValue('bilivex_wheel_rooms_v1') || '[]'); } catch (e) { roomIds = []; }
+    const currentRoom = currentWheelRoom();
+    const active = [];
+    [...new Set(Array.isArray(roomIds) ? roomIds : [])].slice(-100).forEach(room => {
+      if (!/^\d+$/.test(room) || room === currentRoom) return;
+      try {
+        const state = JSON.parse(GM_getValue(wheelRuntimeKey(room)) || 'null');
+        if (state && Number.isFinite(state.updatedAt) && Date.now() - state.updatedAt < 15000) active.push({ room, state });
+      } catch (e) {}
+    });
+    if (!active.length) {
+      const empty = panelDocument.createElement('div'); empty.textContent = '暂无其他房间运行'; empty.dataset.wheelRoomStatusEmpty = '1'; list.appendChild(empty);
+    } else {
+      active.forEach(({ room, state }) => {
+        const line = panelDocument.createElement('div'); line.dataset.wheelRoomStatus = room;
+        const modeName = state.mode === 'emotion' ? '表情' : '文字';
+        line.textContent = '房间 ' + room + ' · ' + modeName + ' · ' + (state.status === 'paused' ? '等待中' : '运行中'); list.appendChild(line);
+      });
+    }
+    wheelRoomStatusTimer = setTimeout(() => renderOtherWheelRooms(details), 2000);
   }
 
   function syncWheelTheme() {
@@ -4126,6 +4320,8 @@
     if (sourceDocument && !wheelRelease) wheelChatDocument = sourceDocument;
     if (document !== panelDocument) { if (sharedRuntime.openWheelPanel) sharedRuntime.openWheelPanel(source, sourceDocument); return; }
     if (source && !wheelRelease) { wheelConfig.activeSource = source; saveWheelConfig(); }
+    if (wheelRoomStatusTimer) clearTimeout(wheelRoomStatusTimer);
+    wheelRoomStatusTimer = null;
     const view = ensureWheelWindow();
     view.hidden = false; view.textContent = ''; syncWheelTheme();
     const head = panelDocument.createElement('header'); head.className = 'wheel-head';
@@ -4155,8 +4351,8 @@
     const more = panelDocument.createElement('details'); const moreTitle = panelDocument.createElement('summary'); moreTitle.textContent = '更多发送选项'; more.appendChild(moreTitle);
     const lengthNote = panelDocument.createElement('p'); lengthNote.dataset.wheelLengthNote = '1'; more.appendChild(lengthNote);
     if (mode === 'text') {
-      const content = wheelField(editor, '文字内容', wheelConfig.text.content, value => { wheelConfig.text.content = value; }, 'textarea');
-      content.placeholder = '写下想发送的话\n每行一条，按顺序发送'; content.rows = 3;
+      renderWheelTextInputs(editor);
+      renderWheelFavoritePicker(editor);
       const rhythm = panelDocument.createElement('div'); rhythm.className = 'wheel-rhythm'; editor.appendChild(rhythm);
       wheelField(rhythm, '间隔秒数', wheelConfig.text.intervalMinSec, value => { wheelConfig.text.intervalMinSec = value; });
       wheelField(rhythm, '运行时限（秒，0 为不限时）', wheelConfig.text.timeLimitSec, value => { wheelConfig.text.timeLimitSec = value; });
@@ -4168,7 +4364,7 @@
       wheelField(more, '随机间隔', wheelConfig.emotion.randomize, value => { wheelConfig.emotion.randomize = value; }, 'checkbox');
       wheelField(more, '最大间隔秒数', wheelConfig.emotion.intervalMaxSec, value => { wheelConfig.emotion.intervalMaxSec = value; });
     }
-    wheelField(more, '按房间恢复（3 秒倒计时）', wheelConfig.resume.enabled, value => { wheelConfig.resume.enabled = value; if (!value) wheelConfig.resume.byRoom = {}; }, 'checkbox'); editor.appendChild(more);
+    wheelField(more, '返回房间后自动恢复（3 秒倒计时）', wheelConfig.resume.enabled, value => { wheelConfig.resume.enabled = value; if (!value) wheelConfig.resume.byRoom = {}; }, 'checkbox'); editor.appendChild(more);
     const preview = panelDocument.createElement('div'); preview.dataset.wheelPreview = '1'; preview.className = 'wheel-preview'; editor.appendChild(preview);
     const footer = panelDocument.createElement('footer'); footer.className = 'wheel-footer';
     const summary = panelDocument.createElement('div'); summary.dataset.wheelSummary = '1'; summary.setAttribute('role', 'status'); footer.appendChild(summary);
@@ -4180,10 +4376,8 @@
     }); start.dataset.wheelStart = '1'; actions.appendChild(start);
     view.appendChild(footer);
     const rooms = panelDocument.createElement('details'); const roomsTitle = panelDocument.createElement('summary'); roomsTitle.textContent = '其他房间运行状态'; rooms.appendChild(roomsTitle);
-    let roomIds; try { roomIds = JSON.parse(GM_getValue('bilivex_wheel_rooms_v1') || '[]'); } catch (e) { roomIds = []; }
-    roomIds.slice(0, 100).forEach(room => {
-      try { const state = JSON.parse(GM_getValue(wheelRuntimeKey(room)) || 'null'); if (state && Date.now() - state.updatedAt < 15000) { const line = panelDocument.createElement('div'); const modeName = state.mode === 'emotion' ? '表情' : '文字'; line.textContent = '房间 ' + room + ' · ' + modeName + ' · ' + (state.status === 'paused' ? '等待中' : '运行中'); rooms.appendChild(line); } } catch (e) {}
-    }); more.appendChild(rooms);
+    const roomList = panelDocument.createElement('div'); roomList.dataset.wheelRoomStatusList = '1'; rooms.appendChild(roomList);
+    rooms.addEventListener('toggle', () => renderOtherWheelRooms(rooms)); more.appendChild(rooms);
     renderWheelPreview(); clampWheelWindow(); view.focus({ preventScroll: true });
   }
 
@@ -4312,7 +4506,7 @@
       const visible = filterFavoriteItems(base.items, currentQuery, favoriteRoomOnly, currentWheelRoom());
       visible.forEach((item) => {
         const row = panelDocument.createElement('div');
-        row.style.cssText = 'display:flex;gap:6px;align-items:flex-start;';
+        row.style.cssText = 'display:flex;gap:6px;align-items:flex-start;flex-shrink:0;';
         const input = panelDocument.createElement('textarea');
         input.value = item.text;
         input.dataset.bilivexFavoriteId = item.id;
@@ -4377,14 +4571,27 @@
     }
     favorites.forEach((item) => {
       const row = panelDocument.createElement('div');
-      row.style.cssText = 'display:flex;align-items:stretch;border:1px solid #edf0f3;border-radius:7px;background:#fff;overflow:hidden;';
+      row.dataset.bilivexFavoriteId = item.id;
+      row.style.cssText = 'display:flex;align-items:stretch;flex-shrink:0;border:1px solid #edf0f3;border-radius:7px;background:#fff;overflow:hidden;';
       const text = panelDocument.createElement('button');
       text.type = 'button'; text.textContent = item.text; text.title = item.text + '\n来源房间：' + (item.sourceRoomIds.join('、') || '未知');
       text.style.cssText = 'flex:1;min-width:0;border:none;background:transparent;color:#3a3f45;text-align:left;padding:6px 8px;font:12px/18px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
       text.addEventListener('click', () => { enqueuePlusSend(() => fillAndSend(item.text, { autoSend: false, finalText: item.text })).then((result) => showToast(result.message || '已填入输入框')); });
       const send = favoriteButton('+1', 'primary', (e) => { e.stopPropagation(); runPlusButtonAction(send, () => sendPlusOne(item.text)); });
       send.style.cssText += 'border-radius:0;border-top:none;border-bottom:none;border-right:none;border-left:1px solid rgba(255,255,255,.55);min-width:48px;';
-      row.appendChild(text); row.appendChild(send); list.appendChild(row);
+      const selected = wheelConfig.text.favoriteIds.includes(item.id);
+      const wheel = favoriteButton('车', 'secondary', (e) => {
+        e.stopPropagation();
+        const status = setWheelFavoriteSelected(item.id, true);
+        if (status === 'added' || status === 'duplicate') {
+          wheel.disabled = true; wheel.setAttribute('aria-pressed', 'true'); wheel.title = '已加入独轮车序列';
+          showToast(status === 'added' ? '已加入独轮车序列' : '已在独轮车序列中');
+        } else showToast('该收藏已不存在');
+      });
+      wheel.setAttribute('aria-label', '添加“' + item.text + '”到独轮车序列'); wheel.setAttribute('aria-pressed', String(selected));
+      wheel.title = selected ? '已加入独轮车序列' : '添加到独轮车序列'; wheel.disabled = selected;
+      wheel.style.cssText += 'border-radius:0;border-top:none;border-bottom:none;border-right:none;min-width:38px;padding-left:8px;padding-right:8px;';
+      row.appendChild(text); row.appendChild(send); row.appendChild(wheel); list.appendChild(row);
     });
     view.appendChild(list);
     const actions = panelDocument.createElement('div');
@@ -4401,6 +4608,8 @@
   }
 
   function openFavoritesPanel() {
+    if (wheelRoomStatusTimer) clearTimeout(wheelRoomStatusTimer);
+    wheelRoomStatusTimer = null;
     const wheelView = panelDocument.getElementById('bilivex-wheel-window'); if (wheelView) wheelView.hidden = true;
     if (cfg.panelCollapsed) { updateCfg({ panelCollapsed: false }); setPanelCollapsed(false); }
     const panel = panelDocument.getElementById('bilivex-panel');
@@ -4444,7 +4653,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '2.4.0';
+    return '2.4.1';
   }
 
   function compareVersions(a, b) {
@@ -5236,7 +5445,7 @@
         const panelMissing = !panelDocument.getElementById('bilivex-panel');
         if (currentUrlChanged || panelMissing) {
           if (currentUrlChanged) {
-            stopWheel('已换房，独轮车已停止');
+            stopWheelForRoomChange();
             resetPlayerEnhancementSchedule();
             if (cfg.blockP2PUpload) applyEarlyP2PSetting(true);
             lastUrl = location.href;
