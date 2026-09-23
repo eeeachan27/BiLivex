@@ -1,21 +1,28 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      2.4.2
+// @version      2.5.0
 // @license      MIT
-// @description  B站直播间增强工具：独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间，以及可选的自动最高画质、自动网页模式和防止 P2P 上传。开源地址：https://github.com/eeeachan27/BiLivex
+// @description  B站直播间增强工具：特别关注主播开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间，以及可选的自动最高画质、自动网页模式和防止 P2P 上传。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
 // @icon         data:image/jpeg;base64,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
 // @match        https://live.bilibili.com/*
+// @match        https://bilibili.com/*
+// @match        https://*.bilibili.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_addValueChangeListener
 // @grant        GM_removeValueChangeListener
+// @grant        GM_listValues
+// @grant        GM_deleteValue
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @connect      cdn.jsdelivr.net
+// @connect      api.live.bilibili.com
+// @connect      api.bilibili.com
 // @run-at       document-start
 // ==/UserScript==
+/* global GM_listValues, GM_deleteValue */
 
 /*
  * BiLivex - 哔哩哔哩直播增强
@@ -32,6 +39,668 @@
 
 (function () {
   'use strict';
+
+  // 开播提醒仅在 B 站 HTTPS 顶层页运行；直播 iframe 保留现有房间功能。
+  let liveAlertEmbeddedRoom = false;
+  if (location.protocol === 'about:' && location.href === 'about:blank') {
+    try { liveAlertEmbeddedRoom = window.top !== window && window.top.location.protocol === 'https:' && window.top.location.hostname === 'live.bilibili.com'; }
+    catch (e) { /* 仅继承同源直播页 */ }
+  }
+  const liveAlertAllowed = liveAlertEmbeddedRoom || liveAlertPageKind(location.protocol, location.hostname, true) !== 'none';
+  if (!liveAlertAllowed) return;
+  const liveAlertRoomPage = liveAlertEmbeddedRoom || location.hostname === 'live.bilibili.com';
+  let liveAlertTopPage = false;
+  try { liveAlertTopPage = window.top === window; } catch (e) { /* 跨源页不参加协调 */ }
+  if (!liveAlertTopPage && !liveAlertRoomPage) return;
+  if (!liveAlertTopPage && liveAlertRoomPage && !liveAlertEmbeddedRoom) {
+    try { if (window.top.location.origin !== location.origin) return; } catch (e) { return; }
+  }
+  const liveAlertController = liveAlertTopPage ? createLiveAlertController(liveAlertRoomPage) : null;
+  if (!liveAlertRoomPage) return;
+
+  function liveAlertUid(value) {
+    const number = Number(value);
+    return Number.isSafeInteger(number) && number > 0 ? number : 0;
+  }
+
+  function liveAlertImage(value) {
+    const url = typeof value === 'string' ? value.trim().replace(/^http:\/\//i, 'https://') : '';
+    return url.length <= 600 && /^https:\/\//i.test(url) ? url : '';
+  }
+
+  function liveAlertMedalLevels(data, accountUid) {
+    if (!data || !Array.isArray(data.list) || (data.uid && liveAlertUid(data.uid) !== liveAlertUid(accountUid))) throw new Error('灯牌资料结构异常');
+    const levels = {};
+    for (const item of data.list) {
+      const id = liveAlertUid(item && item.medal_info && item.medal_info.target_id);
+      const level = Number(item && item.medal_info && item.medal_info.level);
+      if (id && Number.isSafeInteger(level) && level > 0) levels[id] = Math.max(levels[id] || 0, level);
+    }
+    const count = data.count == null ? NaN : Number(data.count);
+    return { levels, complete: Number.isSafeInteger(count) && count === data.list.length };
+  }
+
+  function sortLiveAlertStreamers(entries, currentRoomId, medalLevels) {
+    const room = liveAlertUid(currentRoomId);
+    const collator = new Intl.Collator('zh-CN', { numeric: true, sensitivity: 'base' });
+    const levelOf = item => {
+      const level = Number(medalLevels && medalLevels[item.uid]);
+      return Number.isSafeInteger(level) && level > 0 ? level : 0;
+    };
+    return [...entries].sort((left, right) => {
+      const leftCurrent = room && liveAlertUid(left.roomId) === room;
+      const rightCurrent = room && liveAlertUid(right.roomId) === room;
+      if (leftCurrent !== rightCurrent) return leftCurrent ? -1 : 1;
+      const levelDiff = levelOf(right) - levelOf(left);
+      if (levelDiff) return levelDiff;
+      return collator.compare(String(left.uname || ''), String(right.uname || '')) || left.uid - right.uid;
+    });
+  }
+
+  function liveAlertPageKind(protocol, hostname, topPage) {
+    if (protocol !== 'https:' || !(hostname === 'bilibili.com' || hostname.endsWith('.bilibili.com'))) return 'none';
+    if (!topPage) return hostname === 'live.bilibili.com' ? 'room-frame' : 'none';
+    return hostname === 'live.bilibili.com' ? 'room' : 'monitor';
+  }
+
+  function liveAlertStateStep(previous, current, uid, now, selectionEpoch, enabledSince, accountEpoch) {
+    if (!current || ![0, 1, 2].includes(current.liveStatus)) return { state: previous, eventId: '' };
+    const old = previous && typeof previous === 'object' ? previous : null;
+    const live = current.liveStatus === 1;
+    const rawTime = liveAlertUid(current.liveTime);
+    const time = rawTime && rawTime <= Math.floor(now / 1000) + 300 ? rawTime : 0;
+    const fresh = !old || old.selectionEpoch !== selectionEpoch || old.baselineEnabledSince !== enabledSince || old.baselineAccountEpoch !== accountEpoch;
+    const next = {
+      liveStatus: live ? 1 : 0,
+      liveTime: time,
+      lastValidLiveTime: old ? old.lastValidLiveTime || 0 : 0,
+      transitionSeq: old ? old.transitionSeq || 0 : 0,
+      sessionKey: old ? old.sessionKey || '' : '',
+      sessionOrigin: old ? old.sessionOrigin || 'none' : 'none',
+      selectionEpoch, baselineEnabledSince: enabledSince, baselineAccountEpoch: accountEpoch,
+      observedAt: now,
+      observationStatus: 'valid',
+      missingCount: 0,
+      unknownSince: 0,
+    };
+    if (!live) return { state: { ...next, sessionKey: '', sessionOrigin: 'none' }, eventId: '' };
+    if (fresh || old.liveStatus !== 1) {
+      if (!fresh && time && old.lastValidLiveTime && time <= old.lastValidLiveTime) {
+        return { state: { ...old, observationStatus: 'unknown', unknownSince: old.unknownSince || now }, eventId: '' };
+      }
+      next.transitionSeq += 1;
+      next.sessionKey = time ? `${uid}:time:${time}` : `${uid}:seq:${selectionEpoch}:${next.transitionSeq}`;
+      next.sessionOrigin = time ? 'time' : 'sequence';
+      next.lastValidLiveTime = time;
+      return { state: next, eventId: fresh ? '' : next.sessionKey };
+    }
+    if (time && old.lastValidLiveTime && time > old.lastValidLiveTime) {
+      next.sessionKey = `${uid}:time:${time}`;
+      next.sessionOrigin = 'time';
+      next.lastValidLiveTime = time;
+      return { state: next, eventId: next.sessionKey };
+    }
+    if (time && old.lastValidLiveTime && time < old.lastValidLiveTime) return { state: { ...old, observationStatus: 'unknown', unknownSince: old.unknownSince || now }, eventId: '' };
+    if (time && !old.lastValidLiveTime) next.lastValidLiveTime = time;
+    return { state: next, eventId: '' };
+  }
+
+  function createLiveAlertController(roomPage) {
+    const ACCOUNTS_KEY = 'bilivex_live_alert_accounts_v1';
+    const LEASE_KEY = 'bilivex_live_alert_lease_v1';
+    const WAKE_KEY = 'bilivex_live_alert_wakeup_v1';
+    const DISPLAY_KEY = 'bilivex_live_alert_display_v1';
+    const EVENT_PREFIX = 'bilivex_live_alert_event_v1:';
+    const ACK_PREFIX = 'bilivex_live_alert_ack_v1:';
+    const ownerId = 'alert-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    const listeners = [];
+    const timers = new Set();
+    const activeRequests = new Set();
+    let stopped = false, owner = false, runningCycleId = '';
+    let pageEpoch = 0;
+    let cycleTimer = null, leaseTimer = null, card = null, countdownTimer = null;
+    let countdownRemaining = 5, countdownPaused = false;
+    let activeAccount = '', knownRevision = -1, leaseGeneration = '', syncing = false, knownLoginUid = '';
+    let medalCacheUid = 0, medalCacheAt = 0, medalCache = null;
+
+    function read(key, fallback) {
+      try {
+        const value = GM_getValue(key);
+        return value == null ? fallback : JSON.parse(value);
+      } catch (e) { return null; }
+    }
+    function write(key, value) { GM_setValue(key, JSON.stringify(value)); }
+    function emptyAccounts() { return { schemaVersion: 1, activeAccountUid: '', activeAccountEpoch: '', revision: 0, accounts: {} }; }
+    function config() {
+      const value = read(ACCOUNTS_KEY, emptyAccounts());
+      return value && value.schemaVersion === 1 && Number.isSafeInteger(value.revision) && value.revision >= 0 &&
+        value.accounts && typeof value.accounts === 'object' && !Array.isArray(value.accounts) &&
+        (value.activeAccountUid === '' || !!liveAlertUid(value.activeAccountUid)) &&
+        typeof value.activeAccountEpoch === 'string' ? value : null;
+    }
+    function account(cfg) {
+      const key = String(cfg && cfg.activeAccountUid || '');
+      return cfg && cfg.accounts[key] || null;
+    }
+    function token() { return ownerId + ':' + Date.now() + ':' + Math.random().toString(36).slice(2); }
+    function revisionCurrent(cfg) {
+      const now = config();
+      return !!(now && cfg && now.revision === cfg.revision && now.activeAccountUid === cfg.activeAccountUid && now.activeAccountEpoch === cfg.activeAccountEpoch);
+    }
+    function enabled(cfg) {
+      const a = account(cfg);
+      return !!(cfg && liveAlertUid(cfg.activeAccountUid) && cfg.activeAccountEpoch && a && a.enabled === true &&
+        Array.isArray(a.selectedUids) && a.selectedUids.length && a.selectionEpochByUid &&
+        a.selectedUids.every(id => liveAlertUid(id) && a.selectionEpochByUid[id] && a.streamers && a.streamers[id]));
+    }
+    function later(callback, delay) {
+      const id = setTimeout(() => { timers.delete(id); if (!stopped) callback(); }, delay);
+      timers.add(id);
+      return id;
+    }
+    function clearLater(id) { if (id != null) { clearTimeout(id); timers.delete(id); } }
+    function readLease() { return read(LEASE_KEY, null); }
+    function ownsLease() {
+      const lease = readLease();
+      return !!(lease && lease.ownerId === ownerId && lease.generation === leaseGeneration && lease.expiresAt > Date.now());
+    }
+    function stopPolling() {
+      owner = false;
+      runningCycleId = '';
+      clearLater(cycleTimer); clearLater(leaseTimer);
+      cycleTimer = leaseTimer = null;
+      for (const request of activeRequests) if (request.kind === 'poll') request.abort();
+    }
+    function liveUid() {
+      if (!roomPage) return '';
+      const found = /(?:^|;\s*)DedeUserID=(\d+)/.exec(document.cookie || '');
+      return found && liveAlertUid(found[1]) ? found[1] : '';
+    }
+    async function saveConfig(mutator, expectedRevision = null, expectedUid = null, expectedEpoch = null) {
+      if (!roomPage || !window.navigator.locks || typeof window.navigator.locks.request !== 'function') throw new Error('浏览器不支持配置安全保存');
+      const startedEpoch = pageEpoch;
+      return window.navigator.locks.request('bilivex-live-alert-config-v1', async () => {
+        if (stopped || pageEpoch !== startedEpoch) throw new Error('页面已离开，已取消保存');
+        const latest = config();
+        if (!latest) throw new Error('配置损坏，已停止写入');
+        const uid = liveUid();
+        if (!uid) throw new Error('请先在直播页登录 B 站');
+        if (expectedRevision !== null && (latest.revision !== expectedRevision || latest.activeAccountUid !== expectedUid || latest.activeAccountEpoch !== expectedEpoch)) throw new Error('配置已在其他页面更新，请重新加载后保存');
+        const next = JSON.parse(JSON.stringify(latest));
+        if (next.activeAccountUid !== uid) {
+          next.activeAccountUid = uid;
+          next.activeAccountEpoch = token();
+        }
+        if (!next.accounts[uid]) next.accounts[uid] = { enabled: false, enabledSince: 0, syncedAt: 0, selectedUids: [], selectionEpochByUid: {}, streamers: {} };
+        if (!Array.isArray(next.accounts[uid].selectedUids) || !next.accounts[uid].streamers || typeof next.accounts[uid].streamers !== 'object' || Array.isArray(next.accounts[uid].streamers)) throw new Error('账号配置损坏，已停止写入');
+        next.accounts[uid].enabled = next.accounts[uid].enabled === true;
+        if (!next.accounts[uid].selectionEpochByUid) next.accounts[uid].selectionEpochByUid = {};
+        const oldSelected = new Set(next.accounts[uid].selectedUids || []);
+        await mutator(next.accounts[uid], next, uid);
+        if (stopped || pageEpoch !== startedEpoch) throw new Error('页面已离开，已取消保存');
+        next.accounts[uid].selectedUids = [...new Set(next.accounts[uid].selectedUids.map(liveAlertUid).filter(id => id && next.accounts[uid].streamers[id]))];
+        for (const id of next.accounts[uid].selectedUids) if (!oldSelected.has(id) || !next.accounts[uid].selectionEpochByUid[id]) next.accounts[uid].selectionEpochByUid[id] = token();
+        for (const id of Object.keys(next.accounts[uid].selectionEpochByUid)) if (!next.accounts[uid].selectedUids.includes(Number(id))) delete next.accounts[uid].selectionEpochByUid[id];
+        next.accountConfirmedAt = Date.now();
+        next.revision += 1;
+        write(ACCOUNTS_KEY, next);
+        const saved = config();
+        if (!saved || saved.revision !== next.revision) throw new Error('保存校验失败');
+        return saved;
+      });
+    }
+    function accountChanged() {
+      const cfg = config();
+      if (!cfg || !enabled(cfg)) { stopPolling(); closeCard(); return; }
+      if (activeAccount !== cfg.activeAccountUid || knownRevision !== cfg.revision) {
+        stopPolling(); activeAccount = cfg.activeAccountUid; knownRevision = cfg.revision;
+      }
+      if (!owner) attemptLease();
+      scanEvents();
+    }
+    function request(url, anonymous, kind = 'sync') {
+      return new Promise((resolve, reject) => {
+        const record = { kind, abort: () => {} };
+        let finished = false, handle = null;
+        const finish = (error, value) => {
+          if (finished) return;
+          finished = true; clearTimeout(timeoutId); activeRequests.delete(record);
+          if (error) reject(error); else resolve(value);
+        };
+        const timeoutId = setTimeout(() => {
+          finish(new Error('网络请求超时'));
+          if (handle && typeof handle.abort === 'function') handle.abort();
+        }, 10500);
+        record.abort = () => {
+          finish(new Error('请求已取消'));
+          if (handle && typeof handle.abort === 'function') handle.abort();
+        };
+        activeRequests.add(record);
+        try {
+          handle = GM_xmlhttpRequest({
+            method: 'GET', url, timeout: 10000, anonymous: !!anonymous,
+            onload: (response) => {
+              try {
+                if (response.status === 412 || response.status === 429) {
+                  const error = new Error('接口请求受限'); error.risk = true; finish(error); return;
+                }
+                const data = JSON.parse(response.responseText);
+                if (response.status !== 200 || data.code !== 0 || (data.data && data.data.v_voucher)) {
+                  const error = new Error(data.message || '接口拒绝请求');
+                  error.risk = response.status === 429 || data.code === -352 || data.code === -412 || !!(data.data && data.data.v_voucher);
+                  finish(error); return;
+                }
+                finish(null, data.data);
+              } catch (e) { finish(e); }
+            },
+            onerror: () => finish(new Error('网络请求失败')),
+            ontimeout: () => finish(new Error('网络请求超时')),
+            onabort: () => finish(new Error('请求已取消')),
+          });
+        } catch (e) { finish(e); }
+      });
+    }
+    async function loadMedalLevels(force = false) {
+      const uid = liveUid();
+      if (!uid) throw new Error('请先登录 B 站');
+      if (!force && medalCacheUid === uid && medalCache && Date.now() - medalCacheAt < 300000) return medalCache;
+      const data = await request('https://api.live.bilibili.com/xlive/web-ucenter/user/MedalWall?target_id=' + uid, false);
+      const result = liveAlertMedalLevels(data, uid);
+      medalCacheUid = uid; medalCacheAt = Date.now(); medalCache = result;
+      return result;
+    }
+    function scheduleCycle(delay) {
+      clearLater(cycleTimer);
+      cycleTimer = later(() => { cycleTimer = null; void poll(); }, delay);
+    }
+    function renewLease() {
+      if (!owner || !ownsLease()) { stopPolling(); attemptLease(); return; }
+      try { write(LEASE_KEY, { ownerId, generation: leaseGeneration, accountUid: activeAccount, expiresAt: Date.now() + 90000 }); }
+      catch (e) { stopPolling(); return; }
+      leaseTimer = later(renewLease, 30000);
+    }
+    function attemptLease() {
+      if (stopped || owner) return;
+      const cfg = config();
+      if (!cfg || !enabled(cfg)) return;
+      const lease = readLease();
+      if (lease && lease.ownerId === ownerId && lease.accountUid === cfg.activeAccountUid && lease.expiresAt > Date.now()) {
+        leaseGeneration = lease.generation; owner = true; activeAccount = cfg.activeAccountUid;
+        renewLease(); scheduleCycle(0); return;
+      }
+      if (lease && lease.expiresAt > Date.now()) {
+        clearLater(leaseTimer);
+        leaseTimer = later(attemptLease, Math.max(1000, lease.expiresAt - Date.now() + 10));
+        return;
+      }
+      clearLater(leaseTimer);
+      leaseTimer = later(() => {
+        const current = readLease();
+        if (current && current.expiresAt > Date.now()) { attemptLease(); return; }
+        leaseGeneration = token();
+        try { write(LEASE_KEY, { ownerId, generation: leaseGeneration, accountUid: cfg.activeAccountUid, expiresAt: Date.now() + 90000 }); }
+        catch (e) { return; }
+        if (!ownsLease()) { attemptLease(); return; }
+        owner = true; activeAccount = cfg.activeAccountUid;
+        renewLease(); scheduleCycle(0);
+      }, Math.floor(Math.random() * 750));
+    }
+    function eventKeys() {
+      try { return GM_listValues().filter(key => key.startsWith(EVENT_PREFIX)); }
+      catch (e) { return []; }
+    }
+    function cleanupEvents() {
+      try {
+        for (const key of GM_listValues().filter(key => key.startsWith(EVENT_PREFIX) || key.startsWith(ACK_PREFIX))) {
+          const value = read(key, null);
+          if (value && value.expiresAt && value.expiresAt + 86400000 < Date.now()) GM_deleteValue(key);
+        }
+      } catch (e) { /* 存储异常时不影响现有事件 */ }
+    }
+    function acknowledged(eventId) {
+      try { return GM_listValues().some(key => key.startsWith(ACK_PREFIX + eventId + ':')); }
+      catch (e) { return true; }
+    }
+    function emitEvent(cfg, uid, state, info) {
+      const a = account(cfg);
+      const id = `${cfg.activeAccountUid}:${uid}:${state.selectionEpoch}:${state.sessionKey}`;
+      const key = EVENT_PREFIX + id;
+      if (read(key, null)) return true;
+      cleanupEvents();
+      if (eventKeys().length >= 1000) return false;
+      const streamer = a.streamers[uid] || {};
+      write(key, {
+        eventId: id, accountUid: cfg.activeAccountUid, activeAccountEpoch: cfg.activeAccountEpoch,
+        enabledSince: a.enabledSince, selectionEpoch: state.selectionEpoch, uid, sessionKey: state.sessionKey,
+        roomId: liveAlertUid(info.room_id || streamer.roomId), uname: String(info.uname || streamer.uname || '').slice(0, 80),
+        face: liveAlertImage(info.face || streamer.face), title: String(info.title || '').slice(0, 160),
+        createdAt: Date.now(), expiresAt: Date.now() + 1800000,
+      });
+      if (!read(key, null)) return false;
+      write(WAKE_KEY, Date.now());
+      return true;
+    }
+    async function poll() {
+      if (!owner || runningCycleId || !ownsLease()) { if (owner) scheduleCycle(60000); return; }
+      const cfg = config(), a = account(cfg);
+      if (!enabled(cfg) || !a || cfg.activeAccountUid !== activeAccount) { stopPolling(); return; }
+      const runtimeKey = 'bilivex_live_alert_runtime_v1:' + activeAccount;
+      let runtime = read(runtimeKey, { schemaVersion: 1, accountUid: activeAccount, statesByUid: {}, backoffUntil: 0, consecutiveRiskErrors: 0 });
+      if (!runtime || !runtime.statesByUid) { stopPolling(); return; }
+      if (runtime.backoffUntil > Date.now()) { scheduleCycle(runtime.backoffUntil - Date.now()); return; }
+      const cycleId = token();
+      runningCycleId = cycleId;
+      let nextDelay = 60000 + Math.floor(Math.random() * 5000);
+      try {
+        const ids = [...new Set(a.selectedUids.map(liveAlertUid).filter(Boolean))];
+        for (let offset = 0; offset < ids.length; offset += 200) {
+          if (!owner || stopped || runningCycleId !== cycleId || !ownsLease() || !revisionCurrent(cfg)) break;
+          const batch = ids.slice(offset, offset + 200);
+          const query = batch.map(uid => 'uids%5B%5D=' + uid).join('&');
+          let data;
+          try { data = await request('https://api.live.bilibili.com/room/v1/Room/get_status_info_by_uids?' + query, true, 'poll'); }
+          catch (e) {
+            if (!owner || stopped || runningCycleId !== cycleId || !ownsLease() || !revisionCurrent(cfg)) break;
+            runtime = read(runtimeKey, runtime);
+            if (!runtime || !runtime.statesByUid) break;
+            for (const uid of batch) {
+              const old = runtime.statesByUid[uid];
+              if (old) runtime.statesByUid[uid] = { ...old, observationStatus: 'unknown', unknownSince: old.unknownSince || Date.now(), missingCount: (old.missingCount || 0) + 1 };
+            }
+            if (e.risk) {
+              runtime.consecutiveRiskErrors = (runtime.consecutiveRiskErrors || 0) + 1;
+              runtime.backoffUntil = Date.now() + Math.min(1800000, 300000 * (2 ** Math.min(3, runtime.consecutiveRiskErrors - 1)));
+              nextDelay = runtime.backoffUntil - Date.now();
+            }
+            write(runtimeKey, runtime);
+            break;
+          }
+          if (!owner || stopped || runningCycleId !== cycleId || !ownsLease() || !revisionCurrent(cfg)) break;
+          runtime = read(runtimeKey, runtime);
+          if (!runtime || !runtime.statesByUid) break;
+          for (const uid of batch) {
+            const info = data && data[uid];
+            if (!info || ![0, 1, 2].includes(Number(info.live_status))) {
+              const old = runtime.statesByUid[uid];
+              if (old) runtime.statesByUid[uid] = { ...old, observationStatus: 'unknown', unknownSince: old.unknownSince || Date.now(), missingCount: (old.missingCount || 0) + 1 };
+              continue;
+            }
+            const prior = runtime.statesByUid[uid];
+            const { state, eventId } = liveAlertStateStep(prior, { liveStatus: Number(info.live_status), liveTime: info.live_time }, uid, Date.now(), a.selectionEpochByUid[uid], a.enabledSince, cfg.activeAccountEpoch);
+            if (eventId && a.enabled === true) {
+              try { if (!emitEvent(cfg, uid, state, info)) continue; } catch (e) { continue; }
+            }
+            runtime.statesByUid[uid] = state;
+          }
+          runtime.lastSuccessAt = Date.now();
+          runtime.backoffUntil = 0;
+          runtime.consecutiveRiskErrors = 0;
+          write(runtimeKey, runtime);
+          write(WAKE_KEY, Date.now());
+        }
+      } finally {
+        if (runningCycleId === cycleId) {
+          runningCycleId = '';
+          if (owner && ownsLease()) scheduleCycle(Math.max(1000, nextDelay));
+        }
+      }
+    }
+
+    function closeCard() {
+      clearLater(countdownTimer); countdownTimer = null;
+      if (card) card.remove();
+      card = null;
+    }
+    function claimDisplay() {
+      if (document.visibilityState !== 'visible' || !document.hasFocus()) return false;
+      try { write(DISPLAY_KEY, { ownerId, at: Date.now(), roomPage }); }
+      catch (e) { return false; }
+      const current = read(DISPLAY_KEY, null);
+      return !!(current && current.ownerId === ownerId);
+    }
+    function scanEvents() {
+      if (stopped || card || document.visibilityState !== 'visible' || !document.hasFocus()) return;
+      const cfg = config(), a = account(cfg);
+      if (!enabled(cfg)) return;
+      if (!claimDisplay()) return;
+      let keys;
+      try { keys = GM_listValues(); } catch (e) { return; }
+      const acknowledgedIds = new Set(keys.filter(key => key.startsWith(ACK_PREFIX))
+        .map(key => read(key, null)).filter(value => value && value.eventId && value.expiresAt > Date.now())
+        .map(value => value.eventId));
+      const candidate = keys.filter(key => key.startsWith(EVENT_PREFIX)).map(key => read(key, null)).filter(Boolean).filter(event =>
+        event.accountUid === cfg.activeAccountUid && event.activeAccountEpoch === cfg.activeAccountEpoch &&
+        event.enabledSince === a.enabledSince && a.selectedUids.includes(event.uid) &&
+        event.selectionEpoch === a.selectionEpochByUid[event.uid] &&
+        event.expiresAt > Date.now() && !acknowledgedIds.has(event.eventId));
+      candidate.sort((left, right) => left.createdAt - right.createdAt || String(left.eventId).localeCompare(String(right.eventId)));
+      for (const event of candidate.slice(0, 50)) if (showCard(event)) break;
+    }
+    function showCard(event) {
+      if (!document.body) { later(scanEvents, 100); return false; }
+      const runtime = read('bilivex_live_alert_runtime_v1:' + event.accountUid, null);
+      const state = runtime && runtime.statesByUid && runtime.statesByUid[event.uid];
+      if (!state || state.liveStatus !== 1 || state.observationStatus !== 'valid' || state.sessionKey !== event.sessionKey || Date.now() - state.observedAt > 120000) return false;
+      if (!claimDisplay() || acknowledged(event.eventId)) return false;
+      const host = document.createElement('div');
+      host.id = 'bilivex-live-alert-host';
+      host.style.cssText = 'position:fixed;right:12px;top:12px;z-index:2147483646;pointer-events:none;';
+      if (roomPage) {
+        const panel = document.getElementById('bilivex-panel');
+        if (panel) {
+          const r = panel.getBoundingClientRect();
+          const left = r.left >= 332 ? r.left - 332 : Math.min(window.innerWidth - 332, r.right + 12);
+          host.style.left = Math.max(12, left) + 'px'; host.style.right = 'auto';
+          host.style.top = Math.max(12, Math.min(r.top, window.innerHeight - 170)) + 'px';
+        }
+      }
+      const root = host.attachShadow({ mode: 'open' });
+      const style = document.createElement('style');
+      style.textContent = ':host{all:initial} .card{box-sizing:border-box;width:min(320px,calc(100vw - 24px));padding:14px;border-radius:12px;background:#fff;color:#222;box-shadow:0 6px 24px #0003;font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;pointer-events:auto}.head{display:flex;gap:10px;align-items:center}.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#00aeec}.name{font-weight:700}.title{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.actions{display:flex;gap:8px;margin-top:12px}button{flex:1;padding:7px;border:0;border-radius:7px;cursor:pointer;background:#e9f7fd;color:#006b94}button.go{background:#00aeec;color:white}button:focus-visible{outline:2px solid #fb7299;outline-offset:2px}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}';
+      const box = document.createElement('div'); box.className = 'card'; box.setAttribute('aria-label', '主播开播提醒');
+      const head = document.createElement('div'); head.className = 'head';
+      const avatar = document.createElement('div'); avatar.style.cssText = 'position:relative;width:42px;height:42px;flex:none;border-radius:50%;background:#00aeec;color:#fff;display:grid;place-items:center;font-weight:700;';
+      avatar.textContent = String(event.uname || '播').slice(0, 1);
+      const img = document.createElement('img'); img.className = 'avatar'; img.alt = ''; img.style.cssText = 'position:absolute;inset:0;';
+      if (event.face) img.src = event.face;
+      img.addEventListener('error', () => { img.remove(); }); avatar.appendChild(img);
+      const desc = document.createElement('div');
+      const name = document.createElement('div'); name.className = 'name'; name.textContent = event.uname + ' 正在直播'; name.setAttribute('aria-live', 'polite');
+      const title = document.createElement('div'); title.className = 'title'; title.textContent = event.title; title.title = event.title;
+      desc.append(name, title); head.append(avatar, desc);
+      const actions = document.createElement('div'); actions.className = 'actions';
+      const done = document.createElement('button'); done.type = 'button'; done.setAttribute('aria-label', '我知道了');
+      const label = document.createTextNode('我知道了（'); const count = document.createElement('span'); count.setAttribute('aria-hidden', 'true'); count.textContent = '5s';
+      done.append(label, count, document.createTextNode('）'));
+      const go = document.createElement('button'); go.type = 'button'; go.className = 'go'; go.textContent = '火速前往';
+      const room = liveAlertUid(event.roomId); go.disabled = !room;
+      const finish = () => { closeCard(); scanEvents(); };
+      done.addEventListener('click', finish);
+      go.addEventListener('click', () => { if (room) window.open('https://live.bilibili.com/' + room, '_blank', 'noopener'); finish(); });
+      box.addEventListener('mouseenter', () => { countdownPaused = true; });
+      box.addEventListener('mouseleave', () => { countdownPaused = box.contains(root.activeElement); });
+      box.addEventListener('focusin', () => { countdownPaused = true; });
+      box.addEventListener('focusout', () => { countdownPaused = box.matches(':hover'); });
+      actions.append(done, go); box.append(head, actions); root.append(style, box);
+      document.body.appendChild(host); card = host; countdownRemaining = 5; countdownPaused = false;
+      try { write(ACK_PREFIX + event.eventId + ':' + ownerId, { eventId: event.eventId, displayedAt: Date.now(), expiresAt: event.expiresAt }); }
+      catch (e) { closeCard(); return false; }
+      const tick = () => {
+        if (!card) return;
+        if (!countdownPaused) countdownRemaining -= 1;
+        if (countdownRemaining <= 0) { finish(); return; }
+        count.textContent = countdownRemaining + 's'; countdownTimer = later(tick, 1000);
+      };
+      countdownTimer = later(tick, 1000);
+      return true;
+    }
+    function syncFollowing(onProgress) {
+      if (!roomPage) return Promise.reject(new Error('请在直播页同步关注'));
+      const uid = liveUid();
+      const startedEpoch = pageEpoch;
+      const syncActive = () => !stopped && pageEpoch === startedEpoch && uid === liveUid();
+      if (!uid) return Promise.reject(new Error('请先登录 B 站'));
+      if (syncing) return Promise.reject(new Error('关注列表正在同步'));
+      if (!window.navigator.locks || typeof window.navigator.locks.request !== 'function') return Promise.reject(new Error('浏览器不支持安全同步'));
+      return window.navigator.locks.request('bilivex-live-alert-sync-v1', { ifAvailable: true }, async (lock) => {
+        if (!lock) throw new Error('其他直播页正在同步关注列表');
+        if (!syncActive()) throw new Error('同步已取消或页面已离开');
+        syncing = true;
+        try {
+        let startCfg = config();
+        if (!startCfg) throw new Error('配置损坏，无法同步');
+        if (startCfg.activeAccountUid !== uid) startCfg = await saveConfig(() => {});
+        const list = new Map();
+        let total = 0, primaryComplete = false, primaryError = null;
+        const seenPrimary = new Set();
+        try {
+        for (let page = 1; page <= 100; page += 1) {
+          if (!syncActive()) throw new Error('同步已取消或账号已变化');
+          const data = await request(`https://api.live.bilibili.com/xlive/web-ucenter/user/following?page=${page}&page_size=29&ignoreRecord=1&hit_ab=true`, false);
+          if (!syncActive()) throw new Error('同步已取消或页面已离开');
+          if (!data || !Array.isArray(data.list)) throw new Error('关注列表结构异常');
+          if (page === 1) total = Number(data.count);
+          if (!Number.isSafeInteger(total) || total < 0 || Number(data.count) !== total || data.list.length !== Math.max(0, Math.min(29, total - (page - 1) * 29))) throw new Error('直播关注列表分页不完整');
+          for (const item of data.list) {
+            const id = liveAlertUid(item.uid), room = liveAlertUid(item.roomid);
+            if (!id || seenPrimary.has(id)) throw new Error('直播关注列表出现重复主播');
+            seenPrimary.add(id);
+            if (id && room) list.set(id, { uid: id, roomId: room, uname: String(item.uname || '').slice(0, 80), face: liveAlertImage(item.face) });
+          }
+          onProgress(list.size, total);
+          if (page * 29 >= total) { primaryComplete = true; break; }
+          if (page === 100) throw new Error('关注列表页数超过上限');
+          await new Promise(resolve => setTimeout(resolve, 800 + Math.floor(Math.random() * 700)));
+        }
+        } catch (error) { primaryError = error; list.clear(); }
+        if (!syncActive()) throw new Error('同步已取消或页面已离开');
+        let relationComplete = false, roomStatusComplete = true;
+        const followed = new Map();
+        try {
+          let relationTotal = 0;
+          for (let page = 1; page <= 100; page += 1) {
+            if (!syncActive()) throw new Error('同步已取消或账号已变化');
+            const data = await request(`https://api.bilibili.com/x/relation/followings?vmid=${uid}&pn=${page}&ps=50`, false);
+            if (!syncActive()) throw new Error('同步已取消或页面已离开');
+            if (!data || !Array.isArray(data.list)) throw new Error('关注关系列表结构异常');
+            if (page === 1) relationTotal = Number(data.total);
+            if (!Number.isSafeInteger(relationTotal) || relationTotal < 0 || Number(data.total) !== relationTotal || data.list.length !== Math.max(0, Math.min(50, relationTotal - (page - 1) * 50))) throw new Error('关注关系列表分页不完整');
+            for (const item of data.list) {
+              const id = liveAlertUid(item.mid);
+              if (!id || followed.has(id)) throw new Error('关注关系列表出现重复主播');
+              followed.set(id, { uid: id, uname: String(item.uname || '').slice(0, 80), face: liveAlertImage(item.face) });
+            }
+            onProgress(followed.size, relationTotal);
+            if (page * 50 >= relationTotal) { relationComplete = followed.size === relationTotal; break; }
+            if (page === 100) throw new Error('关注关系页数超过上限');
+            await new Promise(resolve => setTimeout(resolve, 800 + Math.floor(Math.random() * 700)));
+          }
+          if (relationComplete) {
+            const ids = [...followed.keys()];
+            for (let offset = 0; offset < ids.length; offset += 200) {
+              if (!syncActive()) throw new Error('同步已取消或账号已变化');
+              const batch = ids.slice(offset, offset + 200);
+              const query = batch.map(id => 'uids%5B%5D=' + id).join('&');
+              const data = await request('https://api.live.bilibili.com/room/v1/Room/get_status_info_by_uids?' + query, true);
+              if (!syncActive()) throw new Error('同步已取消或页面已离开');
+              for (const id of batch) {
+                const info = data && data[id];
+                if (!info) { roomStatusComplete = false; continue; }
+                const room = liveAlertUid(info.room_id);
+                if (room) {
+                  const relation = followed.get(id), fromLive = list.get(id);
+                  list.set(id, { uid: id, roomId: room, uname: relation.uname || (fromLive && fromLive.uname) || '', face: relation.face || (fromLive && fromLive.face) || '' });
+                }
+              }
+              onProgress(offset + batch.length, ids.length);
+              if (offset + batch.length < ids.length) await new Promise(resolve => setTimeout(resolve, 800 + Math.floor(Math.random() * 700)));
+            }
+          }
+        } catch (e) { relationComplete = false; }
+        if (!syncActive()) throw new Error('同步已取消或页面已离开');
+        if (!primaryComplete && !relationComplete) throw primaryError || new Error('关注列表无法完整读取');
+        if (!syncActive()) throw new Error('同步期间账号已变化或页面已离开');
+        await saveConfig((a) => {
+          const complete = relationComplete && roomStatusComplete;
+          a.streamers = complete ? Object.fromEntries(list) : { ...a.streamers, ...Object.fromEntries(list) };
+          if (complete) a.selectedUids = a.selectedUids.filter(id => list.has(id));
+          a.syncedAt = Date.now();
+          a.syncComplete = complete;
+        }, startCfg.revision, startCfg.activeAccountUid, startCfg.activeAccountEpoch);
+        return list.size;
+        } finally { syncing = false; }
+      });
+    }
+    function begin() {
+      if (stopped) return;
+      knownLoginUid = liveUid();
+      if (roomPage && liveUid()) {
+        const cfg = config();
+        if (cfg && cfg.activeAccountUid !== liveUid()) void saveConfig(() => {}).then(accountChanged).catch(() => {});
+      }
+      accountChanged();
+      const watch = (key, callback) => {
+        try { const id = GM_addValueChangeListener(key, callback); if (id != null) listeners.push(id); } catch (e) { /* 降级为页面恢复重读 */ }
+      };
+      watch(ACCOUNTS_KEY, accountChanged); watch(LEASE_KEY, () => { if (!owner) attemptLease(); });
+      watch(WAKE_KEY, scanEvents);
+      window.addEventListener('focus', onFocus);
+      window.addEventListener('pointerdown', claimDisplay);
+      window.addEventListener('pagehide', onPageHide);
+      window.addEventListener('pageshow', onFocus);
+      document.addEventListener('visibilitychange', onFocus);
+    }
+    function onPageHide(event) {
+      if (event.persisted) {
+        pageEpoch += 1;
+        stopPolling(); closeCard();
+        for (const request of activeRequests) request.abort();
+        timers.forEach(clearTimeout); timers.clear();
+        return;
+      }
+      dispose();
+    }
+    function onFocus() {
+      if (document.visibilityState !== 'visible' || !document.hasFocus()) { closeCard(); return; }
+      if (roomPage && knownLoginUid && !liveUid()) {
+        void deactivateIfLoggedOut(knownLoginUid); knownLoginUid = '';
+        return;
+      }
+      if (roomPage && liveUid()) {
+        knownLoginUid = liveUid();
+        const cfg = config();
+        if (cfg && cfg.activeAccountUid !== liveUid()) { void saveConfig(() => {}).then(accountChanged).catch(() => {}); return; }
+      }
+      accountChanged();
+    }
+    async function deactivateIfLoggedOut(previousUid) {
+      if (!window.navigator.locks || typeof window.navigator.locks.request !== 'function') return;
+      const startedEpoch = pageEpoch;
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (stopped || pageEpoch !== startedEpoch || liveUid()) return;
+      try {
+        await window.navigator.locks.request('bilivex-live-alert-config-v1', () => {
+          const latest = config();
+          if (stopped || pageEpoch !== startedEpoch || !latest || liveUid() || latest.activeAccountUid !== previousUid) return;
+          const next = JSON.parse(JSON.stringify(latest));
+          next.activeAccountUid = ''; next.activeAccountEpoch = token(); next.revision += 1;
+          write(ACCOUNTS_KEY, next);
+        });
+      } catch (e) { /* 无法确认登出时保持原配置，不覆盖账号缓存 */ }
+      accountChanged();
+    }
+    function dispose() {
+      stopped = true; pageEpoch += 1; stopPolling(); closeCard();
+      for (const request of activeRequests) request.abort();
+      timers.forEach(clearTimeout); timers.clear();
+      listeners.forEach(id => { try { GM_removeValueChangeListener(id); } catch (e) { /* 页面退出 */ } });
+      window.removeEventListener('focus', onFocus); window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pointerdown', claimDisplay); window.removeEventListener('pageshow', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    }
+    begin();
+    return { config, account, liveUid, saveConfig, syncFollowing, loadMedalLevels, scanEvents };
+  }
 
   // ---------- 主题调色板 ----------
   const THEMES = {
@@ -1032,6 +1701,9 @@
     });
 
     Array.from(panelDocument.querySelectorAll('#bilivex-panel button[data-bilivex-favorites="1"]')).forEach((b) => {
+      b.style.background = currentTheme.primary;
+    });
+    Array.from(panelDocument.querySelectorAll('#bilivex-panel button[data-bilivex-live-alert-manager="1"]')).forEach((b) => {
       b.style.background = currentTheme.primary;
     });
     Array.from(panelDocument.querySelectorAll('#bilivex-panel button[data-bilivex-more-settings="1"]')).forEach((b) => {
@@ -3125,6 +3797,12 @@
     if (cfg.panelCollapsed) {
       panel.style.width = COLLAPSED_BTN_SIZE + 'px';
       panel.style.height = COLLAPSED_BTN_SIZE + 'px';
+    } else if (panel.querySelector('#bilivex-live-alert-manager')) {
+      panel.style.width = Math.min(340, panelWindow.innerWidth - 24) + 'px';
+      panel.style.minHeight = '0';
+    } else if (isFavoritesPanelOpen(panel)) {
+      panel.style.width = Math.min(340, panelWindow.innerWidth - 16) + 'px';
+      panel.style.minHeight = '0';
     } else {
       panel.style.width = '220px';
       panel.style.minHeight = '0';
@@ -3145,6 +3823,162 @@
       }
     } catch (e) {}
     return panel.isConnected;
+  }
+
+  function openLiveAlertManager() {
+    if (!liveAlertController || !liveAlertRoomPage || !liveAlertTopPage) return;
+    const panel = panelDocument.getElementById('bilivex-panel');
+    if (!panel || panelDocument.getElementById('bilivex-live-alert-manager')) return;
+    const body = panel.querySelector('.bilivex-panel-body');
+    if (!body) return;
+    const previousPanelStyle = { width: panel.style.width, height: panel.style.height, transition: panel.style.transition };
+    body.style.display = 'none';
+    const view = panelDocument.createElement('section');
+    view.id = 'bilivex-live-alert-manager';
+    view.style.cssText = 'box-sizing:border-box;width:100%;max-height:min(70vh,550px);padding:12px;background:#fff;color:#222;display:flex;flex-direction:column;gap:8px;border-radius:0 0 12px 12px;';
+    const header = panelDocument.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
+    const heading = panelDocument.createElement('strong'); heading.textContent = '特别关注主播';
+    const back = panelDocument.createElement('button'); back.type = 'button'; back.textContent = '返回';
+    const status = panelDocument.createElement('div'); status.setAttribute('aria-live', 'polite'); status.style.cssText = 'font-size:11px;color:#667;';
+    const search = panelDocument.createElement('input'); search.type = 'search'; search.placeholder = '搜索昵称或 UID'; search.setAttribute('aria-label', '搜索主播昵称或 UID');
+    search.style.cssText = 'box-sizing:border-box;width:100%;padding:6px;border:1px solid #ccd;border-radius:6px;';
+    const actions = panelDocument.createElement('div'); actions.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+    const list = panelDocument.createElement('div'); list.style.cssText = 'min-height:0;max-height:270px;overflow-y:auto;flex:1;border:1px solid #eee;border-radius:6px;';
+    const footer = panelDocument.createElement('div'); footer.style.cssText = 'display:flex;gap:8px;justify-content:space-between;';
+    const makeButton = (label, callback) => {
+      const button = panelDocument.createElement('button'); button.type = 'button'; button.textContent = label;
+      button.style.cssText = 'border:1px solid #ccd;background:#fff;border-radius:6px;padding:5px 7px;cursor:pointer;';
+      button.addEventListener('click', callback); return button;
+    };
+    let cfg = liveAlertController.config(), a = liveAlertController.account(cfg);
+    let original = a ? [...a.selectedUids] : [];
+    let draft = new Set(original);
+    let syncing = false;
+    let medalLevels = {}, medalState = 'loading';
+    let discardArmed = false;
+    let draftRevision = cfg && cfg.revision, draftUid = cfg && cfg.activeAccountUid, draftEpoch = cfg && cfg.activeAccountEpoch;
+    const draftChanged = () => draft.size !== original.length || original.some(uid => !draft.has(uid));
+    const close = (forPanelToggle = false) => {
+      const rect = panel.getBoundingClientRect();
+      const anchor = getPanelAnchor(panel, rect);
+      const rightGap = panelWindow.innerWidth - rect.right;
+      panel.style.transition = 'none';
+      view.remove(); body.style.display = '';
+      panel.style.width = previousPanelStyle.width;
+      panel.style.height = previousPanelStyle.height;
+      const width = panel.getBoundingClientRect().width;
+      const height = panel.getBoundingClientRect().height;
+      const left = Math.max(8, Math.min(anchor === 'right' ? panelWindow.innerWidth - rightGap - width : rect.left, panelWindow.innerWidth - width - 8));
+      const top = Math.max(8, Math.min(rect.top, panelWindow.innerHeight - height - 8));
+      panel.style.left = left + 'px';
+      panel.style.top = top + 'px';
+      panel.style.right = 'auto';
+      void panel.offsetWidth;
+      panel.style.transition = previousPanelStyle.transition;
+      updateCfg({ panelAnchor: anchor, panelPos: { left: Math.round(left), top: Math.round(top) } });
+      if (!forPanelToggle) panel.querySelector('[data-bilivex-live-alert-manager="1"]')?.focus();
+    };
+    view.addEventListener('bilivex-panel-toggle', (event) => {
+      if (event.detail.collapsed && draftChanged()) {
+        status.textContent = '选择尚未保存，请先保存或返回后收起';
+        event.preventDefault();
+        return;
+      }
+      close(true);
+    });
+    back.addEventListener('click', () => {
+      if (!discardArmed && draftChanged()) {
+        status.textContent = '选择尚未保存，请先保存或再次点击返回放弃';
+        discardArmed = true;
+        return;
+      }
+      close();
+    });
+    function render() {
+      cfg = liveAlertController.config(); a = liveAlertController.account(cfg);
+      const entries = Object.values(a && a.streamers || {}).filter(item => item && liveAlertUid(item.uid));
+      const currentRoomId = canonicalRoom(panelDocument) || roomIdFromUrl(panelWindow.location.href);
+      const q = search.value.trim().toLocaleLowerCase();
+      const filtered = sortLiveAlertStreamers(entries.filter(item => !q || String(item.uid).includes(q) || String(item.uname || '').toLocaleLowerCase().includes(q)), currentRoomId, medalLevels);
+      status.textContent = `已选择 ${draft.size} 位 / 共 ${entries.length} 位` + (a && a.syncedAt ? ' · 更新于 ' + new Date(a.syncedAt).toLocaleString() : ' · 尚未同步') + (a && a.syncComplete === false ? ' · 名单可能不完整，旧选择已保留' : '') + (medalState === 'loading' ? ' · 正在读取灯牌等级' : medalState === 'partial' ? ' · 灯牌资料可能不完整' : medalState === 'error' ? ' · 灯牌等级暂不可用，按名称排序' : '');
+      list.replaceChildren();
+      if (!filtered.length) { const empty = panelDocument.createElement('p'); empty.textContent = entries.length ? '没有匹配的主播' : '暂无关注主播，请刷新关注列表'; empty.style.padding = '8px'; list.appendChild(empty); }
+      for (const item of filtered) {
+        const row = panelDocument.createElement('label');
+        row.style.cssText = 'box-sizing:border-box;min-height:48px;display:flex;align-items:center;gap:8px;padding:5px 8px;border-bottom:1px solid #eee;';
+        const avatar = panelDocument.createElement('span');
+        avatar.style.cssText = 'position:relative;width:32px;height:32px;flex:none;border-radius:50%;background:' + currentTheme.primary + ';color:white;display:grid;place-items:center;font-weight:700;';
+        avatar.textContent = String(item.uname || '播').slice(0, 1);
+        const image = panelDocument.createElement('img'); image.alt = ''; image.loading = 'lazy'; image.referrerPolicy = 'no-referrer';
+        if (liveAlertImage(item.face)) image.src = liveAlertImage(item.face);
+        image.style.cssText = 'position:absolute;inset:0;width:32px;height:32px;border-radius:50%;object-fit:cover;';
+        image.addEventListener('error', () => { image.remove(); }); avatar.appendChild(image);
+        const info = panelDocument.createElement('span'); info.style.cssText = 'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+        const isCurrent = currentRoomId && liveAlertUid(item.roomId) === liveAlertUid(currentRoomId);
+        const medalLevel = Number(medalLevels[item.uid]) || 0;
+        info.textContent = `${item.uname || '未知主播'} · ${item.uid}` + (isCurrent ? ' · 当前直播间' : '') + (medalLevel > 0 ? ` · 灯牌 Lv${medalLevel}` : '');
+        const check = panelDocument.createElement('input'); check.type = 'checkbox'; check.checked = draft.has(item.uid);
+        check.setAttribute('aria-label', '特别关注 ' + (item.uname || item.uid));
+        check.addEventListener('change', () => { if (check.checked) draft.add(item.uid); else draft.delete(item.uid); status.textContent = `已选择 ${draft.size} 位 / 共 ${entries.length} 位`; });
+        row.append(avatar, info, check); list.appendChild(row);
+      }
+    }
+    async function loadMedals(force = false) {
+      medalState = 'loading'; render();
+      try {
+        const result = await liveAlertController.loadMedalLevels(force);
+        if (!view.isConnected) return;
+        medalLevels = result.levels;
+        medalState = result.complete ? 'ready' : 'partial';
+      } catch (error) {
+        if (!view.isConnected) return;
+        medalLevels = {};
+        medalState = 'error';
+      }
+      render();
+    }
+    search.addEventListener('input', render);
+    actions.append(
+      makeButton('全选全部', () => { Object.keys(a && a.streamers || {}).forEach(uid => draft.add(Number(uid))); render(); }),
+      makeButton('全选搜索结果', () => { list.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = true; input.dispatchEvent(new panelWindow.Event('change')); }); render(); }),
+      makeButton('清空选择', () => { draft.clear(); render(); }),
+    );
+    const refresh = makeButton('刷新关注列表', async () => {
+      if (syncing) return;
+      syncing = true; refresh.disabled = true;
+      try {
+        status.textContent = '正在同步关注主播…';
+        await liveAlertController.syncFollowing((count, total) => { status.textContent = `已读取 ${count} 位 / 约 ${total} 位关注`; });
+        cfg = liveAlertController.config(); a = liveAlertController.account(cfg);
+        draft = new Set([...draft].filter(uid => a && a.streamers[uid]));
+        original = a ? [...a.selectedUids] : [];
+        draftRevision = cfg && cfg.revision; draftUid = cfg && cfg.activeAccountUid; draftEpoch = cfg && cfg.activeAccountEpoch;
+        render();
+        void loadMedals(true);
+      } catch (error) { status.textContent = '同步失败：' + String(error.message || error).slice(0, 80); }
+      finally { syncing = false; refresh.disabled = false; }
+    });
+    const save = makeButton('保存', async () => {
+      save.disabled = true;
+      try {
+        await liveAlertController.saveConfig((current) => { current.selectedUids = [...draft].filter(uid => current.streamers[uid]); }, draftRevision, draftUid, draftEpoch);
+        cfg = liveAlertController.config(); draftRevision = cfg && cfg.revision; draftUid = cfg && cfg.activeAccountUid; draftEpoch = cfg && cfg.activeAccountEpoch;
+        original = [...draft]; render(); status.textContent = '特别关注已保存';
+      } catch (error) { status.textContent = '保存失败：' + String(error.message || error).slice(0, 80); }
+      finally { save.disabled = false; }
+    });
+    footer.append(refresh, save); header.append(heading, back); view.append(header, status, search, actions, list, footer); panel.appendChild(view);
+    panel.style.transition = 'none';
+    const managerWidth = Math.min(340, panelWindow.innerWidth - 24);
+    panel.style.width = managerWidth + 'px';
+    const bounds = panel.getBoundingClientRect();
+    panel.style.left = Math.max(8, Math.min(bounds.left, panelWindow.innerWidth - managerWidth - 8)) + 'px';
+    panel.style.top = Math.max(8, Math.min(bounds.top, panelWindow.innerHeight - bounds.height - 8)) + 'px';
+    panel.style.right = 'auto';
+    render();
+    if (!a || !a.syncedAt) void refresh.click();
+    else void loadMedals();
   }
 
   function buildPanel() {
@@ -3448,6 +4282,34 @@
     });
     currentSection = settingsSection;
 
+    // 特别关注开播提醒只在直播域管理，其他 B 站网页不创建悬浮面板。
+    if (liveAlertController) {
+      currentSection = section('开播提醒');
+      const alerts = liveAlertController.account(liveAlertController.config());
+      const toggle = sw(!!(alerts && alerts.enabled), async value => {
+        try {
+          const saved = await liveAlertController.saveConfig(current => {
+            current.enabled = value === true && current.selectedUids.length > 0;
+            current.enabledSince = current.enabled ? Date.now() : 0;
+          });
+          if (value && !liveAlertController.account(saved)?.enabled) { showToast('请先选择特别关注主播'); openLiveAlertManager(); }
+          else showToast(value ? '开播提醒已开启' : '开播提醒已关闭');
+        } catch (error) { showToast('开播提醒保存失败'); }
+        const actual = !!(liveAlertController.account(liveAlertController.config())?.enabled);
+        const input = toggle.querySelector('input');
+        if (input) input.checked = actual;
+        const slider = toggle.querySelector('.bilivex-switch-slider');
+        if (slider) { slider.style.background = actual ? currentTheme.primary : '#cfd5db'; if (slider.firstElementChild) slider.firstElementChild.style.left = actual ? '16px' : '2px'; }
+      });
+      const toggleInput = toggle.querySelector('input');
+      if (toggleInput) { toggleInput.setAttribute('aria-label', '开播提醒'); toggleInput.dataset.bilivexLiveAlertToggle = '1'; }
+      row([lbl('开播提醒'), toggle]);
+      const managerButton = btn('管理特别关注', currentTheme.primary, openLiveAlertManager);
+      managerButton.dataset.bilivexLiveAlertManager = '1';
+      managerButton.style.cssText += 'width:100%;box-sizing:border-box;';
+      row([managerButton]);
+    }
+
     // 分组 2：点赞
     currentSection = section('点赞');
     // 30连击按钮（使用主题 accent 互补色，与标题色形成对比）
@@ -3566,6 +4428,12 @@
   function setPanelCollapsed(collapsed) {
     const panel = panelDocument.getElementById('bilivex-panel');
     if (!panel) return;
+    // 管理页沿用展开面板的布局；切换折叠态前先恢复主菜单，避免隐藏的列表阻断再次展开。
+    const manager = panel.querySelector('#bilivex-live-alert-manager');
+    if (manager && !manager.dispatchEvent(new panelWindow.CustomEvent('bilivex-panel-toggle', { cancelable: true, detail: { collapsed } }))) {
+      updateCfg({ panelCollapsed: !collapsed });
+      return;
+    }
     const head = panel.firstElementChild;
     const body = head ? head.nextElementSibling : null;
     const title = head ? head.firstElementChild : null;
@@ -3649,6 +4517,7 @@
     panel.style.transition = savedTransition;
     requestAnimationFrame(() => {
       if (seq !== collapseAnimSeq) return;
+      if (panel.querySelector('#bilivex-live-alert-manager')) return;
       applyPanelCollapsedStyles(panel, head, title, tog, false);
       if (pinRight) {
         panel.style.left = 'auto';
@@ -3664,6 +4533,7 @@
       updateCfg({ panelAnchor: anchor, panelPos: { left: Math.round(nx), top: Math.round(ny) } });
       setTimeout(() => {
         if (seq !== collapseAnimSeq || !panel.isConnected) return;
+        if (panel.querySelector('#bilivex-live-alert-manager')) return;
         panel.style.height = 'auto';
         if (pinRight) {
           const expandedRect = panel.getBoundingClientRect();
@@ -3765,8 +4635,8 @@
   if (!Object.prototype.hasOwnProperty.call(panelController, 'dragCleanup')) panelController.dragCleanup = null;
   const dragState = panelController.dragState;
   const pressState = panelController.pressState;
-  // 吸附阈值（px）：面板中心距左/右视口边缘小于该值即吸附到侧边
-  const SNAP_THRESHOLD = 120;
+  // 按面板外边缘判定吸附；92px 与原 56px 悬浮球的 120px 中心阈值等价。
+  const SNAP_EDGE_DISTANCE = 92;
   const DRAG_START_DISTANCE = 3;
   function setCurrentPanel(panel) {
     panelController.currentPanel = panel;
@@ -3887,11 +4757,11 @@
       if (nx < 8) nx = 8;                                              // 左侧溢出
       if (ny + r.height > vh - 4) ny = Math.max(8, vh - r.height - 8); // 底部溢出
       if (ny < 8) ny = 8;                                              // 顶部溢出
-      // 再按中心判定侧边吸附
+      // 按面板外边缘判定吸附，展开面板与悬浮球使用相同的触发距离。
       const centerX = nx + r.width / 2;
-      let snapLeft = null;
-      if (centerX < SNAP_THRESHOLD) snapLeft = true;        // 靠近左缘 → 吸附左
-      else if (centerX > vw - SNAP_THRESHOLD) snapLeft = false; // 靠近右缘 → 吸附右
+      const leftGap = nx;
+      const rightGap = vw - nx - r.width;
+      const snapLeft = Math.min(leftGap, rightGap) < SNAP_EDGE_DISTANCE ? leftGap <= rightGap : null;
       if (snapLeft !== null) {
         nx = snapLeft ? 8 : Math.max(8, vw - r.width - 8);
       }
@@ -3899,6 +4769,7 @@
       panel.style.transition = savedTransition
         ? savedTransition + ', left 0.3s ease, top 0.3s ease'
         : 'left 0.3s ease, top 0.3s ease';
+      const snapTransition = panel.style.transition;
       panel.style.left = nx + 'px';
       panel.style.top = ny + 'px';
       panel.style.right = 'auto';
@@ -3906,7 +4777,7 @@
         ? (centerX >= vw / 2 ? 'right' : 'left')
         : (snapLeft ? 'left' : 'right');
       setTimeout(() => {
-        if (panel.isConnected) panel.style.transition = savedTransition;
+        if (panel.isConnected && panel.style.transition === snapTransition) panel.style.transition = savedTransition;
       }, 320);
       // 保存吸附后的最终位置。
       updateCfg({ panelAnchor: panel.dataset.bilivexPanelAnchor, panelPos: { left: Math.round(nx), top: Math.round(ny) } });
@@ -4729,7 +5600,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '2.4.2';
+    return '2.5.0';
   }
 
   function compareVersions(a, b) {
@@ -5441,9 +6312,14 @@
         listenLifecycle(panelDocument, 'webkitfullscreenchange', onFullscreenChange);
       }
     } catch (e) {}
-    window.addEventListener('pagehide', () => {
+    const onPageShow = (event) => {
+      if (event.persisted) { tryInit(); guardianCheck(); }
+    };
+    const onPageHide = (event) => {
       stopActiveLike(true, '页面已离开');
       disposeWheel();
+      // BFCache 返回时复用原监听和观察器，恢复入口在 pageshow 重新检查页面。
+      if (event.persisted) { resetPlayerEnhancementSchedule(); return; }
       if (window._bilivexSpaMO) window._bilivexSpaMO.disconnect();
       if (boundChatList && typeof boundChatList._bilivexCommentMenuCleanup === 'function') {
         boundChatList._bilivexCommentMenuCleanup();
@@ -5476,7 +6352,11 @@
         });
       }
       removeEmptyResidentLayer();
-    }, { once: true });
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pageshow', onPageShow);
+    };
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
     // 注入 +1 反馈动画样式
     injectFloatingDmAnim();
     tryInit();
