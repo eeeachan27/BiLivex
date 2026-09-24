@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      2.5.1
+// @version      2.5.0
 // @license      MIT
 // @description  B站直播间增强工具：特别关注主播开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间，以及可选的自动最高画质、自动网页模式和防止 P2P 上传。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -5600,7 +5600,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '2.5.1';
+    return '2.5.0';
   }
 
   function compareVersions(a, b) {
@@ -5777,6 +5777,11 @@
     try {
       // 只在顶层页面实例检查，避免 iframe 实例重复请求与重复弹窗。
       if (document !== panelDocument) return;
+      // 真机调试入口：URL 带 #bilivex-update-test 时强制弹出更新提示，不走网络。
+      if (/bilivex-update-test/.test(panelWindow.location.hash)) {
+        setTimeout(() => showUpdateNotice('9.9.9'), 800);
+        return;
+      }
       if (updateCheckInFlight) return;
       const roomKey = getUpdateRoomKey();
       const state = readUpdateState();
@@ -6383,10 +6388,8 @@
       '#live-player .left-area, #live-player video';
     const touchesLifecycle = (records) => records.some((record) => {
       const nodes = Array.from(record.addedNodes).concat(Array.from(record.removedNodes));
-      // 活动页会持续插入含 iframe 的大型容器；只响应直接变动的生命周期节点，
-      // 避免深搜后对尚在构建的整块页面反复初始化，令高负载直播间卡死。
       return nodes.some((node) => node.nodeType === 1 &&
-        node.matches(lifecycleSelector));
+        (node.matches(lifecycleSelector) || node.querySelector(lifecycleSelector)));
     });
     const mo = new MutationObserver((records) => {
       const urlChanged = location.href !== lastUrl;
