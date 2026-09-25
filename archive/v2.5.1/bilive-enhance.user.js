@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      2.5.2
+// @version      2.5.1
 // @license      MIT
 // @description  B站直播间增强工具：特别关注主播开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间，以及可选的自动最高画质、自动网页模式和防止 P2P 上传。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -3677,16 +3677,13 @@
     // 不替换原点击行为，仅在面板提供快捷入口
   }
 
-  function findLikeButton(root = document, visited = new Set()) {
-    // 跨域 iframe 的 contentDocument 为 null；不能退回顶层文档重新递归。
-    if (!root || visited.has(root)) return null;
-    visited.add(root);
-    const doc = root;
+  function findLikeButton(root) {
+    const doc = root || document;
     const local = doc.querySelector('.like-btn');
     if (local) return local;
     for (const frame of doc.querySelectorAll('iframe')) {
       try {
-        const button = findLikeButton(frame.contentDocument, visited);
+        const button = findLikeButton(frame.contentDocument);
         if (button) return button;
       } catch (e) {}
     }
@@ -5603,7 +5600,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '2.5.2';
+    return '2.5.1';
   }
 
   function compareVersions(a, b) {
@@ -5818,9 +5815,6 @@
     playerSequence: 0,
     running: false,
     rerunRequested: false,
-    rerunResetRequested: false,
-    readyVideo: null,
-    readyInstanceKey: '',
     qualityDone: new Set(),
     qualityReadyAt: new Map(),
     webDone: new Set(),
@@ -6004,8 +5998,6 @@
       const player = getPageLivePlayer();
       const info = getLivePlayerInfo(player);
       const instanceKey = getPlayerInstanceKey(info);
-      playerEnhancementState.readyVideo = document.querySelector('#live-player video, .live-player-mounter video');
-      playerEnhancementState.readyInstanceKey = instanceKey;
       if (!instanceKey) {
         pending = true;
         return;
@@ -6029,11 +6021,8 @@
     } finally {
       playerEnhancementState.running = false;
       const rerunRequested = playerEnhancementState.rerunRequested;
-      const rerunResetRequested = playerEnhancementState.rerunResetRequested;
       playerEnhancementState.rerunRequested = false;
-      playerEnhancementState.rerunResetRequested = false;
-      // 同一播放器的重复事件只合并重试；换实例或退出浏览器全屏才重置次数。
-      if (rerunRequested) schedulePlayerEnhancements(rerunResetRequested);
+      if (rerunRequested) schedulePlayerEnhancements(true);
       else if (pending) schedulePlayerEnhancements();
     }
   }
@@ -6042,7 +6031,6 @@
     if (!cfg.autoHighestQuality && !cfg.autoWebMode) return;
     if (playerEnhancementState.running) {
       playerEnhancementState.rerunRequested = true;
-      if (restartRetry) playerEnhancementState.rerunResetRequested = true;
       return;
     }
     if (restartRetry) playerEnhancementState.retryIndex = 0;
@@ -6299,23 +6287,14 @@
 
   function start() {
     try {
-      let browserFullscreen = isBrowserFullscreen(getLivePlayerInfo(getPageLivePlayer()));
       const onFullscreenChange = () => {
         syncFullscreenUi();
-        const nowFullscreen = isBrowserFullscreen(getLivePlayerInfo(getPageLivePlayer()));
-        const changed = browserFullscreen !== nowFullscreen;
-        browserFullscreen = nowFullscreen;
-        schedulePlayerEnhancements(changed);
+        schedulePlayerEnhancements(true);
       };
       const onPlayerReady = (event) => {
         if (!event.target || event.target.tagName !== 'VIDEO') return;
         if (!event.target.closest('#live-player, .live-player-mounter')) return;
-        const instanceKey = getPlayerInstanceKey(getLivePlayerInfo(getPageLivePlayer()));
-        const changed = playerEnhancementState.readyVideo !== event.target ||
-          playerEnhancementState.readyInstanceKey !== instanceKey;
-        playerEnhancementState.readyVideo = event.target;
-        playerEnhancementState.readyInstanceKey = instanceKey;
-        schedulePlayerEnhancements(changed);
+        schedulePlayerEnhancements(true);
       };
       listenLifecycle(document, 'compositionstart', event => composingInputs.add(event.target), true);
       listenLifecycle(document, 'compositionend', event => composingInputs.delete(event.target), true);
@@ -6431,13 +6410,7 @@
           if (currentUrlChanged && document === panelDocument) checkForUpdate(true);
         } else {
           initRoom();
-          const video = document.querySelector('#live-player video, .live-player-mounter video');
-          const instanceKey = getPlayerInstanceKey(getLivePlayerInfo(getPageLivePlayer()));
-          const playerChanged = playerEnhancementState.readyVideo !== video ||
-            playerEnhancementState.readyInstanceKey !== instanceKey;
-          playerEnhancementState.readyVideo = video;
-          playerEnhancementState.readyInstanceKey = instanceKey;
-          schedulePlayerEnhancements(playerChanged);
+          schedulePlayerEnhancements(true);
         }
         guardianCheck();
       });
