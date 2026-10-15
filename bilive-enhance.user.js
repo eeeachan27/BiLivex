@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      3.0.0
+// @version      3.1.0
 // @license      MIT
-// @description  B站直播间增强工具：六分类悬浮窗、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
+// @description  B站直播间增强工具：六分类悬浮窗、带弹幕画中画、仅音频模式、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
 // @icon         data:image/jpeg;base64,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
 // @match        https://live.bilibili.com/*
@@ -35,6 +35,8 @@
  *   5) 一键点赞：连续点赞 30 次点亮粉丝团灯牌。
  *   6) 同步时间：在播放器原生底栏一键跳到当前可播放的最新画面。
  *   7) 更多设置：可选自动最高画质、自动网页模式和 B 站原生 P2P 禁用路径。
+ *   8) 带弹幕画中画：独立小窗弹幕、悬停操作栏与原生 +1 协调。
+ *   9) 仅音频：独立音轨、停止视频加载、暂停卸载及原生视频恢复。
  */
 
 (function () {
@@ -1198,14 +1200,23 @@
   let plusSendTail = Promise.resolve();
   let nativeSendEpoch = 0;
   let nativeSendPageActive = true;
+  let nativeSendUrlRoom = roomIdFromUrl(location.href);
+  let nativeSendPanelUrlRoom = null;
   const nativeSendCancellations = new Set();
 
   function nativeSendCurrent(epoch) {
-    return nativeSendPageActive && epoch === nativeSendEpoch;
+    if (!nativeSendPageActive || epoch !== nativeSendEpoch) return false;
+    try {
+      // 原生房号可能晚于 SPA 地址更新；先阻止本页或顶层已换房的旧请求。
+      return roomIdFromUrl(location.href) === nativeSendUrlRoom &&
+        (nativeSendPanelUrlRoom === null || roomIdFromUrl(panelWindow.location.href) === nativeSendPanelUrlRoom);
+    } catch (e) { return false; }
   }
 
   function cancelNativeSends(message) {
     nativeSendEpoch += 1;
+    nativeSendUrlRoom = roomIdFromUrl(location.href);
+    try { nativeSendPanelUrlRoom = roomIdFromUrl(panelWindow.location.href); } catch (e) { nativeSendPanelUrlRoom = ''; }
     const result = { status: 'cancelled', message };
     // 卸载和 BFCache 可能冻结计时器与动画帧，取消不能等待旧回调恢复后才释放队列。
     [...nativeSendCancellations].forEach(cancel => { try { cancel(result); } catch (e) {} });
@@ -1454,19 +1465,20 @@
     return { status: 'triggered', message: '已触发原生表情发送，无法确认服务端结果' };
   }
 
-  async function sendSpecialEmoji(hash, requestId, roomId) {
+  async function sendSpecialEmoji(hash, requestId, roomId, options = {}) {
     const epoch = nativeSendEpoch;
-    const input = await waitForNativeChatInput(null, () => nativeSendCurrent(epoch));
-    if (!nativeSendCurrent(epoch)) return { status: 'cancelled', message: '页面已离开，取消发送' };
+    const current = () => nativeSendCurrent(epoch) && !options.signal?.aborted && (!options.canContinue || options.canContinue());
+    const input = await waitForNativeChatInput(null, current);
+    if (!current()) return { status: 'cancelled', message: '任务已停止，取消发送' };
     if (!input) return { status: 'failed', message: '未找到原生聊天输入框，请稍后重试' };
     const ownerDocument = input.ownerDocument;
-    const roomMatches = () => !roomId || canonicalRoom(ownerDocument) === roomId;
+    const roomMatches = () => (!roomId || canonicalRoom(ownerDocument) === roomId) && (!options.ownerDocument || options.ownerDocument === ownerDocument);
     if (!roomMatches()) return { status: 'cancelled', message: '直播间已变化，取消发送' };
     const busy = () => !!input.value || composingInputs.has(input);
     if (busy()) return { status: 'user-busy', message: '请先处理输入框草稿或完成输入，再重试' };
     const result = await clickNativeSpecialEmoji(ownerDocument, hash, requestId,
-      () => nativeSendCurrent(epoch) && roomMatches() && input.isConnected && findChatInput() === input && !busy());
-    if (result.status === 'cancelled' && nativeSendCurrent(epoch) && roomMatches() && busy()) {
+      () => current() && roomMatches() && input.isConnected && findChatInput() === input && !busy());
+    if (result.status === 'cancelled' && current() && roomMatches() && busy()) {
       return { status: 'user-busy', message: '输入框内容已变化，保留草稿并停止发送' };
     }
     return result;
@@ -1585,26 +1597,40 @@
   async function fillAndSend(text, opts) {
     opts = opts || {};
     const epoch = nativeSendEpoch;
-    const ta = await waitForNativeChatInput(null, () => nativeSendCurrent(epoch));
-    if (!nativeSendCurrent(epoch)) return { status: 'cancelled', message: '页面已离开，取消发送' };
+    const current = () => nativeSendCurrent(epoch) && !opts.signal?.aborted && (!opts.canContinue || opts.canContinue());
+    const ta = await waitForNativeChatInput(null, current);
+    if (!current()) return { status: 'cancelled', message: '任务已停止，取消发送' };
     if (!ta) return { status: 'no-input', message: '未找到原生聊天输入框，请稍后重试' };
+    if (opts.ownerDocument && opts.ownerDocument !== ta.ownerDocument) return { status: 'cancelled', message: '输入框来源已变化，取消发送' };
     if (opts.roomId && canonicalRoom(ta.ownerDocument) !== opts.roomId) return { status: 'cancelled', message: '已换房，取消发送' };
     if (ta.value || composingInputs.has(ta)) return { status: 'user-busy', message: '请先处理输入框草稿或完成输入，再重试' };
-    try { ta.focus(); } catch (e) {}
+    if (!opts.keepFocus) { try { ta.focus(); } catch (e) {} }
     const tailText = getTailText();
     const finalText = opts.finalText || (tailText && !text.endsWith(tailText)
       ? text + tailText
       : text);
+    let inputChanged = false, writing = true, ownsInput = true;
+    const onInputChange = event => { if (!writing || event.isTrusted) inputChanged = true; };
+    const unbindInput = () => { ta.removeEventListener('input', onInputChange); ta.removeEventListener('beforeinput', onInputChange); };
+    // 普通发送同样保护用户重建的同文草稿，不以是否传入取消信号区分。
+    ta.addEventListener('input', onInputChange); ta.addEventListener('beforeinput', onInputChange);
     if (!setReactLikeValue(ta, finalText)) {
+      unbindInput();
       return Promise.resolve({ status: 'user-busy', message: '输入框内容已变化，保留草稿并停止发送' });
     }
-    const clearPendingInput = () => { if (ta.value === finalText && !composingInputs.has(ta)) setReactLikeValue(ta, ''); };
-    if (!nativeSendCurrent(epoch)) {
+    writing = false;
+    const clearPendingInput = () => {
+      if (!ownsInput) return;
+      ownsInput = false;
+      if (!inputChanged && ta.value === finalText && !composingInputs.has(ta)) setReactLikeValue(ta, '');
+    };
+    if (!current()) {
       clearPendingInput();
+      unbindInput();
       return { status: 'cancelled', message: '页面已离开，取消发送' };
     }
     tracePlus('dom-input', { requestId: opts.requestId, textLength: finalText.length });
-    if (opts.autoSend === false) return Promise.resolve({ status: 'filled', message: '已填入输入框' });
+    if (opts.autoSend === false) { unbindInput(); return Promise.resolve({ status: 'filled', message: '已填入输入框' }); }
     // Vue 会在 input 后异步更新按钮状态，下一帧再点击真实发送按钮。
     const ownerWindow = ta.ownerDocument.defaultView || window;
     const useAnimationFrame = typeof ownerWindow.requestAnimationFrame === 'function';
@@ -1612,7 +1638,13 @@
       ? ownerWindow.requestAnimationFrame.bind(ownerWindow)
       : (cb) => ownerWindow.setTimeout(cb, 0);
     return new Promise((resolve) => {
-      let completed = false, frameId = null;
+      let completed = false, frameId = null, fallbackTimer = null;
+      const finishScheduling = () => {
+        if (fallbackTimer !== null) ownerWindow.clearTimeout(fallbackTimer);
+        if (frameId !== null && useAnimationFrame) ownerWindow.cancelAnimationFrame(frameId);
+        opts.signal?.removeEventListener('abort', onAbort);
+        unbindInput();
+      };
       const cancel = result => {
         if (completed) return;
         completed = true; nativeSendCancellations.delete(cancel);
@@ -1623,17 +1655,21 @@
           }
           clearPendingInput();
         } catch (e) {}
+        finishScheduling();
         resolve(result);
       };
+      const onAbort = () => cancel({ status: 'cancelled', message: '小窗任务已停止，取消发送' });
       nativeSendCancellations.add(cancel);
-      frameId = schedule(() => {
+      opts.signal?.addEventListener('abort', onAbort, { once: true });
+      const execute = () => {
         if (completed) return;
         completed = true; nativeSendCancellations.delete(cancel);
-        if (!nativeSendCurrent(epoch) || !ta.isConnected || findChatInput() !== ta || (opts.roomId && canonicalRoom(ta.ownerDocument) !== opts.roomId)) {
+        finishScheduling();
+        if (!current() || !ta.isConnected || findChatInput() !== ta || (opts.roomId && canonicalRoom(ta.ownerDocument) !== opts.roomId)) {
           clearPendingInput();
           resolve({ status: 'cancelled', message: '页面或输入框已变化，取消发送' }); return;
         }
-        if (ta.value !== finalText || composingInputs.has(ta)) { resolve({ status: 'user-busy', message: '输入框内容已变化，保留草稿并停止发送' }); return; }
+        if (inputChanged || ta.value !== finalText || composingInputs.has(ta)) { resolve({ status: 'user-busy', message: '输入框内容已变化，保留草稿并停止发送' }); return; }
         const beforeOwn = new Set(ta.ownerDocument.querySelectorAll('.my-self'));
         const btn = findSendBtn(ta);
         if (btn && !btn.disabled && btn.getAttribute('aria-disabled') !== 'true') {
@@ -1647,7 +1683,7 @@
           }
         }
         try {
-          ta.focus();
+          if (!opts.keepFocus) ta.focus();
           const KeyboardEventCtor = ownerWindow.KeyboardEvent || KeyboardEvent;
           const enterOptions = {
             key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
@@ -1661,11 +1697,15 @@
           tracePlus('dom-enter-error', { requestId: opts.requestId, error: e && e.message });
           resolve({ status: 'failed', message: '无法触发聊天框发送' });
         }
-      });
+      };
+      frameId = schedule(execute);
+      // 小窗操作不能无限等待后台页面的动画帧；两种回调共享一次执行标识。
+      if (opts.signal) fallbackTimer = ownerWindow.setTimeout(execute, 100);
+      if (opts.signal?.aborted) onAbort();
     });
   }
 
-  function sendPlusOne(payload) {
+  function sendPlusOne(payload, options = {}) {
     const normalized = typeof payload === 'string' ? { type: 'text', text: payload } : (payload || {});
     const cleanText = String(normalized.text || '').trim();
     if (!cleanText) {
@@ -1673,39 +1713,41 @@
       return Promise.resolve({ status: 'invalid', message: '该弹幕无文本内容' });
     }
     const requestId = nextPlusRequestId();
-    const roomId = canonicalRoom(document);
+    const roomId = options.roomId || canonicalRoom(document);
     tracePlus('queued', { requestId, textLength: cleanText.length, payloadType: normalized.type || 'text' });
     return enqueuePlusSend(async () => {
+      if (options.signal?.aborted || (options.canContinue && !options.canContinue()) || canonicalRoom(document) !== roomId) return { status: 'cancelled', requestId, message: '小窗或直播间已变化，取消发送' };
+      const notify = message => { if (!options.silent) showToast(message); };
       if (normalized.type === 'emoji-special' && normalized.hash) {
-        const result = await sendSpecialEmoji(normalized.hash, requestId, roomId);
+        const result = await sendSpecialEmoji(normalized.hash, requestId, roomId, options);
         tracePlus('dom-result', { requestId, status: result.status, payloadType: normalized.type });
-        showToast(result.message || (result.status === 'triggered' ? '已触发发送' : '发送失败'));
+        notify(result.message || (result.status === 'triggered' ? '已触发发送' : '发送失败'));
         return { ...result, requestId };
       }
       // 始终使用原生控件，让播放器沿用 B 站的本人弹幕状态与蓝色标识。
       const finalText = getTailText() && !cleanText.endsWith(getTailText())
         ? cleanText + getTailText() : cleanText;
-      const domResult = await fillAndSend(finalText, { requestId, finalText, roomId });
+      const domResult = await fillAndSend(finalText, { ...options, requestId, finalText, roomId });
       if (domResult.status === 'triggered') {
         const confirmed = await confirmTriggeredSend(domResult.input, finalText, null, domResult.beforeOwn);
         tracePlus('dom-result', { requestId, status: confirmed.status });
-        showToast(confirmed.message);
+        notify(confirmed.message);
         return { ...confirmed, requestId };
       }
       if (['filled', 'user-busy', 'cancelled'].includes(domResult.status)) {
         tracePlus('dom-result', { requestId, status: domResult.status });
-        showToast(domResult.message || '已填入输入框');
+        notify(domResult.message || '已填入输入框');
         return { ...domResult, requestId };
       }
       tracePlus('dom-unavailable', { requestId, status: domResult.status });
       const result = { status: 'failed', requestId, message: domResult.message || '未找到原生发送控件，请稍后重试' };
       tracePlus('send-unavailable', result);
-      showToast(result.message);
+      notify(result.message);
       return result;
-    }).catch((error) => {
+    }, options.signal).catch((error) => {
       const message = '发送失败，请重试';
       tracePlus('queue-error', { requestId, error: error && error.message });
-      showToast(message);
+      if (!options.silent) showToast(message);
       return { status: 'failed', requestId, message };
     });
   }
@@ -2047,6 +2089,7 @@
     }
   } catch (e) {}
   const uiDocument = document;
+  nativeSendPanelUrlRoom = roomIdFromUrl(panelWindow.location.href);
   function getPanelRoot() {
     const node = panelWindow._bilivexPanelController?.currentPanel;
     return panelDocument.getElementById('bilivex-panel') || (node?.isConnected ? node : null);
@@ -2267,6 +2310,7 @@
 
   async function sendWheelMessage(message, token, room) {
     const controller = new window.AbortController();
+    let unbindInput = () => {};
     wheelSendController = controller;
     try { return await enqueuePlusSend(async () => {
       const epoch = nativeSendEpoch;
@@ -2276,21 +2320,26 @@
       if (controls.room !== room) return { status: 'room-changed' };
       const input = controls.input;
       if (input.value || composingInputs.has(input)) return { status: 'user-busy' };
+      let inputChanged = false, writing = true;
+      const onInputChange = event => { if (!writing || event.isTrusted) inputChanged = true; };
+      input.addEventListener('input', onInputChange); input.addEventListener('beforeinput', onInputChange);
+      unbindInput = () => { input.removeEventListener('input', onInputChange); input.removeEventListener('beforeinput', onInputChange); };
       const payload = typeof message === 'string' ? { type: 'text', text: message } : message;
       if (payload && payload.type === 'emoji-special' && payload.hash) {
         const warning = Array.from(controls.control.querySelectorAll('[role=alert], .input-limit-anchor, .chat-input-warning')).find(node => node.getBoundingClientRect().width && /禁言|频繁|频率|稍后再发/.test(node.textContent));
         if (warning) return { status: 'restricted' };
         const before = new Set(input.ownerDocument.querySelectorAll('.my-self'));
         const clicked = await clickNativeSpecialEmoji(input.ownerDocument, payload.hash, 'wheel-' + token,
-          () => token === wheelToken && !!wheelRelease && nativeSendCurrent(epoch) && input.isConnected && canonicalRoom(input.ownerDocument) === room && !input.value && !composingInputs.has(input),
+          () => token === wheelToken && !!wheelRelease && nativeSendCurrent(epoch) && input.isConnected && canonicalRoom(input.ownerDocument) === room && !inputChanged && !input.value && !composingInputs.has(input),
           delay => waitWheelDelay(delay, input.ownerDocument, controller.signal));
-        if (clicked.status === 'cancelled') return { status: token !== wheelToken ? 'cancelled' : input.value || composingInputs.has(input) ? 'user-busy' : 'room-changed' };
+        writing = false;
+        if (clicked.status === 'cancelled') return { status: token !== wheelToken ? 'cancelled' : inputChanged || input.value || composingInputs.has(input) ? 'user-busy' : 'room-changed' };
         if (clicked.status !== 'triggered') return { status: 'emotion-missing' };
         let emojiInputCleanupDone = false;
         const clearPendingEmojiInput = () => {
           if (emojiInputCleanupDone) return;
           emojiInputCleanupDone = true;
-          if (payload.inputText && input.value === payload.inputText && !composingInputs.has(input)) setReactLikeValue(input, '');
+          if (!inputChanged && payload.inputText && input.value === payload.inputText && !composingInputs.has(input)) setReactLikeValue(input, '');
         };
         controller.signal.addEventListener('abort', clearPendingEmojiInput, { once: true });
         let emojiReady;
@@ -2302,6 +2351,7 @@
           clearPendingEmojiInput(); return { status: token !== wheelToken ? 'cancelled' : 'room-changed' };
         }
         // 普通表情点击后会写入输入框；房间专属表情通常由原生面板直接发送。
+        if (inputChanged) return { status: 'user-busy' };
         if (input.value) {
           const inserted = input.value;
           if (!payload.inputText || inserted !== payload.inputText) return { status: 'user-busy' };
@@ -2317,7 +2367,9 @@
       }
       const text = String(payload && payload.text || '');
       if (!setReactLikeValue(input, text)) return { status: 'user-busy' };
-      const clearPendingInput = () => { if (input.value === text && !composingInputs.has(input)) setReactLikeValue(input, ''); };
+      writing = false;
+      // 用户重新输入相同文字后，待发任务也不再拥有该草稿。
+      const clearPendingInput = () => { if (!inputChanged && input.value === text && !composingInputs.has(input)) setReactLikeValue(input, ''); };
       if (token !== wheelToken || !wheelRelease || !nativeSendCurrent(epoch)) {
         clearPendingInput(); return { status: 'cancelled' };
       }
@@ -2348,7 +2400,7 @@
         clearPendingInput();
         return { status: token !== wheelToken ? 'cancelled' : controls && controls.room !== room ? 'room-changed' : 'missing' };
       }
-      if (input.value !== text || composingInputs.has(input)) return { status: 'user-busy' };
+      if (inputChanged || input.value !== text || composingInputs.has(input)) return { status: 'user-busy' };
       const warning = Array.from(controls.control.querySelectorAll('[role=alert], .input-limit-anchor, .chat-input-warning')).find(node => node.getBoundingClientRect().width && /禁言|频繁|频率|稍后再发/.test(node.textContent));
       if (warning) { if (input.value === text) setReactLikeValue(input, ''); return { status: 'restricted' }; }
       const before = new Set(input.ownerDocument.querySelectorAll('.my-self'));
@@ -2364,6 +2416,7 @@
       return { status: 'unconfirmed' };
     }, controller.signal); }
     finally {
+      unbindInput();
       controller.abort();
       if (wheelSendController === controller) wheelSendController = null;
     }
@@ -3413,7 +3466,7 @@
     },
 
     _computeCandidate(px, py) {
-      if (!cfg.floatDmPlus) return null;
+      if (!cfg.floatDmPlus || mediaSourceIsCovered()) return null;
       const local = this.getLocalPoint(px, py);
       const playerRectUi = getPlayerRect();
       if (!playerRectUi) return null;
@@ -3467,7 +3520,7 @@
     },
 
     check() {
-      if (!cfg.floatDmPlus) {
+      if (!cfg.floatDmPlus || mediaSourceIsCovered()) {
         if (this.hovered) this.leave(this.hovered);
         return;
       }
@@ -4509,6 +4562,7 @@
     ['quality', '自动最高画质', '观看', '画质'], ['web', '自动网页模式', '观看', '网页全屏'],
     ['sync', '同步时间', '观看', '延迟 追上直播'], ['purify-room', '直播间净化', '观看', '礼物栏 排行榜 活动入口 聊天净化 礼物提示 进场提示 舰长 灯牌'],
     ['p2p', '防止 P2P 上传', '观看', '网络设置'],
+    ['pip', '带弹幕画中画', '观看', '小窗 悬停 +1'], ['audio', '仅音频模式', '观看', '声音 恢复视频'],
     ['alerts', '开播提醒', '关注', '提醒'], ['following', '管理特别关注', '关注', '关注名单'],
     ['like', '一键点赞', '弹幕', '30连击'], ['theme', '外观主题', '设置', '蓝色 粉色'],
     ['quick', '常用入口配置', '设置', '排序'], ['position', '恢复窗口位置', '设置', '拖动 锚点'],
@@ -4520,6 +4574,7 @@
     quality: ['播放方式', '自动选择当前账号可用的最高画质', '◈'], web: ['播放方式', '进入房间时使用网页全屏', '□'],
     sync: ['播放方式', '查看本地缓冲，手动同步', '↻'], 'purify-room': ['画面与声音', '页面区域与聊天提示，分别设置', '◇'],
     p2p: ['网络与播放调节', '切换此项将重载播放器', '⇄'],
+    pip: ['画面与声音', '置顶小窗，悬停弹幕操作', '▣'], audio: ['画面与声音', '独立音频流，随时恢复视频', '♫'],
     alerts: ['特别关注', '在打开的 B 站页面提醒', '♧'], following: ['特别关注', '选择需要提醒的主播', '◎'],
     like: ['互动', '明确点击后执行 30 连击', '♡'], theme: ['界面', '蓝／粉主题配色', '◐'],
     quick: ['界面', '最多四项，自由替换', '⊞'], position: ['界面', '恢复悬浮窗的默认停放位置', '⌖'],
@@ -4730,6 +4785,22 @@
     panel.querySelectorAll('[data-purify-status]').forEach(node => { node.textContent = purifyStatus(node.dataset.purifyStatus); });
     panel.querySelectorAll('[data-bilivex-setting] input').forEach(node => { if (!node.disabled) node.checked = cfg[node.closest('[data-bilivex-setting]').dataset.bilivexSetting] === true; });
     panel.querySelectorAll('[data-quick-setting]').forEach(node => { if (!node.disabled) node.checked = cfg[node.dataset.quickSetting] === true; });
+    const media = sharedRuntime.mediaController;
+    panel.querySelectorAll('[data-media-status]').forEach(node => { node.textContent = media?.message || '未启用'; });
+    panel.querySelectorAll('[data-media-start]').forEach(node => { node.disabled = !!media && media.mode !== 'idle'; });
+    panel.querySelectorAll('[data-media-exit]').forEach(node => { node.disabled = !media || media.mode === 'idle' || media.mode === 'restoring'; node.textContent = media?.mode === 'recovery-needed' ? '重试恢复视频' : '退出当前模式'; });
+    let mediaTask = panel.querySelector('[data-panel-media-task]');
+    if (!mediaTask) {
+      mediaTask = panelElement('div'); mediaTask.dataset.panelMediaTask = '1';
+      mediaTask.style.cssText = 'padding:8px 12px;border-top:1px solid #e3edf3;display:flex;align-items:center;gap:8px';
+      const label = panelElement('span'); label.style.cssText = 'flex:1;font-size:12px';
+      const exit = panelButton('退出', () => { const current = getMediaController(); return current.mode === 'recovery-needed' ? current.recover() : current.stop(); });
+      mediaTask.append(label, exit); task?.after(mediaTask);
+    }
+    mediaTask.hidden = !media || media.mode === 'idle';
+    mediaTask.querySelector('span').textContent = media?.message || '';
+    mediaTask.querySelector('button').textContent = media?.session?.kind === 'audio' || media?.mode === 'recovery-needed' ? '恢复视频' : '退出小窗';
+    mediaTask.querySelector('button').disabled = media?.mode === 'restoring';
     panel.querySelectorAll('[data-purify-input]').forEach(node => { if (!node.disabled) node.checked = !purifyShared.stopped.has(node.dataset.purifyInput) && readPurify(node.dataset.purifyInput); });
     const categorySelect = panel.querySelector('[data-panel-category-select]'); if (categorySelect) categorySelect.value = panelUi.category;
     panel.querySelector('[data-panel-content]')?.setAttribute('aria-labelledby', 'bilivex-tab-' + PANEL_CATEGORIES.indexOf(panelUi.category));
@@ -4814,6 +4885,8 @@
       });
       content.appendChild(panelElement('p', '恢复原样会关闭以上五项净化。', 'blx-notice'));
       content.appendChild(panelButton('恢复原样', () => { const failed = PURIFY_KEYS.filter(key => !setPurifyPreference(key, false)); panelMessage(failed.length ? '本页已恢复，部分设置未保存，刷新后可能重新生效' : '已关闭全部五项净化，恢复原样'); }));
+    } else if (['pip', 'audio'].includes(panelUi.detail)) {
+      renderMediaDetail(content, panelUi.detail);
     } else if (['quality', 'web', 'p2p', 'floating', 'tail'].includes(panelUi.detail)) {
       const map = { quality: ['autoHighestQuality', '自动最高画质'], web: ['autoWebMode', '自动网页模式'], p2p: ['blockP2PUpload', '防止 P2P 上传'], floating: ['floatDmPlus', '弹幕操作'], tail: ['tailEnabled', '小尾巴'] };
       const [key, label] = map[panelUi.detail];
@@ -6064,7 +6137,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '3.0.0';
+    return '3.1.0';
   }
 
   function compareVersions(a, b) {
@@ -6270,6 +6343,809 @@
     }
   }
 
+  // ---------- 画中画与仅音频：会话归属顶层，媒体和原生操作归属来源文档 ----------
+  const AUDIO_PLAYER_URL = 'https://cdn.jsdelivr.net/npm/mpegts.js@1.8.0/dist/mpegts.js';
+  const AUDIO_PLAYER_INTEGRITY = 'sha384-0ULWmWrXKR9cXZCzOnbU6u30SGYIR9sB/zwIXPanKhS9yOFMvpssfdX9O7agZO2A';
+
+  function mediaContentRect(rect, width, height) {
+    if (!rect || !(width > 0 && height > 0 && rect.width > 0 && rect.height > 0)) return null;
+    const scale = Math.min(rect.width / width, rect.height / height);
+    const w = width * scale, h = height * scale;
+    const left = rect.left + (rect.width - w) / 2, top = rect.top + (rect.height - h) / 2;
+    return { left, top, right: left + w, bottom: top + h, width: w, height: h };
+  }
+
+  function audioPlayInfoUrl(room) {
+    const url = new URL('https://api.live.bilibili.com/xlive/app-room/v2/index/getRoomPlayInfo');
+    // 公开客户端协议字段用于只读取流，不使用账号令牌或签名密钥。
+    url.search = new window.URLSearchParams({ room_id: String(room), only_audio: '1', only_video: '0',
+      mobi_app: 'android', platform: 'android', protocol: '0,1', format: '0,2', codec: '0', qn: '250',
+      http: '0', no_playurl: '0', play_type: '0', appkey: 'iVGUTjsxvpLeuDCf', build: '6215200',
+      c_locale: 'zh_CN', s_locale: 'zh_CN', channel: 'bili', device: 'android', device_name: 'VTR-AL00',
+      dolby: '1', free_type: '0', mask: '0', network: 'wifi',
+      statistics: '{"appId":1,"platform":3,"version":"6.21.5","abtest":""}', ts: String(Math.floor(Date.now() / 1000)) }).toString();
+    return url.href;
+  }
+
+  function selectAudioStream(response, all = false) {
+    if (response?.code !== 0 || response.data?.live_status !== 1) throw new Error('当前直播未提供可用音频流');
+    const candidates = [];
+    for (const stream of response.data.playurl_info?.playurl?.stream || []) {
+      if (stream.protocol_name !== 'http_stream') continue;
+      for (const format of stream.format || []) {
+        if (format.format_name !== 'flv') continue;
+        for (const codec of format.codec || []) {
+          for (const host of codec.url_info || []) {
+            const url = new URL(String(codec.base_url || '') + String(host.extra || ''), host.host);
+            if (url.protocol === 'https:' && /(^|\.)(bilivideo\.com|bilivideo\.cn|biliapi\.net)$/.test(url.hostname) && !candidates.includes(url.href)) candidates.push(url.href);
+          }
+        }
+      }
+    }
+    if (!candidates.length) throw new Error('没有可播放的独立音频资源');
+    return all ? candidates.slice(0, 2) : candidates[0];
+  }
+
+  function isAudioOnlyFlv(bytes) {
+    return bytes && bytes.length >= 9 && bytes[0] === 70 && bytes[1] === 76 && bytes[2] === 86 &&
+      bytes[3] === 1 && (bytes[4] & 4) !== 0 && (bytes[4] & 1) === 0;
+  }
+
+  function mediaPacket(operation, value) {
+    const body = value == null ? new Uint8Array() : new window.TextEncoder().encode(JSON.stringify(value));
+    const bytes = new Uint8Array(16 + body.length), view = new window.DataView(bytes.buffer);
+    view.setUint32(0, bytes.length); view.setUint16(4, 16); view.setUint16(6, 1);
+    view.setUint32(8, operation); view.setUint32(12, 1); bytes.set(body, 16);
+    return bytes.buffer;
+  }
+
+  async function readMediaPackets(buffer, receive, current, depth = 0) {
+    if (!current() || depth > 2 || buffer.byteLength > 2 * 1024 * 1024) return;
+    const bytes = new Uint8Array(buffer), view = new window.DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    for (let offset = 0; offset + 16 <= bytes.length && current();) {
+      const length = view.getUint32(offset), header = view.getUint16(offset + 4);
+      const version = view.getUint16(offset + 6), op = view.getUint32(offset + 8);
+      if (length < header || header < 16 || offset + length > bytes.length) return;
+      const body = bytes.slice(offset + header, offset + length);
+      if (version === 2 && op === 5) {
+        const stream = new Blob([body]).stream().pipeThrough(new window.DecompressionStream('deflate'));
+        const reader = stream.getReader(); const parts = []; let size = 0;
+        try {
+          for (;;) { const part = await reader.read(); if (part.done) break; size += part.value.length;
+            if (size > 2 * 1024 * 1024 || !current()) { await reader.cancel(); return; } parts.push(part.value); }
+          const all = new Uint8Array(size); let at = 0; for (const part of parts) { all.set(part, at); at += part.length; }
+          await readMediaPackets(all.buffer, receive, current, depth + 1);
+        } finally { reader.releaseLock(); }
+      } else if ((op === 5 || op === 8) && version <= 1) {
+        try { const data = JSON.parse(new window.TextDecoder().decode(body)); receive(op === 8 ? { cmd: '__BILIVEX_AUTH__', data } : data); } catch (e) { /* 未知消息不影响其他弹幕 */ }
+      }
+      offset += length;
+    }
+  }
+
+  function registerMediaSource() {
+    const sources = sharedRuntime.mediaSources || (sharedRuntime.mediaSources = new Map());
+    const root = document.querySelector('#live-player, .live-player-mounter');
+    const video = findActiveLiveVideo(root), player = getPageLivePlayer();
+    const previous = sources.get(document);
+    if (previous && previous.video === video && previous.player === player && previous.room === canonicalRoom(document) && previous.current()) return;
+    const controller = sharedRuntime.mediaController;
+    if (['restoring', 'recovery-needed'].includes(controller?.mode) && controller.recovery?.source.document === document && !controller.recovery.source.current()) {
+      controller.stop('恢复来源已变化，请手动恢复当前直播视频', false);
+    }
+    if (controller?.session?.source.document === document) {
+      const s = controller.session;
+      if (s.kind === 'audio' && s.nativeStopped && root === s.source.root && s.source.current()) return;
+      if (s.route === 'move' && s.video?.ownerDocument === s.pip?.document && root === s.source.root && s.source.current() && s.source.canReturnVideo(s)) return;
+      controller.stop('播放器或直播间已变化', false);
+    }
+    if (!video || !player || !/^\d+$/.test(canonicalRoom(document))) { sources.delete(document); return; }
+    const source = { document, window, root, video, player, room: canonicalRoom(document),
+      urlRoom: roomIdFromUrl(location.href), panelUrlRoom: roomIdFromUrl(panelWindow.location.href),
+      current: () => {
+        try {
+          return nativeSendPageActive && root.isConnected && document.querySelector('#live-player, .live-player-mounter') === root && roomIdFromUrl(location.href) === source.urlRoom &&
+            roomIdFromUrl(panelWindow.location.href) === source.panelUrlRoom && canonicalRoom(document) === source.room && getPageLivePlayer() === player;
+        } catch (e) { return false; }
+      },
+      config: () => cfg, webMode: () => isWebMode(), refreshControls: () => refreshPlayerMediaControls(),
+      dismissHover: () => { if (FloatingDmEngine.hovered) FloatingDmEngine.leave(FloatingDmEngine.hovered); },
+      send: (payload, context) => sendPlusOne(payload, context),
+      suspend: () => resetPlayerEnhancementSchedule(), resume: () => { if (nativeSendPageActive) schedulePlayerEnhancements(true); },
+      favorite: payload => addFavorite(payload.type === 'emoji-special' ? '' : payload.text, document) };
+    const account = (document.cookie.match(/(?:^|;\s*)DedeUserID=(\d+)/) || [])[1] || '';
+    const mediaCurrent = source.current;
+    // 账号改变会取消会话；归还节点仍按原房间、播放器和锚点归属判断。
+    source.canReturnVideo = s => mediaCurrent() && !!s.anchor?.parentNode?.isConnected && root.contains(s.anchor) &&
+      [...root.querySelectorAll('video')].every(video => s.retainedVideos?.has(video));
+    source.current = () => mediaCurrent() && ((document.cookie.match(/(?:^|;\s*)DedeUserID=(\d+)/) || [])[1] || '') === account;
+    sources.set(document, source);
+    sharedRuntime.refreshPanelStatus?.();
+  }
+
+  function getMediaController() {
+    return sharedRuntime.mediaController || (sharedRuntime.mediaController = createMediaController());
+  }
+
+  function createMediaController() {
+    const state = { mode: 'idle', message: '未启用', session: null, generation: 0, recovery: null, route: 'capture' };
+    let cachedRecovery = null, restoreTask = null;
+    const cancelRestore = () => { const task = restoreTask; restoreTask = null; task?.abort.abort(); };
+    const update = message => { if (message) state.message = message; sharedRuntime.refreshPanelStatus?.(); sharedRuntime.mediaSources?.forEach(source => source.refreshControls?.()); };
+    const sourceNow = ownerDocument => [...(sharedRuntime.mediaSources?.values() || [])].find(source => (!ownerDocument || source.document === ownerDocument) && source.current() && source.video.isConnected && getLivePlayerInfo(source.player)?.liveStatus === 1);
+    const live = s => state.session === s && !s.abort.signal.aborted && s.source.current();
+    const nativeModeConflict = source => {
+      const documents = [panelDocument, source.document];
+      return documents.some(doc => doc.fullscreenElement || doc.webkitFullscreenElement || doc.pictureInPictureElement) ||
+        Number(getLivePlayerInfo(source.player)?.playerStatus) === 2 || !!panelWindow.documentPictureInPicture?.window;
+    };
+    const watch = (s, target, event, handler, options) => {
+      target.addEventListener(event, handler, options); s.cleanups.push(() => target.removeEventListener(event, handler, options));
+    };
+    const later = (s, callback, delay) => {
+      const timer = panelWindow.setTimeout(() => { s.timers.delete(timer); if (state.session === s && !s.abort.signal.aborted) callback(); }, delay);
+      s.timers.add(timer); return timer;
+    };
+    const wait = (s, condition, duration, failure, start) => new Promise((resolve, reject) => {
+      const end = Date.now() + duration;
+      let settled = false, started = !start, poll = null;
+      const finish = error => {
+        if (settled) return; settled = true;
+        if (poll !== null) { panelWindow.clearTimeout(poll); s.timers.delete(poll); }
+        s.abort.signal.removeEventListener('abort', cancel);
+        if (error) reject(error); else resolve();
+      };
+      const cancel = () => finish(new Error('任务已取消'));
+      const fail = error => finish(error || new Error(failure));
+      const check = () => {
+        if (settled) return;
+        try {
+          if (!live(s)) { finish(new Error('来源已变化')); return; }
+          if (started && condition()) { finish(); return; }
+          if (Date.now() >= end) { finish(new Error(failure)); return; }
+          poll = later(s, check, 100);
+        } catch (error) { fail(error); }
+      };
+      s.abort.signal.addEventListener('abort', cancel, { once: true });
+      // 原生方法返回的 Promise 与媒体就绪检查共用期限和取消边界。
+      if (start && live(s)) {
+        try { Promise.resolve(start()).then(() => { started = true; }, fail); }
+        catch (error) { fail(error); }
+      }
+      check();
+    });
+    const json = async (s, url) => {
+      const request = new panelWindow.AbortController(); const cancel = () => request.abort();
+      s.abort.signal.addEventListener('abort', cancel, { once: true });
+      const timer = panelWindow.setTimeout(cancel, 8000);
+      try { const response = await panelWindow.fetch(url, { credentials: 'include', signal: request.signal });
+        if (!response.ok) throw new Error('请求失败：' + response.status); return await response.json();
+      } finally { panelWindow.clearTimeout(timer); s.abort.signal.removeEventListener('abort', cancel); }
+    };
+    const begin = (kind, source) => {
+      cachedRecovery = null; cancelRestore();
+      const s = { kind, source, route: state.route, generation: ++state.generation,
+        abort: new panelWindow.AbortController(), timers: new Set(), cleanups: [], tracks: [], actions: new Set(),
+        volume: source.video.volume, muted: source.video.muted, paused: source.video.paused, nativeStopped: false,
+        webMode: source.webMode(), trigger: panelDocument.activeElement };
+      state.session = s; state.mode = kind === 'pip' ? 'pip-opening' : 'audio-preparing'; state.recovery = null;
+      // 使当前文档的画质/网页模式旧任务失效，实例间通过共享忙碌状态让权。
+      source.suspend?.(); update('正在' + (kind === 'pip' ? '打开画中画' : '准备仅音频'));
+      const onFullscreen = () => {
+        if (state.session === s && [panelDocument, source.document].some(doc => doc.fullscreenElement || doc.webkitFullscreenElement)) stop('已退出媒体模式，请在退出全屏后重新开启');
+      };
+      [...new Set([panelDocument, source.document])].forEach(doc => {
+        watch(s, doc, 'fullscreenchange', onFullscreen); watch(s, doc, 'webkitfullscreenchange', onFullscreen);
+      });
+      return s;
+    };
+    const resolveRoom = async s => {
+      if (s.apiRoom) return s.apiRoom;
+      const response = await json(s, 'https://api.live.bilibili.com/room/v1/Room/room_init?id=' + s.source.room);
+      const id = Number(response?.data?.room_id);
+      if (response?.code !== 0 || response.data.live_status !== 1 || !Number.isSafeInteger(id) || id <= 0) throw new Error('当前房间不是可用的直播');
+      if (!live(s)) throw new Error('直播间已变化');
+      s.apiRoom = String(id); return s.apiRoom;
+    };
+
+    async function restore(s) {
+      if (!s.nativeStopped) return;
+      if (!s.source.current()) throw new Error('原播放器已失效，请在当前直播间手动恢复视频');
+      cancelRestore();
+      const task = { abort: new panelWindow.AbortController(), generation: state.generation };
+      restoreTask = task; state.recovery = s;
+      try {
+        // 整个恢复过程共用截止时间；页面取消可立即结束，迟到的 SDK 回调不再改动状态。
+        await new Promise((resolve, reject) => {
+          let settled = false, poll = null, deadline = null;
+          const finish = error => {
+            if (settled) return; settled = true;
+            panelWindow.clearTimeout(poll); panelWindow.clearTimeout(deadline);
+            task.abort.signal.removeEventListener('abort', cancel);
+            if (error) reject(error); else resolve();
+          };
+          const cancel = () => finish(new Error('视频恢复已取消'));
+          const fail = error => finish(error || new Error('原生视频重载失败，请点击恢复视频重试'));
+          const current = () => {
+            if (settled) return false;
+            if (restoreTask !== task || state.generation !== task.generation || state.recovery !== s || !s.source.current()) {
+              finish(new Error('播放器来源已变化')); return false;
+            }
+            return true;
+          };
+          const check = () => {
+            try {
+              if (!current()) return;
+              const video = s.source.root.querySelector('video');
+              if (video?.readyState >= 2) {
+                video.volume = s.volume; video.muted = s.muted;
+                if (s.paused) { video.pause(); finish(); }
+                else Promise.resolve(video.play()).then(() => { if (current()) finish(); }, () => finish(new Error('请点击原生播放器恢复播放'))).catch(finish);
+              } else poll = panelWindow.setTimeout(check, 100);
+            } catch (error) { fail(error); }
+          };
+          task.abort.signal.addEventListener('abort', cancel, { once: true });
+          deadline = panelWindow.setTimeout(() => finish(new Error('视频恢复超时，请点击恢复视频重试')), 6000);
+          try { if (current()) Promise.resolve(s.source.player.reload()).then(check, fail); }
+          catch (error) { fail(error); }
+        });
+        if (restoreTask === task) state.recovery = null;
+      } finally { if (restoreTask === task) restoreTask = null; }
+    }
+
+    async function stop(message = '已退出媒体模式', restoreVideo = true) {
+      cachedRecovery = null;
+      const s = state.session;
+      if (!s) {
+        if (!restoreVideo && ['restoring', 'recovery-needed'].includes(state.mode)) {
+          cancelRestore(); ++state.generation; state.recovery = null; state.mode = 'idle'; update(message);
+        }
+        return;
+      }
+      // 退出时读取实际设置，覆盖尚未派发的音量变化事件。
+      if (s.audio) { s.volume = s.audio.volume; s.muted = s.audio.muted; }
+      state.session = null; const generation = ++state.generation; state.mode = 'restoring'; s.abort.abort();
+      s.actions.forEach(action => action.abort()); s.actions.clear();
+      s.cleanups.splice(0).forEach(cleanup => { try { cleanup(); } catch (e) {} });
+      s.timers.forEach(timer => panelWindow.clearTimeout(timer)); s.timers.clear();
+      s.socket?.close(); s.releaseHover?.();
+      for (const method of ['pause', 'unload', 'detachMediaElement', 'destroy']) {
+        try { s.audioPlayer?.[method](); } catch (e) { /* 一个步骤失败仍继续释放其他资源 */ }
+      }
+      if (s.audio) { s.audio.pause(); s.audio.removeAttribute('src'); s.audio.load(); s.audio.remove(); }
+      s.placeholder?.remove();
+      s.tracks.forEach(track => { try { track.stop(); } catch (e) {} }); s.tracks = [];
+      if (s.route === 'move' && s.video) {
+        if (s.moveStyle) { s.video.style.width = s.moveStyle.width; s.video.style.height = s.moveStyle.height; }
+        if (s.source.canReturnVideo(s)) s.anchor.replaceWith(s.video);
+        else s.video.remove();
+      } else if (s.video) s.video.srcObject = null;
+      s.anchor?.remove();
+      s.pip?.close();
+      try {
+        if (restoreVideo) await restore(s);
+        if (state.generation === generation && state.mode === 'restoring') { state.mode = 'idle'; state.recovery = null; update(message); s.source.resume?.(); if (s.trigger?.isConnected) s.trigger.focus({ preventScroll: true }); }
+      } catch (e) { if (state.generation !== generation) return; state.mode = s.source.current() ? 'recovery-needed' : 'idle'; state.recovery = state.mode === 'recovery-needed' ? s : null; update(e.message); }
+    }
+
+    async function connectMessages(s, receive) {
+      const apiRoom = await resolveRoom(s);
+      // 优先复用该来源页面正常取得的 WBI 签名请求，不拦截网络，也不导出签名和令牌。
+      const observedRequest = () => {
+        const entries = [...new Set([s.source.window, panelWindow])].flatMap(view => {
+          try { return view.performance.getEntriesByType('resource'); } catch (e) { return []; }
+        });
+        for (let i = entries.length - 1; i >= 0; i--) {
+          try { const url = new URL(entries[i].name);
+            if (url.protocol === 'https:' && url.hostname === 'api.live.bilibili.com' &&
+              url.pathname === '/xlive/web-room/v1/index/getDanmuInfo' &&
+              url.searchParams.get('id') === apiRoom && url.searchParams.has('w_rid')) { s.source.messageRequestUrl = url.href; return url.href; }
+          } catch (e) { /* 无关资源跳过 */ }
+        }
+        return s.source.messageRequestUrl || '';
+      };
+      let requestUrl = observedRequest();
+      let data = await json(s, requestUrl || 'https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id=' + apiRoom + '&type=0');
+      if (data?.code !== 0 && !requestUrl) {
+        await wait(s, () => !!observedRequest(), 3000, '原页弹幕连接信息未就绪，请稍后重试');
+        requestUrl = observedRequest(); data = await json(s, requestUrl);
+      }
+      if (!live(s)) return;
+      const host = data?.code === 0 && data.data?.host_list?.find(h => /(^|\.)chat\.bilibili\.com$/.test(h.host));
+      if (!host || !data.data.token) throw new Error('当前房间弹幕连接信息已失效，请刷新原页后重试');
+      const account = await json(s, 'https://api.bilibili.com/x/web-interface/nav');
+      const uid = Number(account?.data?.mid || 0);
+      if (account?.code !== 0 || !Number.isSafeInteger(uid) || uid < 0) throw new Error('无法核对当前弹幕连接账号');
+      const buvid = decodeURIComponent((s.source.document.cookie.match(/(?:^|;\s*)buvid3=([^;]+)/) || [])[1] || '');
+      if (!live(s)) return;
+      let retries = 0;
+      const open = () => {
+        if (!live(s)) return;
+        const ws = new panelWindow.WebSocket('wss://' + host.host + ':' + (host.wss_port || 443) + '/sub');
+        s.socket = ws; s.messageReady = false; ws.binaryType = 'arraybuffer'; let heartbeat;
+        const packets = []; let reading = false;
+        const readNext = async () => {
+          if (reading) return; reading = true;
+          try { while (packets.length && live(s) && s.socket === ws) {
+            await readMediaPackets(packets.shift(), message => {
+              if (message.cmd === '__BILIVEX_AUTH__') { if (message.data?.code === 0) s.messageReady = true; else stop('当前房间弹幕连接未获允许'); }
+              else receive(message);
+            }, () => live(s) && s.socket === ws);
+          } } catch (e) { if (live(s)) update('弹幕消息解析失败'); }
+          finally { reading = false; }
+        };
+        ws.onopen = () => {
+          if (!live(s)) { ws.close(); return; }
+          ws.send(mediaPacket(7, { uid, roomid: Number(apiRoom), protover: 2, buvid,
+            support_ack: false, queue_uuid: '', scene: 'room', platform: 'web', type: 2, key: data.data.token }));
+          const beat = () => { if (live(s) && ws.readyState === 1) { ws.send(mediaPacket(2)); heartbeat = later(s, beat, 30000); } };
+          heartbeat = later(s, beat, 30000);
+        };
+        ws.onmessage = event => { if (live(s) && event.data?.byteLength <= 2 * 1024 * 1024 && packets.length < 8) { packets.push(event.data); readNext(); } };
+        ws.onerror = () => ws.close();
+        ws.onclose = () => {
+          packets.length = 0;
+          if (heartbeat) { panelWindow.clearTimeout(heartbeat); s.timers.delete(heartbeat); }
+          if (!live(s)) return;
+          if (++retries <= 3) later(s, open, 1000 * retries);
+          else stop('弹幕连接已中断，画中画已退出');
+        };
+      }; open();
+      await wait(s, () => s.messageReady, 8000, '弹幕连接未能就绪');
+    }
+
+    function buildPip(s) {
+      const doc = s.pip.document;
+      doc.title = 'BiLivex · 弹幕画中画';
+      const style = doc.createElement('style');
+      style.textContent = `html,body{margin:0;height:100%;background:#111;color:#fff;font:14px system-ui}
+        body{position:relative;overflow:hidden}button,select{font:inherit;border:0;border-radius:8px;padding:5px 9px;cursor:pointer;background:#34404c;color:#fff}
+        button:disabled{opacity:.5;cursor:default}button:focus-visible,input:focus-visible{outline:2px solid #ff86b0}
+        #stage{position:relative;height:100%;overflow:hidden}video{width:100%;height:100%;object-fit:contain}
+        #dm,#resident{position:absolute;inset:0;overflow:hidden;pointer-events:none}.dm{position:absolute;white-space:nowrap;font-size:20px;font-weight:600;text-shadow:1px 1px 3px #000;pointer-events:none}.dm img{height:32px;vertical-align:middle}
+        #actions{position:fixed;display:flex;gap:4px;padding:4px;border-radius:10px;background:#253240ee;z-index:4}#actions button{min-height:30px}#plus{background:#c44174}
+        #bar{position:absolute;bottom:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:7px;background:#20242bee;z-index:6;opacity:0;visibility:hidden;transform:translateY(100%);pointer-events:none;transition:opacity .2s ease,transform .2s ease,visibility 0s linear .2s}
+        #bar[data-visible="1"]{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto;transition-delay:0s}#volume{width:80px}
+        #notice{position:absolute;bottom:8px;left:8px;right:8px;display:flex;align-items:center;gap:8px;pointer-events:none;background:#172231da;border-radius:6px;padding:6px;z-index:5;font-size:12px}
+        #notice[hidden]{display:none}#notice-text{flex:1;min-width:0;overflow-wrap:anywhere}#notice-close{flex:none;min-width:28px;min-height:28px;padding:2px 6px;pointer-events:auto}
+        @media(prefers-reduced-motion:reduce){#bar{transition:none}}`;
+      doc.head.appendChild(style);
+      doc.body.innerHTML = '<main id="stage" tabindex="-1"><video muted playsinline></video><div id="dm"></div><div id="resident"></div></main><nav id="bar" aria-label="画中画控制"><button id="play">暂停</button><button id="mute">静音</button><input id="volume" type="range" min="0" max="1" step="0.05" aria-label="音量"><button id="dm-toggle">隐藏弹幕</button></nav><aside id="notice" hidden><span id="notice-text" role="status" aria-live="polite"></span><button id="notice-close" type="button" aria-label="关闭提示" title="关闭提示">×</button></aside>';
+      const stage = doc.getElementById('stage'), layer = doc.getElementById('dm'), resident = doc.getElementById('resident');
+      const bar = doc.getElementById('bar'), tip = doc.getElementById('notice'), tipText = doc.getElementById('notice-text');
+      s.video = doc.querySelector('video'); s.records = new Set(); s.queue = []; s.tracksAt = []; s.danmakuVisible = true;
+      let pointerInside = false, keyboardControls = false, noticeTimer = null, hover = null, leaveTimer = null;
+      const syncBar = () => {
+        const visible = pointerInside || keyboardControls;
+        bar.dataset.visible = visible ? '1' : '0';
+        // 提示始终避让底栏，鼠标进入时不移动关闭按钮的点击目标。
+        tip.style.bottom = (bar.getBoundingClientRect().height + 8) + 'px';
+        if (hover) reposition();
+      };
+      const cancelNoticeTimer = () => {
+        if (noticeTimer !== null) { s.pip.clearTimeout(noticeTimer); noticeTimer = null; }
+      };
+      s.cleanups.push(cancelNoticeTimer);
+      const dismissNotice = () => {
+        cancelNoticeTimer();
+        const focused = tip.contains(doc.activeElement);
+        tip.hidden = true; tipText.textContent = '';
+        if (hover) reposition();
+        if (focused) (pointerInside || keyboardControls ? doc.getElementById('play') : stage).focus({ preventScroll: true });
+      };
+      const notice = message => {
+        if (s.pip.closed || !live(s)) return;
+        cancelNoticeTimer(); tipText.textContent = message; tip.hidden = false; syncBar();
+        // 使用可见小窗自身的计时器，避免原页在后台时延迟提示关闭。
+        noticeTimer = s.pip.setTimeout(() => { noticeTimer = null; if (live(s)) dismissNotice(); }, 5000);
+      };
+      s.notice = notice;
+      watch(s, doc.getElementById('notice-close'), 'click', dismissNotice);
+      watch(s, doc.documentElement, 'pointerenter', () => { pointerInside = true; syncBar(); });
+      watch(s, doc.documentElement, 'pointerleave', () => { pointerInside = false; syncBar(); });
+      watch(s, doc, 'pointerdown', () => { keyboardControls = false; syncBar(); });
+      watch(s, doc, 'keydown', event => { if (event.key === 'Tab') { keyboardControls = true; syncBar(); } });
+      watch(s, doc, 'focusout', () => later(s, () => {
+        if (!bar.contains(doc.activeElement) && !tip.contains(doc.activeElement)) { keyboardControls = false; syncBar(); }
+      }, 0));
+      const contentRect = () => {
+        const rect = stage.getBoundingClientRect();
+        const area = mediaContentRect(rect, s.source.video.videoWidth || s.width, s.source.video.videoHeight || s.height);
+        if (!area) return null;
+        // 只裁去控件覆盖的区域，不用裁剪后的高度重新计算视频比例。
+        if (bar.dataset.visible === '1') area.bottom = Math.min(area.bottom, rect.bottom - bar.getBoundingClientRect().height);
+        if (!tip.hidden) area.bottom = Math.min(area.bottom, tip.getBoundingClientRect().top);
+        area.height = Math.max(0, area.bottom - area.top);
+        return area.height > 0 ? area : null;
+      };
+      const makeText = (node, record) => { if (record.image) { const image = doc.createElement('img'); image.src = record.image; image.alt = record.text; node.appendChild(image); } else node.textContent = record.text; };
+      const inside = (rect, point) => rect && point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
+      const release = () => {
+        if (leaveTimer) { panelWindow.clearTimeout(leaveTimer); s.timers.delete(leaveTimer); leaveTimer = null; }
+        if (!hover) return;
+        if (hover.expire) { panelWindow.clearTimeout(hover.expire); s.timers.delete(hover.expire); }
+        if (hover.record.node.isConnected) hover.record.node.style.visibility = '';
+        hover.copy.remove(); hover.actions.remove(); hover = null;
+      };
+      s.releaseHover = release;
+      const reposition = () => {
+        if (!hover) return;
+        const area = contentRect();
+        const geometry = computeFloatingVisibility(hover.copy.getBoundingClientRect(), area);
+        if (!geometry) { release(); return; }
+        const g = geometry.visibleRect, r = hover.copy.getBoundingClientRect();
+        hover.copy.style.clipPath = 'inset(' + geometry.clipTop + 'px ' + geometry.clipRight + 'px ' + geometry.clipBottom + 'px ' + geometry.clipLeft + 'px)';
+        const a = hover.actions.getBoundingClientRect();
+        const x = geometry.enteringFromRight || g.right + 6 + a.width > s.pip.innerWidth ? g.left - 6 - a.width : g.right + 6;
+        hover.actions.style.left = Math.max(4, Math.min(x, s.pip.innerWidth - a.width - 4)) + 'px';
+        hover.actions.style.top = Math.max(4, Math.min(r.top, area.bottom - a.height - 4)) + 'px';
+      };
+      const select = record => {
+        if (!live(s) || !s.source.config().floatDmPlus || !s.danmakuVisible || !record.node.isConnected) return;
+        if (hover?.record === record) return;
+        release();
+        const r = record.node.getBoundingClientRect();
+        if (!computeFloatingVisibility(r, contentRect())) return;
+        const copy = doc.createElement('div'); copy.className = 'dm'; makeText(copy, record);
+        copy.style.cssText = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;color:' + record.color + ';pointer-events:none';
+        resident.appendChild(copy); record.node.style.visibility = 'hidden';
+        const actions = doc.createElement('div'); actions.id = 'actions'; actions.setAttribute('aria-label', '弹幕操作栏');
+        const plus = doc.createElement('button'); plus.id = 'plus'; plus.textContent = '+1'; plus.setAttribute('aria-label', '发送这条弹幕 +1');
+        plus.style.background = THEMES[s.source.config().theme]?.primary || currentTheme.primary;
+        const favorite = doc.createElement('button'); favorite.textContent = '收藏';
+        plus.disabled = record.busy || !record.payload.text;
+        if (!record.payload.text) plus.title = '该内容暂不支持原生 +1';
+        favorite.disabled = record.payload.type === 'emoji-special' || !record.payload.text;
+        actions.append(plus, favorite); doc.body.appendChild(actions);
+        hover = { record, copy, actions }; reposition();
+        hover.expire = later(s, () => { if (hover?.record === record) release(); }, 15000);
+        plus.addEventListener('click', event => {
+          event.preventDefault(); event.stopPropagation();
+          if (!live(s) || !s.source.config().floatDmPlus || record.busy || !record.payload.text) return;
+          const action = new panelWindow.AbortController(); s.actions.add(action); record.busy = true;
+          const deadline = Date.now() + 8000;
+          const timer = later(s, () => action.abort(), 8000);
+          runPlusButtonAction(plus, () => s.source.send(record.payload, { signal: action.signal, roomId: s.source.room,
+            ownerDocument: s.source.document, silent: true, keepFocus: true,
+            canContinue: () => live(s) && s.source.config().floatDmPlus && Date.now() < deadline })).then(result => {
+            if (live(s)) notice(result.status === 'confirmed' ? '页面已观测到发送结果' : result.message || '未触发发送');
+          }).finally(() => { record.busy = false; s.actions.delete(action); panelWindow.clearTimeout(timer); s.timers.delete(timer); });
+        });
+        favorite.addEventListener('click', async event => {
+          event.stopPropagation();
+          if (!live(s) || favorite.disabled) return;
+          favorite.disabled = true;
+          try { const result = await s.source.favorite(record.payload); if (live(s)) notice(result.status === 'added' ? '已收藏' : result.status === 'associated' ? '已关联来源房间' : result.status === 'duplicate' ? '已在收藏夹中' : '无法收藏该弹幕'); }
+          catch (e) { notice('收藏失败'); }
+          finally { if (favorite.isConnected) favorite.disabled = false; }
+        });
+      };
+      watch(s, doc, 'pointermove', event => {
+        if (!live(s)) return;
+        if (!pointerInside) { pointerInside = true; syncBar(); }
+        if (hover && !s.source.config().floatDmPlus) release();
+        const point = { x: event.clientX, y: event.clientY };
+        if ((bar.dataset.visible === '1' && inside(bar.getBoundingClientRect(), point)) || (!tip.hidden && inside(tip.getBoundingClientRect(), point))) { release(); return; }
+        if (hover) {
+          if (hover.actions.contains(event.target)) return;
+          const g = computeFloatingVisibility(hover.copy.getBoundingClientRect(), contentRect());
+          const a = hover.actions.getBoundingClientRect();
+          const v = g?.visibleRect;
+          const bridge = v && { left: Math.min(v.right, a.right), right: Math.max(v.left, a.left), top: Math.max(v.top, a.top), bottom: Math.min(v.bottom, a.bottom) };
+          if (inside(v, point) || inside(a, point) || inside(bridge, point)) {
+            if (leaveTimer) { panelWindow.clearTimeout(leaveTimer); s.timers.delete(leaveTimer); leaveTimer = null; } return;
+          }
+          if (!leaveTimer) leaveTimer = later(s, () => { leaveTimer = null; release(); }, 120);
+          return;
+        }
+        const records = [...s.records].reverse();
+        const record = records.find(item => computeFloatingVisibility(item.node.getBoundingClientRect(), contentRect(), point)?.pointerInside);
+        if (record) select(record);
+      });
+      watch(s, doc, 'pointerleave', release);
+      watch(s, s.pip, 'blur', () => { pointerInside = false; keyboardControls = false; syncBar(); release(); });
+      watch(s, s.pip, 'resize', () => { syncBar(); reposition(); });
+      watch(s, doc, 'keydown', event => { if (event.key === 'Escape') release(); });
+      doc.getElementById('dm-toggle').onclick = () => { s.danmakuVisible = !s.danmakuVisible; layer.hidden = !s.danmakuVisible; release(); doc.getElementById('dm-toggle').textContent = s.danmakuVisible ? '隐藏弹幕' : '显示弹幕'; };
+      const syncControls = () => {
+        doc.getElementById('play').textContent = s.source.video.paused ? '播放' : '暂停';
+        doc.getElementById('mute').textContent = s.source.video.muted ? '取消静音' : '静音';
+        doc.getElementById('volume').value = String(s.source.video.volume);
+        const sourceLabel = s.sourceCover?.querySelector('[data-bilivex-pip-source-label]');
+        if (sourceLabel) sourceLabel.textContent = s.source.video.paused ? '增强画中画已暂停' : '正在增强画中画中播放';
+        if (s.source.video.paused) s.records.forEach(record => record.animation.pause());
+        else s.records.forEach(record => record.animation.play());
+      };
+      doc.getElementById('play').onclick = () => { if (s.source.video.paused) s.source.video.play().catch(() => notice('请在原页恢复播放')); else s.source.video.pause(); };
+      doc.getElementById('mute').onclick = () => { s.source.video.muted = !s.source.video.muted; };
+      doc.getElementById('volume').oninput = event => { s.source.video.volume = Number(event.target.value); };
+      ['play', 'pause', 'volumechange'].forEach(event => watch(s, s.source.video, event, syncControls)); syncControls();
+      s.receive = message => {
+        const record = parsePipMessage(message);
+        if (!record || !s.danmakuVisible || !live(s)) return;
+        record.generation = s.generation; s.queue.push(record); if (s.queue.length > 200) s.queue.shift();
+      };
+      const pump = () => {
+        if (!live(s)) return;
+        if (!s.source.config().floatDmPlus && hover) { release(); s.actions.forEach(action => action.abort()); }
+        const area = contentRect(), now = Date.now();
+        if (area && s.queue.length && !s.source.video.paused && s.records.size < 80) {
+          const track = Array.from({ length: Math.max(1, Math.floor(area.height / 36)) }, (_, i) => i).find(i => !s.tracksAt[i] || s.tracksAt[i] <= now);
+          if (track !== undefined) {
+            const record = s.queue.shift(), node = doc.createElement('div'); node.className = 'dm'; makeText(node, record);
+            node.style.color = record.color; node.style.left = (area.right - stage.getBoundingClientRect().left) + 'px';
+            node.style.top = (area.top - stage.getBoundingClientRect().top + track * 36) + 'px'; layer.appendChild(node);
+            record.node = node;
+            const duration = Math.max(6000, Math.min(14000, (area.width + node.offsetWidth) / 100 * 1000));
+            record.animation = node.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-' + (area.width + node.offsetWidth) + 'px)' }], { duration, easing: 'linear', fill: 'forwards' });
+            s.tracksAt[track] = now + duration; s.records.add(record);
+            record.animation.onfinish = () => { node.remove(); s.records.delete(record); };
+          }
+        }
+        later(s, pump, 80);
+      }; pump();
+      s.cleanups.push(() => { s.records.forEach(record => { record.animation.cancel(); record.node.remove(); }); s.records.clear(); s.queue = []; });
+      notice('小窗独立弹幕暂不继承原生屏蔽词；悬停操作沿用弹幕操作开关');
+    }
+
+    function coverPipSource(s) {
+      const doc = s.source.document, root = s.source.root;
+      const mask = doc.createElement('div'); mask.dataset.bilivexPipSource = '1'; s.sourceCover = mask;
+      s.cleanups.push(() => mask.remove());
+      const control = root.querySelector('#web-player-controller-wrap-el, .live-web-player-controller');
+      const controlZ = control ? Number(s.source.window.getComputedStyle(control).zIndex) : NaN;
+      // 同层时将遮罩放在控件前面；覆盖原页视频和弹幕，保留原生底栏。
+      mask.style.cssText = 'position:absolute;inset:0;z-index:' + (Number.isFinite(controlZ) && controlZ > 0 ? controlZ : 12) + ';background:#101419;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;font:16px system-ui';
+      const label = doc.createElement('p'); label.dataset.bilivexPipSourceLabel = '1';
+      label.textContent = s.source.video.paused ? '增强画中画已暂停' : '正在增强画中画中播放'; label.style.margin = '0';
+      const back = doc.createElement('button'); back.type = 'button'; back.textContent = '返回直播间';
+      back.style.cssText = 'min-height:36px;padding:6px 16px;border:0;border-radius:8px;background:' + (THEMES[s.source.config().theme]?.primary || currentTheme.primary) + ';color:white;font:14px system-ui;cursor:pointer';
+      mask.append(label, back);
+      let anchor = control; while (anchor?.parentElement && anchor.parentElement !== root) anchor = anchor.parentElement;
+      root.insertBefore(mask, anchor?.parentElement === root ? anchor : null);
+      s.source.dismissHover?.();
+      watch(s, mask, 'click', event => event.stopPropagation());
+      watch(s, mask, 'dblclick', event => event.stopPropagation());
+      watch(s, back, 'click', event => { event.stopPropagation(); if (live(s)) stop(); });
+    }
+
+    async function openPip(ownerDocument) {
+      if (state.mode !== 'idle') { update('请先退出当前模式，再开启画中画'); return false; }
+      const source = sourceNow(ownerDocument);
+      if (!source) { update('未找到正在直播的原生视频'); return false; }
+      if (!panelWindow.documentPictureInPicture) { update('当前浏览器不支持带弹幕画中画'); return false; }
+      if (nativeModeConflict(source)) { update('请先退出全屏或已有画中画，再开启带弹幕画中画'); return false; }
+      const s = begin('pip', source); s.width = source.video.videoWidth; s.height = source.video.videoHeight;
+      try {
+        // 开窗在用户点击链内发起；消息接口与媒体准备在获得窗口后进行。
+        const pip = await panelWindow.documentPictureInPicture.requestWindow({ width: 670, height: 430 });
+        if (!live(s)) { pip.close(); return false; }
+        s.pip = pip; watch(s, pip, 'pagehide', () => { if (state.session === s) stop(); });
+        buildPip(s);
+        if (s.route === 'move') {
+          s.moveStyle = { width: source.video.style.width, height: source.video.style.height };
+          s.retainedVideos = new Set([...source.root.querySelectorAll('video')].filter(video => video !== source.video));
+          s.anchor = source.document.createComment('BiLivex 视频原位'); source.video.before(s.anchor);
+          s.video.replaceWith(source.video); s.video = source.video;
+          s.video.style.width = '100%'; s.video.style.height = '100%';
+          await wait(s, () => s.video.readyState >= 2 && s.video.videoWidth > 0 && s.video.videoHeight > 0, 5000, '原视频尚未就绪，请在直播画面恢复后重试');
+        } else {
+          if (typeof source.video.captureStream !== 'function') throw new Error('当前视频无法捕获，请选择搬移原视频后重试');
+          const stream = source.video.captureStream(); s.tracks = stream.getTracks();
+          const tracks = stream.getVideoTracks(); if (!tracks.length) throw new Error('没有可捕获的视频轨道');
+          s.video.srcObject = new panelWindow.MediaStream(tracks); s.video.muted = true;
+          await wait(s, () => s.video.videoWidth > 0 && s.video.readyState >= 2, 5000, '画面捕获不可用，请选择搬移原视频后重试', () => s.video.play());
+          tracks.forEach(track => watch(s, track, 'ended', () => stop('源视频轨道已结束')));
+        }
+        coverPipSource(s);
+        await connectMessages(s, s.receive);
+        if (!live(s)) return false;
+        state.mode = 'pip-active'; update('画中画生效 · 悬停弹幕可 +1');
+        health(s); return true;
+      } catch (error) { if (state.session === s) await stop('画中画开启失败：' + error.message); return false; }
+    }
+
+    async function loadAudioLibrary(s) {
+      // 库注入 panelDocument，必须从该文档的页面上下文读取，不能误读来源 iframe。
+      const page = typeof unsafeWindow === 'undefined' ? panelWindow : panelWindow === window ? unsafeWindow : unsafeWindow.top;
+      if (page.mpegts?.createPlayer && page.mpegts.version === '1.8.0') return page.mpegts;
+      let promise = sharedRuntime.audioLibraryPromise;
+      if (!promise) {
+        promise = new Promise((resolve, reject) => {
+          const previous = page.mpegts;
+          const script = panelDocument.createElement('script'); script.src = AUDIO_PLAYER_URL;
+          script.integrity = AUDIO_PLAYER_INTEGRITY; script.crossOrigin = 'anonymous';
+          const timer = panelWindow.setTimeout(() => { script.remove(); reject(new Error('音频播放器加载超时')); }, 10000);
+          script.onload = () => { panelWindow.clearTimeout(timer); script.remove(); const library = page.mpegts; if (previous) page.mpegts = previous; if (library?.createPlayer && library.version === '1.8.0') resolve(library); else reject(new Error('当前页面无法加载音频播放器')); };
+          script.onerror = () => { panelWindow.clearTimeout(timer); script.remove(); reject(new Error('音频播放器加载失败')); };
+          panelDocument.head.appendChild(script);
+        });
+        sharedRuntime.audioLibraryPromise = promise;
+        promise.catch(() => { if (sharedRuntime.audioLibraryPromise === promise) sharedRuntime.audioLibraryPromise = null; });
+      }
+      const library = await promise; if (!live(s)) throw new Error('任务已取消'); return library;
+    }
+
+    async function probeAudio(s, url) {
+      const request = new panelWindow.AbortController(); const cancel = () => request.abort();
+      s.abort.signal.addEventListener('abort', cancel, { once: true });
+      const timer = panelWindow.setTimeout(cancel, 8000);
+      try {
+        const response = await panelWindow.fetch(url, { signal: request.signal, headers: { Range: 'bytes=0-12' } });
+        if (!response.ok || !response.body) throw new Error('音频流不可访问（HTTP ' + response.status + '）');
+        const reader = response.body.getReader(); const head = new Uint8Array(9); let used = 0;
+        try { while (used < 9) { const part = await reader.read(); if (part.done) break; const take = Math.min(9 - used, part.value.length); head.set(part.value.subarray(0, take), used); used += take; } }
+        finally { await reader.cancel().catch(() => {}); }
+        if (used < 9 || !isAudioOnlyFlv(head)) throw new Error('返回的媒体包含视频或没有独立音轨');
+      } finally { request.abort(); panelWindow.clearTimeout(timer); s.abort.signal.removeEventListener('abort', cancel); }
+    }
+
+    async function openAudio(ownerDocument) {
+      if (state.mode !== 'idle') { update('请先退出当前模式，再开启仅音频'); return false; }
+      const source = sourceNow(ownerDocument);
+      if (!source) { update('当前直播视频尚未就绪，请等待后重试'); return false; }
+      if (nativeModeConflict(source)) { update('请先退出全屏或已有画中画，再开启仅音频'); return false; }
+      if (typeof source.player.stopPlayback !== 'function' || typeof source.player.reload !== 'function') { update('当前播放器不支持安全停止与恢复视频'); return false; }
+      const s = begin('audio', source);
+      try {
+        const result = await json(s, audioPlayInfoUrl(await resolveRoom(s)));
+        const candidates = selectAudioStream(result, true);
+        const library = await loadAudioLibrary(s);
+        if (!library.isSupported()) throw new Error('当前浏览器不支持音频流解封装');
+        let url = '', lastError;
+        for (const candidate of candidates) {
+          try { await probeAudio(s, candidate); url = candidate; break; }
+          catch (error) { lastError = error; if (!live(s)) return false; }
+        }
+        if (!url) throw lastError || new Error('当前房间音频源不可用');
+        if (!live(s)) return false;
+        // 先核实独立音轨，再停止原生下载；新音频流只在停止之后启动。
+        s.nativeStopped = true;
+        await wait(s, () => { const v = source.root.querySelector('video'); return !v || v.readyState < 2 || !v.currentSrc; }, 5000, '原生视频未能停止加载', () => source.player.stopPlayback());
+        const audio = source.document.createElement('audio'); s.audio = audio; audio.volume = s.volume; audio.muted = s.muted;
+        // 准备期间已允许调节音量和静音，立即保留用户设置。
+        watch(s, audio, 'volumechange', () => { s.volume = audio.volume; s.muted = audio.muted; });
+        audio.controls = false; audio.hidden = true; audio.setAttribute('aria-label', '仅音频播放器');
+        const placeholder = source.document.createElement('div'); s.placeholder = placeholder;
+        placeholder.id = 'bilivex-audio-mode';
+        // stopPlayback 会显示层级 19 的原生封面，控制区域必须完整覆盖封面并接收指针。
+        placeholder.style.cssText = 'position:absolute;inset:0;z-index:100;pointer-events:auto;background:#15202cee;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
+        ['click', 'dblclick', 'pointerdown', 'mousedown', 'keydown'].forEach(event => watch(s, placeholder, event, e => e.stopPropagation()));
+        const text = source.document.createElement('p'); text.textContent = '仅音频模式 · 恢复视频可返回直播画面';
+        const play = source.document.createElement('button'); play.textContent = s.paused ? '播放音频' : '暂停音频'; play.disabled = true;
+        const back = source.document.createElement('button'); back.textContent = '恢复视频'; back.onclick = () => stop();
+        const mute = source.document.createElement('button'); mute.textContent = audio.muted ? '取消静音' : '静音';
+        mute.onclick = () => { audio.muted = !audio.muted; mute.textContent = audio.muted ? '取消静音' : '静音'; };
+        const volume = source.document.createElement('input'); volume.type = 'range'; volume.min = '0'; volume.max = '1'; volume.step = '.05'; volume.value = String(audio.volume); volume.setAttribute('aria-label', '仅音频音量'); volume.oninput = () => { audio.volume = Number(volume.value); };
+        [play, back, mute].forEach(button => { button.style.cssText = 'min-height:36px;padding:6px 14px;border:0;border-radius:8px;cursor:pointer;background:#35465b;color:white;font:14px system-ui'; });
+        placeholder.append(text, audio, play, mute, volume, back); source.root.appendChild(placeholder);
+        // 让解封装器读取实际轨道；不通过覆盖 hasVideo 制造“没有视频”的结果。
+        const player = library.createPlayer({ type: 'flv', isLive: true, url },
+          { enableWorker: false, enableStashBuffer: false, autoCleanupSourceBuffer: true, autoCleanupMaxBackwardDuration: 20, autoCleanupMinBackwardDuration: 5 });
+        s.audioPlayer = player;
+        let info = null;
+        player.on(library.Events.MEDIA_INFO, data => { if (!live(s)) return; info = data; if (data.hasVideo || !data.hasAudio) stop('媒体轨道不符合仅音频要求'); });
+        player.on(library.Events.ERROR, () => { if (live(s) && !(state.mode === 'audio-active' && s.paused)) stop('音频流失效，已尝试恢复视频'); });
+        player.attachMediaElement(audio); player.load();
+        await wait(s, () => info && info.hasAudio && !info.hasVideo, 10000, '音频轨道准备超时');
+        if (!s.paused) { const time = audio.currentTime; await wait(s, () => audio.currentTime > time && !audio.paused, 10000, '音频未开始播放', () => player.play()); }
+        else { player.pause(); player.unload(); }
+        if (!live(s)) return false;
+        play.onclick = async () => {
+          if (!live(s) || play.disabled) return;
+          play.disabled = true;
+          try {
+            if (s.paused) {
+              // unload 后新直播从新的时间轴开始；重建媒体源，避免旧播放位置等待旧时长。
+              state.mode = 'audio-preparing'; s.paused = false; info = null; update('正在重新加载音频');
+              player.detachMediaElement(); player.attachMediaElement(audio); player.load();
+              await wait(s, () => info && info.hasAudio && !info.hasVideo, 10000, '重新加载音频轨道超时');
+              const time = audio.currentTime;
+              await wait(s, () => audio.currentTime > time && !audio.paused, 10000, '音频未恢复播放', () => player.play());
+              if (!live(s)) return; state.mode = 'audio-active'; play.textContent = '暂停音频';
+            }
+            else { s.paused = true; player.pause(); player.unload(); play.textContent = '播放音频'; }
+            update(s.paused ? '仅音频已暂停，已停止加载' : '仅音频播放中');
+          } catch (e) { if (live(s)) stop('音频播放被阻止，请恢复视频'); }
+          finally { if (play.isConnected) play.disabled = false; }
+        };
+        watch(s, audio, 'pause', () => {
+          if (live(s) && state.mode === 'audio-active' && audio.paused && !s.paused) {
+            s.paused = true; player.unload(); play.textContent = '播放音频'; update('仅音频已暂停，已停止加载');
+          }
+        });
+        play.disabled = false; state.mode = 'audio-active'; update(s.paused ? '仅音频已就绪，已暂停' : '仅音频播放中'); health(s); return true;
+      } catch (error) { if (state.session === s) await stop('仅音频开启失败：' + error.message); return false; }
+    }
+
+    function health(s) {
+      later(s, () => {
+        if (!s.source.current()) { stop('播放器来源已变化', false); return; }
+        if (s.source.webMode() !== s.webMode) { stop('网页模式已变化，已退出媒体模式'); return; }
+        if (s.kind === 'pip') {
+          if (!s.sourceCover?.isConnected) { stop('原页遮罩区域已重建，已退出增强画中画'); return; }
+          if (s.pip.closed || (s.route !== 'move' && !s.source.video.isConnected)) { stop('源视频已重建'); return; }
+        } else {
+          if (!s.audio?.isConnected || !s.placeholder?.isConnected) { stop('音频控制区域已重建，已尝试恢复视频'); return; }
+          const video = s.source.root.querySelector('video');
+          if (video?.readyState >= 2 && !video.paused) { stop('原生视频已重新启动，退出仅音频'); return; }
+        }
+        health(s);
+      }, 1500);
+    }
+
+    async function recover() {
+      const s = state.recovery; if (!s || state.mode !== 'recovery-needed') return;
+      const generation = ++state.generation; state.mode = 'restoring'; update('正在恢复视频');
+      try { await restore(s); if (state.generation !== generation) return; state.mode = 'idle'; update('视频已恢复'); s.source.resume?.(); }
+      catch (error) { if (state.generation !== generation) return; state.mode = s.source.current() ? 'recovery-needed' : 'idle'; state.recovery = state.mode === 'recovery-needed' ? s : null; update(error.message); }
+    }
+    function suspendPage(ownerDocument, persisted) {
+      const s = state.session || state.recovery;
+      if (ownerDocument !== panelDocument && s?.source.document !== ownerDocument && cachedRecovery?.source.document !== ownerDocument && state.recovery?.source.document !== ownerDocument) return;
+      if (s) {
+        const recovery = persisted && s.kind === 'audio' && s.nativeStopped ? s : null;
+        stop('页面已离开', false);
+        cachedRecovery = recovery;
+      } else if (!persisted) stop('页面已离开', false);
+    }
+    function resumePage(ownerDocument) {
+      const s = cachedRecovery;
+      // 来源 iframe 的 pageshow 先恢复其生命周期状态，再允许重载原生视频。
+      if (!s || s.source.document !== ownerDocument) return;
+      cachedRecovery = null;
+      if (state.mode !== 'idle' || state.session) return;
+      if (!s.source.current()) { update('播放器来源已变化，请手动恢复当前直播视频'); return; }
+      state.recovery = s; state.mode = 'recovery-needed'; recover();
+    }
+    state.openPip = openPip; state.openAudio = openAudio; state.stop = stop; state.recover = recover;
+    state.suspendPage = suspendPage; state.resumePage = resumePage;
+    state.sourceNow = sourceNow;
+    return state;
+  }
+
+  function parsePipMessage(message) {
+    if (!/^DANMU_MSG(?::|$)/.test(String(message?.cmd || '')) || !Array.isArray(message.info)) return null;
+    const text = String(message.info[1] || ''); if (!text || text.length > 1000) return null;
+    const metadata = Array.isArray(message.info[0]) ? message.info[0] : [];
+    const color = Number(metadata[3]);
+    const special = metadata.find(value => value && typeof value === 'object' && !Array.isArray(value) && typeof value.url === 'string' && value.emoticon_unique);
+    let image = '';
+    if (special && special.url.length <= 600) {
+      try { const url = new URL(special.url); if (url.protocol === 'https:' && url.hostname.endsWith('.hdslb.com') && !url.username && !url.password) image = url.href; } catch (e) { /* 未知表情不可发送 */ }
+    }
+    const hash = emojiHashFromSrc(image);
+    const payload = image ? (EMOJI_ID_TO_NAME[hash] ? { type: 'emoji', text: '[' + EMOJI_ID_TO_NAME[hash] + ']' } : hash ? { type: 'emoji-special', text: hash, hash } : { type: 'unknown', text: '' }) : special ? { type: 'unknown', text: '' } : { type: 'text', text };
+    return { text, image, payload, color: Number.isSafeInteger(color) && color >= 0 && color <= 0xffffff ? '#' + color.toString(16).padStart(6, '0') : '#ffffff', busy: false };
+  }
+
+  function mediaIsBusy() { return !!sharedRuntime.mediaController && sharedRuntime.mediaController.mode !== 'idle'; }
+
+  function mediaSourceIsCovered() {
+    const s = sharedRuntime.mediaController?.session;
+    return s?.kind === 'pip' && s.source.document === document && !!s.sourceCover?.isConnected;
+  }
+
+  function renderMediaDetail(content, kind) {
+    const controller = getMediaController();
+    const label = panelElement('p', controller.message, 'blx-notice'); label.dataset.mediaStatus = '1'; content.appendChild(label);
+    if (kind === 'pip') {
+      content.appendChild(panelElement('p', '带弹幕画中画支持悬停 +1 / 收藏，沿用“弹幕操作”开关。小窗弹幕暂不继承原生屏蔽词。'));
+      const select = panelElement('select'); select.setAttribute('aria-label', '画中画视频呈现方式');
+      [['capture', '捕获原视频流（优先）'], ['move', '搬移原视频（兼容选项）']].forEach(([value, text]) => { const option = panelElement('option', text); option.value = value; select.appendChild(option); });
+      select.value = controller.route; select.disabled = controller.mode !== 'idle';
+      listenPanelNode(select, 'change', () => { controller.route = select.value; }); content.appendChild(select);
+    } else content.appendChild(panelElement('p', '独立音频播放；仅音频期间暂不执行自动画质、网页模式与视频同步。失败时尝试恢复视频。'));
+    const start = panelButton(kind === 'pip' ? '开启带弹幕画中画' : '开启仅音频', () => kind === 'pip' ? controller.openPip() : controller.openAudio());
+    start.dataset.mediaStart = kind; start.disabled = controller.mode !== 'idle'; content.appendChild(start);
+    const exit = panelButton(controller.mode === 'recovery-needed' ? '重试恢复视频' : '退出当前模式', () => controller.mode === 'recovery-needed' ? controller.recover() : controller.stop());
+    exit.dataset.mediaExit = '1'; exit.disabled = controller.mode === 'idle' || controller.mode === 'restoring'; content.appendChild(exit);
+    if (kind === 'pip') content.appendChild(panelButton('普通画中画（不含弹幕及操作栏）', () => {
+      const source = controller.sourceNow(); if (mediaIsBusy() || !source) { panelMessage('请先退出当前模式，并确认直播视频已就绪'); return; }
+      source.video.requestPictureInPicture?.().catch(() => panelMessage('当前视频不支持普通画中画'));
+    }));
+  }
+
   // ---------- 更多设置：播放器功能 ----------
   const PLAYER_RETRY_DELAYS = [0, 150, 300, 600, 950, 1300, 1500, 150];
   const playerEnhancementState = {
@@ -6459,6 +7335,7 @@
       return;
     }
     if (sequence !== playerEnhancementState.sequence || (!cfg.autoHighestQuality && !cfg.autoWebMode)) return;
+    if (mediaIsBusy()) return;
     playerEnhancementState.running = true;
     let pending = false;
     try {
@@ -6500,6 +7377,7 @@
   }
 
   function schedulePlayerEnhancements(restartRetry) {
+    if (mediaIsBusy()) return;
     if (!cfg.autoHighestQuality && !cfg.autoWebMode) return;
     if (playerEnhancementState.running) {
       playerEnhancementState.rerunRequested = true;
@@ -6534,6 +7412,7 @@
 
   function reloadPlayerForP2P(enabled) {
     if (document !== panelDocument) return false;
+    if (mediaIsBusy()) { getMediaController().stop('正在退出媒体模式并重载播放器', false).then(() => reloadPlayerForP2P(enabled)); return true; }
     const frames = Array.from(panelDocument.querySelectorAll('iframe'));
     for (const frame of frames) {
       try {
@@ -6575,7 +7454,7 @@
     const timeNodes = document.querySelectorAll('#live-player .text.time, .live-player-mounter .text.time');
     for (const timeNode of timeNodes) {
       const timeText = (timeNode.textContent || '').trim();
-      if (timeText && !/^\d{1,3}:\d{2}(?::\d{2})?$/.test(timeText)) continue;
+      if (timeText && !/^\d+:\d{2}(?::\d{2})?$/.test(timeText)) continue;
       const leftArea = timeNode.closest('.left-area');
       if (!leftArea) continue;
       let anchor = timeNode.closest('.tip-wrap') || timeNode;
@@ -6609,8 +7488,10 @@
   }
 
   function syncVideoToLiveEdge(button) {
+    if (sharedRuntime.mediaController?.session?.kind === 'audio') return { status: 'unavailable', message: '仅音频期间视频同步暂不可用' };
     const player = button && button.closest('#live-player, .live-player-mounter');
-    const video = findActiveLiveVideo(player || document.querySelector('#live-player, .live-player-mounter'));
+    const session = sharedRuntime.mediaController?.session;
+    const video = session?.kind === 'pip' && session.source.document === (button?.ownerDocument || document) && session.source.current() ? session.source.video : findActiveLiveVideo(player || document.querySelector('#live-player, .live-player-mounter'));
     const target = getVideoSyncTarget(video);
     if (!video || target === null) return { status: 'unavailable' };
     const before = Number(video.currentTime) || 0;
@@ -6650,11 +7531,89 @@
       });
     }
     if (mount.anchor.nextElementSibling !== button) mount.anchor.after(button);
+    bindPlayerMediaControls(mount);
     return button;
+  }
+
+  // ---------- 原生底栏媒体入口：只使用已识别的音量和画中画锚点 ----------
+  function findNativePipMount(player) {
+    for (const area of player.querySelectorAll('.right-area')) {
+      const anchors = Array.from(area.children).filter(node => !node.hasAttribute('data-bilivex-media-control'));
+      const matches = anchors.filter(node => {
+        if (node.matches('.pip-wrap, .picture-in-picture') || node.querySelector('[title="画中画"], [aria-label="画中画"], .pip-wrap, .picture-in-picture')) return true;
+        if ((node.textContent || '').trim() === '画中画') return true;
+        // 当前原生按钮没有名称属性；仅匹配已在实页确认的画中画 SVG 特征，不按位置猜测。
+        return Array.from(node.querySelectorAll('svg path')).some(path => (path.getAttribute('d') || '').includes('M12.5 15.25C12.5 13.7312'));
+      });
+      if (matches.length === 1) return { anchor: matches[0], area };
+    }
+    return null;
+  }
+
+  function refreshPlayerMediaControls() {
+    const controller = sharedRuntime.mediaController;
+    const mode = controller?.mode || 'idle';
+    const owner = controller?.session?.source.document || controller?.recovery?.source.document;
+    const kind = controller?.session?.kind || (mode === 'recovery-needed' ? 'audio' : '');
+    const available = !!controller?.sourceNow(document);
+    const audioActive = kind === 'audio' && owner === document;
+    document.querySelectorAll(VIDEO_SYNC_SELECTOR).forEach(button => {
+      const title = audioActive ? '仅音频期间视频同步暂不可用' : '同步时间';
+      if (button.title !== title) button.title = title;
+      const disabled = String(audioActive); if (button.getAttribute('aria-disabled') !== disabled) button.setAttribute('aria-disabled', disabled);
+    });
+    document.querySelectorAll('[data-bilivex-media-control]').forEach(button => {
+      const feature = button.dataset.bilivexMediaControl;
+      const active = owner === document && kind === feature;
+      const disabled = mode === 'idle' ? !available : !active || mode === 'restoring';
+      const label = feature === 'pip' ? (active ? '退出增强画中画' : '增强画中画') : (active ? '恢复视频' : '仅音频模式');
+      const title = disabled ? (mode === 'idle' ? '请等待当前直播视频就绪' : '请先退出当前媒体模式') : label;
+      [['aria-label', label], ['title', title], ['aria-pressed', String(active)], ['aria-disabled', String(disabled)]].forEach(([key, value]) => { if (button.getAttribute(key) !== value) button.setAttribute(key, value); });
+      button.style.opacity = disabled ? '.45' : '1';
+      button.style.color = active ? '#00aeec' : '';
+    });
+  }
+
+  function bindPlayerMediaControls(mount) {
+    const controller = getMediaController();
+    if (!document.getElementById('bilivex-media-controls-style')) {
+      const style = document.createElement('style'); style.id = 'bilivex-media-controls-style';
+      style.textContent = '#live-player .bilivex-media-control:focus-visible,.live-player-mounter .bilivex-media-control:focus-visible{outline:2px solid #00aeec;outline-offset:2px}';
+      document.head.appendChild(style);
+    }
+    const volume = Array.from(mount.leftArea.children).find(node => node.matches('.volume, .volume-wrap'));
+    const pip = findNativePipMount(mount.player);
+    const make = (kind, anchor, area, icon) => {
+      if (!anchor || !area) return;
+      let button = area.querySelector('[data-bilivex-media-control="' + kind + '"]');
+      if (!button) {
+        button = document.createElement('span'); button.className = 'icon bilivex-media-control';
+        button.dataset.bilivexMediaControl = kind; button.setAttribute('role', 'button'); button.setAttribute('tabindex', '0');
+        button.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + icon + '</svg>';
+        const activate = event => {
+          event.preventDefault(); event.stopPropagation();
+          if (button.getAttribute('aria-disabled') === 'true') return;
+          if (controller.mode === 'recovery-needed') controller.recover();
+          else if (controller.session?.source.document === document && controller.session.kind === kind) controller.stop();
+          else if (kind === 'pip') controller.openPip(document);
+          else controller.openAudio(document);
+        };
+        button.addEventListener('click', activate);
+        button.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) activate(event); });
+      }
+      const layout = getComputedStyle(area);
+      const rightBefore = (layout.flexDirection === 'row-reverse') !== (layout.direction === 'rtl');
+      if (rightBefore) { if (anchor.previousElementSibling !== button) anchor.before(button); }
+      else if (anchor.nextElementSibling !== button) anchor.after(button);
+    };
+    make('audio', volume, mount.leftArea, '<path d="M5 13v-1a7 7 0 0 1 14 0v1"></path><rect x="3" y="12" width="4" height="8" rx="2"></rect><rect x="17" y="12" width="4" height="8" rx="2"></rect>');
+    make('pip', pip?.anchor, pip?.area, '<rect x="3" y="4" width="18" height="16" rx="2"></rect><rect x="12" y="12" width="7" height="6" rx="1"></rect><path d="M6 8h3M6 11h2"></path>');
+    refreshPlayerMediaControls();
   }
 
   // ---------- 初始化 ----------
   function initRoom() {
+    registerMediaSource();
     refreshPurification();
     bindWheelEntry();
     const list = document.querySelector('.chat-history-list');
@@ -6675,6 +7634,7 @@
 
   function guardianCheck() {
     try {
+      registerMediaSource();
       refreshPurification();
       bindWheelEntry();
       bindVideoSync();
@@ -6806,11 +7766,14 @@
     } catch (e) {}
     const onPageShow = (event) => {
       nativeSendPageActive = true;
+      if (event.persisted) sharedRuntime.mediaController?.resumePage(document);
       if (sharedRuntime.panelLeavingDocument === document) { sharedRuntime.panelLeavingDocument = null; sharedRuntime.restorePanel?.(getUiHost()); }
       if (event.persisted && purifyController) purifyController.resume();
       if (event.persisted) { tryInit(); guardianCheck(); }
     };
     const onPageHide = (event) => {
+      sharedRuntime.mediaController?.suspendPage(document, event.persisted);
+      sharedRuntime.mediaSources?.delete(document);
       nativeSendPageActive = false; cancelNativeSends('页面已离开，任务已取消');
       sharedRuntime.cancelPanelMotion?.();
       // 子文档销毁前交还主面板，避免浏览器随 iframe 卸载移除面板原生事件监听。
@@ -6920,6 +7883,7 @@
         const panelMissing = !getPanelRoot();
         if (currentUrlChanged || panelMissing) {
           if (currentUrlChanged) {
+            if (sharedRuntime.mediaController?.session?.source.document === document || sharedRuntime.mediaController?.recovery?.source.document === document || document === panelDocument) sharedRuntime.mediaController?.stop('直播间已变化', false);
             cancelNativeSends('直播间已变化，任务已取消');
             if (purifyController) purifyController.refresh();
             stopActiveLike(true, '直播间已变化');
