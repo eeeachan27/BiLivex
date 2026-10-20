@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      3.1.0
+// @version      3.2.0
 // @license      MIT
-// @description  B站直播间增强工具：六分类悬浮窗、带弹幕画中画、仅音频模式、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
+// @description  B站直播间增强工具：原生弹幕字体记忆、评论区固定入口、六分类悬浮窗、带弹幕画中画、仅音频模式、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
 // @icon         data:image/jpeg;base64,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
 // @match        https://live.bilibili.com/*
@@ -2174,7 +2174,7 @@
     wheelConfig.resume = latest.resume;
   }
 
-  function canonicalRoom(root) {
+  function canonicalRoom(root, allowUrl = true) {
     const doc = root || document, view = doc.defaultView;
     try {
       const live = view === window ? unsafeWindow.BilibiliLive : view.BilibiliLive;
@@ -2182,6 +2182,7 @@
       const node = doc.querySelector('[data-room-id], [data-roomid]');
       const id = node && (node.getAttribute('data-room-id') || node.getAttribute('data-roomid'));
       if (/^\d+$/.test(id || '')) return id;
+      if (!allowUrl) return '';
       // URL 仅作普通长号兜底；短号未解析成功时失败关闭。
       const urlRoom = roomIdFromUrl(view.location.href);
       return urlRoom.length >= 5 ? urlRoom : '';
@@ -3986,7 +3987,7 @@
     style.id = 'bilivex-panel-guard-style';
     // 活动页进入网页模式时会给 body 的附加子节点写入 visibility:hidden。
     // 样式表中的 important 规则用于抵抗这次外部内联改写，面板自身没有隐藏状态。
-    style.textContent = '#bilivex-panel{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483647!important}';
+    style.textContent = '#bilivex-panel:not([data-presentation="fixed"]){display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483647!important}';
     (panelDocument.head || panelDocument.documentElement).appendChild(style);
     return style;
   }
@@ -4000,6 +4001,7 @@
     if (changingDocument && document === panelDocument) schedulePanelEventRestore(panel);
     const panelStyle = sharedRuntime.panelStyle;
     if (panelStyle && panelStyle.ownerDocument !== host.ownerDocument) (host.ownerDocument.head || host.ownerDocument.documentElement).appendChild(panelStyle);
+    if (fixedEntry()) return sharedRuntime.entryController.layout(panel, host);
     if (document === panelDocument && panelController.dragBound && panelController.dragDocument !== panel.ownerDocument) bindDragHandlers();
     panel.style.position = 'fixed';
     panel.style.setProperty('z-index', '2147483647', 'important');
@@ -4554,30 +4556,619 @@
   let purifyController = null;
   function refreshPurification() { if (!purifyController) purifyController = createPurifyController(); purifyController.refresh(); }
 
+  // ---------- 评论区固定入口：共用主面板，不改变业务任务 ----------
+  const ENTRY_MODE_KEY = 'bilivex_entry_mode_v1';
+  const preferenceSaveFailures = sharedRuntime.preferenceSaveFailures || (sharedRuntime.preferenceSaveFailures = new Map());
+  function normalizeEntryPreference(raw) {
+    if (raw == null || raw === '') return { fixed: false, writable: true, error: '' };
+    try {
+      const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!value || value.schemaVersion !== 1 || !['floating', 'comment'].includes(value.mode)) throw new Error('未知入口配置');
+      return { fixed: value.mode === 'comment', writable: true, error: '' };
+    } catch (error) { return { fixed: false, writable: false, error: '入口配置无法识别，已保留原值' }; }
+  }
+  function entryPreference() {
+    if (preferenceSaveFailures.has(ENTRY_MODE_KEY)) return { fixed: sharedRuntime.entryController?.fixed === true, writable: false, error: '入口保存结果未确认，当前页面保持原入口；可重新核对' };
+    try { return normalizeEntryPreference(GM_getValue(ENTRY_MODE_KEY)); }
+    catch (error) { return { fixed: false, writable: false, error: '入口偏好读取失败，当前入口保持可用' }; }
+  }
+  function fixedEntry() { return sharedRuntime.entryController?.fixed === true; }
+  function liveUiDocuments() {
+    const list = new Set([panelDocument]);
+    const visit = (doc, depth) => {
+      if (depth > 5 || list.size >= 32) return;
+      for (const frame of doc.querySelectorAll('iframe')) {
+        if (list.size >= 32) break;
+        try { const child = frame.contentDocument; if (child?.body && !list.has(child)) { list.add(child); visit(child, depth + 1); } } catch (error) { /* 跨源文档不参与界面协调。 */ }
+      }
+    };
+    visit(panelDocument, 0); return [...list];
+  }
+  function entryIsComposing() {
+    const docs = liveUiDocuments();
+    for (const input of sharedRuntime.entryComposing || []) if (!input.isConnected || !docs.includes(input.ownerDocument)) {
+      sharedRuntime.entryComposing.delete(input); if (!input.isConnected) composingInputs.delete(input); input.removeAttribute?.('data-bilivex-composing-input');
+    }
+    if (![...(sharedRuntime.entryComposing || [])].some(input => input.ownerDocument === document)) {
+      document.documentElement?.removeAttribute('data-bilivex-composing');
+      document.querySelectorAll('[data-bilivex-composing-input]').forEach(input => input.removeAttribute('data-bilivex-composing-input'));
+    }
+    // 以仍在文档中的输入节点为准；独立沙箱通过 DOM 标记判断，不让旧节点永久阻塞切换。
+    return docs.some(doc => {
+      const active = doc.documentElement?.hasAttribute('data-bilivex-composing') && !!doc.querySelector('[data-bilivex-composing-input]');
+      if (!active) doc.documentElement?.removeAttribute('data-bilivex-composing');
+      return active;
+    });
+  }
+  function entryApplicable() { return panelWindow.location.hostname === 'live.bilibili.com' && !!(canonicalRoom(panelDocument) || roomIdFromUrl(panelWindow.location.href)); }
+  function refreshEntryPresentation(local = false) {
+    if (sharedRuntime.entryComposing?.size && !entryIsComposing() && document !== panelDocument) panelDocument.dispatchEvent(new panelWindow.Event('bilivex-entry-composition-change'));
+    if (document !== panelDocument) { sharedRuntime.entryController?.refresh(local); return; }
+    if (!sharedRuntime.entryController) sharedRuntime.entryController = createEntryController();
+    sharedRuntime.entryController.refresh(local);
+  }
+  function entryRect(node, targetDocument) {
+    const toTop = (rect, ownerDocument) => {
+      let left = rect.left, top = rect.top, width = rect.width, height = rect.height, view = ownerDocument.defaultView;
+      // 油猴的顶层窗口代理可能不同；文档身份才是坐标换算的终点。
+      for (let depth = 0; view && view.document !== panelDocument && depth < 8; depth += 1) {
+        const frame = view.frameElement; if (!frame) return null;
+        const outer = frame.getBoundingClientRect(), sx = outer.width / (frame.offsetWidth || outer.width || 1), sy = outer.height / (frame.offsetHeight || outer.height || 1);
+        left = outer.left + (frame.clientLeft + left) * sx; top = outer.top + (frame.clientTop + top) * sy; width *= sx; height *= sy; view = frame.ownerDocument.defaultView;
+      }
+      return view?.document === panelDocument ? { left, top, width, height } : null;
+    };
+    try {
+      const source = toTop(node.getBoundingClientRect(), node.ownerDocument); if (!source) return null;
+      if (targetDocument === panelDocument) return { ...source, right: source.left + source.width, bottom: source.top + source.height };
+      const view = targetDocument.defaultView;
+      const target = toTop({ left: 0, top: 0, width: view.innerWidth, height: view.innerHeight }, targetDocument); if (!target || !target.width || !target.height) return null;
+      const sx = target.width / view.innerWidth, sy = target.height / view.innerHeight;
+      const left = (source.left - target.left) / sx, top = (source.top - target.top) / sy, width = source.width / sx, height = source.height / sy;
+      return { left, top, width, height, right: left + width, bottom: top + height };
+    } catch (error) { return null; }
+  }
+  function createEntryController() {
+    let button = null, anchor = null, kind = '', controlRoot = null, frameId = 0, retryTimer = null, missingAt = 0, lastRect = null;
+    const documents = new Map();
+    const controller = { fixed: entryPreference().fixed && entryApplicable(), open: false, restoring: false, status: '', refresh, layout, setOpen, suspend, dispose, button: () => button };
+    function queue() { if (!frameId) frameId = panelWindow.requestAnimationFrame(() => { frameId = 0; refresh(); }); }
+    function clearEntry() { button?.remove(); button = null; anchor = null; kind = ''; controlRoot = null; lastRect = null; }
+    function inFullscreen(doc) {
+      const full = doc.fullscreenElement;
+      if (full) return full;
+      const parent = panelDocument.fullscreenElement;
+      if (doc === panelDocument) return parent;
+      try { return parent === doc.defaultView.frameElement ? (full || doc.body) : parent; } catch (error) { return parent; }
+    }
+    function visibleComment(node) {
+      const doc = node.ownerDocument, rect = node.getBoundingClientRect(), view = doc.defaultView, full = inFullscreen(doc);
+      if (!rect.width || !rect.height || rect.bottom <= 0 || rect.right <= 0 || rect.left >= view.innerWidth || rect.top >= view.innerHeight || (full && !full.contains(node))) return false;
+      for (let current = node; current; current = current.parentElement) {
+        const style = view.getComputedStyle(current);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+      }
+      return !!entryRect(node, panelDocument);
+    }
+    function watchDocument(doc) {
+      const control = doc.querySelector('.chat-control-panel'), playerControl = doc.querySelector('#web-player-controller-wrap-el');
+      const previous = documents.get(doc);
+      if (previous && previous.control === control && previous.playerControl === playerControl) return;
+      previous?.();
+      const outside = event => {
+        if (!controller.fixed || !controller.open) return;
+        const path = event.composedPath();
+        if (path.includes(getPanelRoot()) || path.includes(button)) return;
+        setOpen(false, 'outside');
+      };
+      const resize = event => {
+        // 菜单正文滚动和详情恢复位置不改变外部入口；控制栏隐藏时也要保留最后锚点。
+        if (event?.type === 'scroll' && event.target?.closest?.('#bilivex-panel')) return;
+        lastRect = null; queue();
+      };
+      const observer = new panelWindow.MutationObserver(records => {
+        if (records.some(record => {
+          if (record.target.closest?.('#bilivex-panel,[data-bilivex-entry]')) return false;
+          if (record.type === 'attributes') return record.target === doc.body || record.target.matches('.chat-control-panel,.control-panel-icon-row,.icon-right-part,#web-player-controller-wrap-el,.right-area');
+          if (record.target === playerControl) return true;
+          return [...record.addedNodes, ...record.removedNodes].some(node => node.nodeType === 1 && node.matches('.control-panel-icon-row,.icon-right-part,.like-btn,#web-player-controller-wrap-el,.right-area,.chat-control-panel,iframe'));
+        })) queue();
+      });
+      if (doc.body) observer.observe(doc.body, { attributes: true, attributeFilter: ['class', 'style'] });
+      [control, playerControl].filter(Boolean).forEach(node => observer.observe(node, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] }));
+      doc.addEventListener('pointerdown', outside, true); doc.addEventListener('scroll', resize, true);
+      doc.defaultView?.addEventListener('resize', resize);
+      const cleanup = () => { observer.disconnect(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('scroll', resize, true); doc.defaultView?.removeEventListener('resize', resize); };
+      cleanup.control = control; cleanup.playerControl = playerControl; documents.set(doc, cleanup);
+    }
+    function collectDocuments() {
+      const list = new Set(liveUiDocuments());
+      for (const [doc, cleanup] of documents) if (!list.has(doc)) { cleanup(); documents.delete(doc); }
+      return [...list];
+    }
+    function choose(docs) {
+      const room = canonicalRoom(panelDocument) || roomIdFromUrl(panelWindow.location.href);
+      const relevant = docs.filter(doc => canonicalRoom(doc) === room || sharedRuntime.mediaSources?.get(doc)?.panelUrlRoom === roomIdFromUrl(panelWindow.location.href) || readDmDocumentState(doc));
+      for (const doc of relevant) {
+        const like = doc.querySelector('.chat-control-panel .control-panel-icon-row .icon-right-part .like-btn');
+        if (like && visibleComment(like)) return { anchor: like, area: like.parentElement, kind: 'comment' };
+      }
+      for (const doc of relevant) {
+        const root = doc.querySelector('#live-player,.live-player-mounter'), area = root?.querySelector('#web-player-controller-wrap-el .right-area,.live-web-player-controller .right-area');
+        const full = inFullscreen(doc);
+        // 控制栏自动隐藏仍保留该结构；只有实际全屏宿主排除它时才不可用。
+        if (area?.isConnected && (!full || full.contains(area))) return { anchor: area.querySelector('.setting-wrap,.setting,.quality-wrap') || null, area, kind: 'player' };
+      }
+      return null;
+    }
+    function createButton(doc) {
+      const node = doc.createElement('button'); node.type = 'button'; node.dataset.bilivexEntry = '1'; node.setAttribute('aria-label', '打开 BiLivex 菜单'); node.setAttribute('aria-controls', 'bilivex-panel');
+      node.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;min-width:28px;padding:2px;margin:0 4px;border:0;border-radius:50%;background:transparent;cursor:pointer;flex-shrink:0;vertical-align:middle;';
+      const image = doc.createElement('img'); image.src = LOGO_DATA_URI; image.alt = ''; image.draggable = false; image.width = 24; image.height = 24; image.style.cssText = 'width:24px;height:24px;border-radius:50%;pointer-events:none'; node.appendChild(image);
+      // 保留原生按钮激活，不让按键到达播放器的窗口级发送或播放监听。
+      ['keydown', 'keypress', 'keyup'].forEach(type => node.addEventListener(type, event => event.stopPropagation()));
+      node.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); setOpen(!controller.open, 'button'); });
+      return node;
+    }
+    function mount(target) {
+      if (!button || button.ownerDocument !== target.area.ownerDocument) { clearEntry(); button = createButton(target.area.ownerDocument); }
+      if (anchor !== target.anchor || kind !== target.kind) lastRect = null;
+      anchor = target.anchor; kind = target.kind;
+      controlRoot = kind === 'player' ? target.area.closest('#web-player-controller-wrap-el') : null;
+      if (kind !== 'fallback') ['position', 'top', 'right', 'z-index'].forEach(name => button.style.removeProperty(name));
+      const view = target.area.ownerDocument.defaultView, style = view.getComputedStyle(target.area);
+      const before = (style.flexDirection === 'row-reverse') === (style.direction === 'rtl');
+      if (target.anchor) {
+        if (before) { if (button.nextElementSibling !== target.anchor) target.anchor.before(button); }
+        else if (button.previousElementSibling !== target.anchor) target.anchor.after(button);
+      } else if (button.parentNode !== target.area) target.area.appendChild(button);
+      button.dataset.entryKind = kind;
+      button.title = kind === 'fallback' ? '当前布局暂未适配，临时使用固定入口；可在设置中关闭' : '打开 BiLivex 菜单';
+    }
+    function refresh(local = false) {
+      const preference = entryPreference();
+      const wanted = preference.fixed && entryApplicable();
+      if (wanted !== controller.fixed) {
+        if (entryIsComposing()) { controller.status = '等待当前输入结束后切换入口'; return; }
+        const panel = getPanelRoot(), wasOpen = panel && panel.dataset.collapsed !== 'true';
+        cancelPanelMotion(panel); panelController.dragCleanup?.();
+        try { const head = panel?.firstElementChild; if (head?.hasPointerCapture(pressState.pointerId)) head.releasePointerCapture(pressState.pointerId); } catch (error) {}
+        clearTimeout(pressState.longTimer); pressState.down = false; dragState.dragging = false;
+        controller.fixed = wanted; controller.open = controller.fixed && local ? !!wasOpen : false;
+        if (!controller.fixed) {
+          suspend(); cfg = loadCfg(); controller.status = preference.error || '当前使用悬浮入口';
+          if (panel) { panel.inert = false; panel.removeAttribute('aria-hidden'); delete panel.dataset.presentation; panel.dataset.bilivexPanelAnchor = cfg.panelAnchor || ''; panel.style.removeProperty('display'); panel.style.removeProperty('visibility'); panel.style.removeProperty('pointer-events'); panel.style.removeProperty('max-height'); panel.style.left = cfg.panelPos ? cfg.panelPos.left + 'px' : 'auto'; panel.style.right = cfg.panelPos ? 'auto' : '18px'; panel.style.top = cfg.panelPos ? cfg.panelPos.top + 'px' : '96px';
+            controller.restoring = true; setPanelCollapsed(cfg.panelCollapsed, false); controller.restoring = false; bindDragHandlers(); }
+          return;
+        }
+      }
+      if (!controller.fixed) return;
+      const docs = collectDocuments(); docs.forEach(watchDocument);
+      const target = choose(docs);
+      if (target) { missingAt = 0; if (retryTimer !== null) clearTimeout(retryTimer); retryTimer = null; mount(target); controller.status = target.kind === 'comment' ? '入口已固定到评论区' : '入口随播放器控制栏显示'; }
+      else if (kind === 'player' && button && !button.isConnected && controlRoot?.isConnected && docs.includes(controlRoot.ownerDocument) &&
+        (!inFullscreen(controlRoot.ownerDocument) || inFullscreen(controlRoot.ownerDocument).contains(controlRoot))) {
+        // 原生控制栏自动隐藏时可能卸载整组按钮；宿主仍有效则保留已打开菜单及最后锚点，等待原生按钮恢复。
+        missingAt = 0; if (retryTimer !== null) clearTimeout(retryTimer); retryTimer = null;
+        controller.status = '入口随播放器控制栏显示';
+      }
+      else {
+        if (!missingAt) missingAt = Date.now();
+        if (Date.now() - missingAt < 1500) { if (retryTimer === null) retryTimer = setTimeout(() => { retryTimer = null; refresh(); }, 1500); }
+        else if (!panelDocument.fullscreenElement && !docs.some(doc => doc.fullscreenElement) && !isWebMode()) {
+          mount({ anchor: null, area: panelDocument.body, kind: 'fallback' }); button.style.position = 'fixed'; button.style.top = '96px'; button.style.right = '18px'; button.style.zIndex = '2147483647'; controller.status = '当前布局暂未适配，临时使用固定入口';
+        } else { clearEntry(); controller.status = '此全屏布局需退出全屏后打开插件'; controller.open = false; }
+      }
+      layout();
+    }
+    function layout(panel = getPanelRoot(), host = getUiHost()) {
+      if (!controller.fixed || !panel || !host) return false;
+      panel.dataset.presentation = 'fixed'; panel.dataset.collapsed = 'false';
+      panel.style.setProperty('display', controller.open ? 'flex' : 'none', 'important'); panel.style.setProperty('visibility', controller.open ? 'visible' : 'hidden', 'important');
+      panel.style.setProperty('pointer-events', controller.open ? 'auto' : 'none', 'important'); panel.inert = !controller.open; panel.setAttribute('aria-hidden', String(!controller.open));
+      const view = host.ownerDocument.defaultView, maxHeight = Math.max(0, Math.min(600, view.innerHeight - 24));
+      const width = Math.max(0, Math.min(360, view.innerWidth - 16));
+      panel.style.height = 'auto'; panel.style.width = width + 'px'; panel.style.maxHeight = maxHeight + 'px';
+      // 固定菜单只滚动正文，清除悬浮形态遗留的外层滚动，保证关闭按钮始终可达。
+      if (panel.scrollTop) panel.scrollTop = 0;
+      const head = panel.firstElementChild, body = head.nextElementSibling; body.hidden = false; body.inert = false; body.style.display = 'flex'; body.setAttribute('aria-hidden', 'false');
+      head.style.cssText = ''; head.style.cursor = 'default'; head.querySelector('[data-panel-brand]').hidden = false; head.querySelector('[data-panel-search]').hidden = false;
+      const close = head.querySelector('[data-panel-toggle]'); close.textContent = '×'; close.style.cssText = ''; close.setAttribute('aria-label', '关闭 BiLivex 菜单'); close.setAttribute('aria-expanded', String(controller.open));
+      panel.querySelectorAll('[data-entry-status]').forEach(node => { node.textContent = controller.status; });
+      if (button) { button.setAttribute('aria-expanded', String(controller.open)); button.setAttribute('aria-label', (controller.open ? '关闭' : '打开') + ' BiLivex 菜单'); }
+      if (!controller.open) return true;
+      const rect = button?.isConnected ? entryRect(button, host.ownerDocument) : null;
+      if (rect?.width && rect.height) lastRect = rect;
+      if (!lastRect) { if (button && !entryIsComposing()) setOpen(false, 'layout'); return true; }
+      const size = panel.getBoundingClientRect();
+      // 正文上下内边距共 38px，另留一行 44px 操作空间；不超过原视口高度上限。
+      const minimumHeight = Math.min(maxHeight, size.height - (panel.querySelector('[data-panel-content]')?.clientHeight || 0) + 82);
+      const above = Math.max(0, lastRect.top - 16), below = Math.max(0, view.innerHeight - lastRect.bottom - 16);
+      const before = Math.max(0, lastRect.left - 16), after = Math.max(0, view.innerWidth - lastRect.right - 16);
+      let left, top;
+      // 菜单要给入口留出点击空间；优先上下展开，低高度时使用可容纳菜单的侧边。
+      if (width && maxHeight && Math.max(above, below) >= minimumHeight) {
+        const up = above >= size.height || above >= below;
+        panel.style.maxHeight = Math.min(maxHeight, up ? above : below) + 'px';
+        const bounded = panel.getBoundingClientRect();
+        left = lastRect.right - bounded.width; top = up ? lastRect.top - 8 - bounded.height : lastRect.bottom + 8;
+      } else if (width && maxHeight && Math.max(before, after) >= Math.min(280, width)) {
+        const toLeft = before >= after;
+        panel.style.width = Math.min(width, toLeft ? before : after) + 'px';
+        const bounded = panel.getBoundingClientRect();
+        left = toLeft ? lastRect.left - 8 - bounded.width : lastRect.right + 8; top = lastRect.bottom - bounded.height;
+      } else {
+        controller.status = '当前可见空间不足，请调整窗口后打开插件'; if (button) button.title = controller.status;
+        if (!entryIsComposing()) setOpen(false, 'layout'); return true;
+      }
+      const bounded = panel.getBoundingClientRect();
+      left = Math.max(8, Math.min(left, view.innerWidth - bounded.width - 8));
+      top = Math.max(8, Math.min(top, view.innerHeight - bounded.height - 8));
+      panel.style.left = left + 'px'; panel.style.top = top + 'px'; panel.style.right = 'auto';
+      return true;
+    }
+    function setOpen(open, reason = 'button') {
+      controller.open = open; const panel = getPanelRoot(); if (!panel) return;
+      capturePanelView(); ensurePanelVisible(panel, getUiHost());
+      if (open) panel.querySelector('h3')?.focus({ preventScroll: true });
+      else if (reason !== 'outside' && button?.isConnected && button.getBoundingClientRect().width) button.focus({ preventScroll: true });
+    }
+    function suspend() {
+      if (frameId) panelWindow.cancelAnimationFrame(frameId); frameId = 0;
+      if (retryTimer !== null) clearTimeout(retryTimer); retryTimer = null;
+      documents.forEach(cleanup => cleanup()); documents.clear(); clearEntry(); missingAt = 0;
+    }
+    function dispose() { suspend(); controller.open = false; }
+    return controller;
+  }
+
+  // ---------- 原生弹幕字体偏好：只写指定字段，不改 B 站存储 ----------
+  const DM_AUTO_KEY = 'bilivex_danmaku_auto_v1';
+  const DM_FONT_KEY = 'bilivex_danmaku_font_v1';
+  const DM_STATUS_ATTRIBUTE = 'data-bilivex-dm-status';
+  const DM_STATUS_EVENT = 'bilivex-dm-status-change';
+  const DM_REAPPLY_EVENT = 'bilivex-dm-reapply';
+  const DM_ROOM_EVENT = 'bilivex-dm-room-change';
+  const DM_VISIT_ATTRIBUTE = 'data-bilivex-dm-visit';
+  function readDmVisit() {
+    const root = panelDocument.documentElement;
+    try {
+      const raw = root?.getAttribute(DM_VISIT_ATTRIBUTE); if (!raw) return null;
+      const value = raw.length <= 1024 ? JSON.parse(raw) : null, pageRoom = roomIdFromUrl(panelWindow.location.href);
+      if (!value || value.schemaVersion !== 1 || typeof value.room !== 'string' || !/^\d+$/.test(value.room) || typeof value.urlRoom !== 'string' || !/^\d+$/.test(value.urlRoom) ||
+          !pageRoom || (value.urlRoom !== pageRoom && value.room !== pageRoom) || (value.manual !== null && (!value.manual || typeof value.manual.fontFamily !== 'string' || value.manual.fontFamily.length > 100 || typeof value.manual.bold !== 'boolean'))) {
+        root?.removeAttribute(DM_VISIT_ATTRIBUTE); return null;
+      }
+      return value;
+    } catch (error) { root?.removeAttribute(DM_VISIT_ATTRIBUTE); return null; }
+  }
+  function rememberDmVisit(visit) {
+    // 顶层 DOM 只保留本次进入的手动选择，独立子沙箱真正重建后仍可恢复；不写 GM 或 B 站存储。
+    if (visit?.yielded) panelDocument.documentElement?.setAttribute(DM_VISIT_ATTRIBUTE,
+      JSON.stringify({ schemaVersion: 1, room: visit.room, urlRoom: visit.urlRoom, manual: visit.manual }));
+  }
+  function readDmDocumentState(doc) {
+    try {
+      const raw = doc.documentElement?.getAttribute(DM_STATUS_ATTRIBUTE);
+      if (!raw || raw.length > 2048) return null;
+      const value = JSON.parse(raw);
+      if (value.room !== canonicalRoom(doc) || !value.room || value.urlRoom !== roomIdFromUrl(doc.defaultView.location.href) ||
+          value.panelUrlRoom !== roomIdFromUrl(panelWindow.location.href) || typeof value.status !== 'string' || value.status.length > 180) return null;
+      return value;
+    } catch (error) { return null; }
+  }
+  // 来自原生播放器的字体选项；字重与字体成组保存，细体默认不加粗。
+  const DM_FONTS = [
+    ['SimHei', '黑体', true], ['SimSun', '宋体', true], ['NSimSun', '新宋体', true],
+    ['FangSong', '仿宋', true], ['Microsoft YaHei', '微软雅黑', true],
+    ['Microsoft YaHei Light', '雅黑细体（微软雅黑 Light）', false],
+    ['Noto Sans CJK SC DemiLight', 'Noto Sans 细体', false], ['Noto Sans CJK SC Regular', 'Noto Sans 常规', false]
+  ];
+  function normalizeDmFont(raw) {
+    if (raw == null || raw === '') return { value: null, writable: true, error: '' };
+    try {
+      const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!value || value.schemaVersion !== 1) return { value: null, writable: false, error: '未知字体配置版本，暂不可覆盖' };
+      if (value.fontFamily === '') return { value: null, writable: true, error: '' };
+      if (typeof value.fontFamily !== 'string' || value.fontFamily.length > 100 || typeof value.bold !== 'boolean') throw new Error('字体配置损坏');
+      return { value: { fontFamily: value.fontFamily, bold: value.bold }, writable: true,
+        error: DM_FONTS.some(item => item[0] === value.fontFamily) ? '' : '已保存字体当前未适配，原值已保留' };
+    } catch (error) { return { value: null, writable: false, error: '字体配置无法读取，原值已保留' }; }
+  }
+  function sameDmFont(left, right) { return !!left && !!right && left.fontFamily === right.fontFamily && left.bold === right.bold; }
+  function readNativeDmFont(player) {
+    try {
+      const value = getLivePlayerInfo(player)?.danmaku;
+      return value && typeof value.fontFamily === 'string' && typeof value.bold === 'boolean'
+        ? { fontFamily: value.fontFamily, bold: value.bold } : null;
+    } catch (error) { return null; }
+  }
+  const dmPreferences = sharedRuntime.dmPreferences || (sharedRuntime.dmPreferences = { controllers: new Set(), visit: null, saving: false });
+  let dmController = null;
+  function dmSaved() {
+    try {
+      const auto = GM_getValue(DM_AUTO_KEY) === true, raw = GM_getValue(DM_FONT_KEY);
+      const value = { auto, raw, ...normalizeDmFont(raw) };
+      if (preferenceSaveFailures.has(DM_AUTO_KEY) || preferenceSaveFailures.has(DM_FONT_KEY)) value.error = '字体保存结果未确认，本页已暂停；可重新核对';
+      return value;
+    }
+    catch (error) { return { auto: false, value: null, writable: false, error: '无法读取弹幕偏好，本页已暂停' }; }
+  }
+  function dmPreferenceStatus() {
+    const saved = dmSaved();
+    if (saved.error) return saved.error;
+    if (!saved.auto) return '自动应用已关闭；关闭不会改回当前字体';
+    if (!saved.value) return '尚未选择接管的字体';
+    const controller = [...dmPreferences.controllers].find(item => item.source?.current());
+    if (controller?.status) return controller.status;
+    // 活动页的独立沙箱不能通过 window 属性共享对象，使用所属文档发布的状态。
+    const state = liveUiDocuments().map(readDmDocumentState).find(value => value?.auto === saved.auto && value.preference === JSON.stringify(saved.value));
+    return state?.status || '偏好已保存，等待当前直播播放器';
+  }
+  function refreshDmPreferences(reclaim = false, syncView = false) {
+    if (reclaim) {
+      panelDocument.documentElement?.removeAttribute(DM_VISIT_ATTRIBUTE);
+      if (dmPreferences.visit) { dmPreferences.visit.yielded = false; dmPreferences.visit.manual = null; }
+    }
+    dmPreferences.controllers.forEach(item => item.refresh(reclaim));
+    sharedRuntime.refreshPanelStatus?.();
+    if (syncView) sharedRuntime.syncDmPreferenceView?.();
+    if (reclaim && document === panelDocument) panelDocument.dispatchEvent(new panelWindow.Event(DM_REAPPLY_EVENT));
+  }
+  function saveDmPreference(key, value) {
+    try {
+      GM_setValue(key, value);
+      if (GM_getValue(key) !== value) throw new Error('保存结果未确认');
+      preferenceSaveFailures.delete(key);
+      return '';
+    } catch (error) { preferenceSaveFailures.set(key, String(error.message || error)); return '保存失败：' + error.message; }
+  }
+  function createDmPreferenceController() {
+    let task = null, timer = null, manualTimer = null, removeEvents = [], suspended = false;
+    const controller = { source: null, status: '', refresh, suspend, dispose, retry: () => refreshDmPreferences(true) };
+    const owners = dmPreferences.owners || (dmPreferences.owners = new Map());
+    // 已提交的原生调用不能撤销，跨任务和协调实例等待它结束，避免迟到写入覆盖新选择。
+    const writes = dmPreferences.writes || (dmPreferences.writes = new WeakMap());
+    dmPreferences.controllers.add(controller);
+    const publish = (clear = false) => {
+      const root = document.documentElement; if (!root) return;
+      const source = controller.source, saved = dmSaved();
+      if (!clear && sourceCurrent(source) && dmPreferences.visit?.room === source.room && dmPreferences.visit.urlRoom === source.panelUrlRoom) rememberDmVisit(dmPreferences.visit);
+      const value = !clear && sourceCurrent(source) ? JSON.stringify({ room: source.room, urlRoom: source.urlRoom, panelUrlRoom: source.panelUrlRoom,
+        auto: saved.auto, preference: JSON.stringify(saved.value), status: suspended ? '已暂停，等待页面可见' : controller.status }) : null;
+      if (root.getAttribute(DM_STATUS_ATTRIBUTE) === value) return;
+      if (value) root.setAttribute(DM_STATUS_ATTRIBUTE, value); else root.removeAttribute(DM_STATUS_ATTRIBUTE);
+      if (document !== panelDocument) panelDocument.dispatchEvent(new panelWindow.Event(DM_STATUS_EVENT));
+    };
+    const notify = text => { const changed = controller.status !== text; controller.status = text; publish(); if (changed) sharedRuntime.refreshPanelStatus?.(); };
+    function sourceCurrent(source) {
+      return !!source?.panelUrlRoom && !!source.current() && source.video?.isConnected && source.video.ownerDocument === source.document && findActiveLiveVideo(source.root) === source.video;
+    }
+    function releaseOwner() { if (controller.source && owners.get(controller.source.player) === controller) owners.delete(controller.source.player); }
+    function pauseTime(t) { if (t?.activeAt) t.elapsed += Date.now() - t.activeAt; if (t) t.activeAt = 0; }
+    function cancel() {
+      if (timer !== null) clearTimeout(timer); timer = null;
+      if (task) task.cancelled = true;
+    }
+    function removeNativeEvents() {
+      removeEvents.splice(0).forEach(remove => remove());
+      if (manualTimer !== null) clearTimeout(manualTimer); manualTimer = null;
+    }
+    function observeManual(event) {
+      if (!event.isTrusted || mediaIsBusy() || !event.target?.closest?.('#web-player-controller-wrap-el, .live-web-player-controller') || event.target.closest('[data-bilivex-entry], #bilivex-panel, [data-bilivex-media-control], [data-bilivex-video-sync]')) return;
+      const source = controller.source, before = controller.lastObserved || readNativeDmFont(source?.player), visit = dmPreferences.visit;
+      if (!sourceCurrent(source) || !before || !visit) return;
+      if (manualTimer !== null) clearTimeout(manualTimer);
+      manualTimer = setTimeout(() => {
+        manualTimer = null;
+        if (!sourceCurrent(source) || mediaIsBusy() || dmPreferences.visit !== visit || !dmSaved().auto) return;
+        const after = readNativeDmFont(source.player);
+        if (!after || !sameDmFont(before, after)) {
+          visit.yielded = true; visit.manual = after;
+          rememberDmVisit(visit);
+          controller.lastObserved = after;
+          dmPreferences.controllers.forEach(item => item.refresh());
+        } else if (task && !task.cancelled) schedule(0);
+      }, 120);
+    }
+    function addNativeEvents() {
+      if (removeEvents.length) return;
+      ['pointerdown', 'keydown', 'change'].forEach(type => {
+        document.addEventListener(type, observeManual, true);
+        removeEvents.push(() => document.removeEventListener(type, observeManual, true));
+      });
+    }
+    function schedule(delay) {
+      if (timer !== null || suspended || task?.cancelled) return;
+      timer = setTimeout(() => { timer = null; tick(); }, delay);
+    }
+    function current(t) {
+      const saved = dmSaved();
+      return t === task && !t.cancelled && !suspended && sourceCurrent(t.source) && getPlayerInstanceKey(getLivePlayerInfo(t.source.player)) === t.instanceKey && dmPreferences.visit === t.visit &&
+        saved.auto && !saved.error && JSON.stringify(saved.value) === t.preference;
+    }
+    async function tick() {
+      const t = task; if (!t || t.cancelled || suspended) return;
+      if (document.hidden || mediaIsBusy() || dmPreferences.saving) { pauseTime(t); notify(mediaIsBusy() ? '媒体模式中暂缓，恢复后再核对' : '已暂停，等待页面可见'); return; }
+      if (!current(t)) return;
+      if (manualTimer !== null) { pauseTime(t); notify('等待原生设置操作结束'); return; }
+      const now = Date.now(); if (t.activeAt) t.elapsed += now - t.activeAt; t.activeAt = now;
+      if (t.elapsed >= 8000) { t.cancelled = true; notify('未能稳定应用，可重新应用'); return; }
+      // 原生接口可能异步完成；等待期间只检查预算，不将尚未完成的结果误判为外部修改。
+      if (writes.has(t.source.player)) { schedule(200); return; }
+      const enhancementsActive = playerEnhancementState.running || playerEnhancementState.timer !== null || playerEnhancementState.retryIndex < PLAYER_RETRY_DELAYS.length;
+      const qualityPending = cfg.autoHighestQuality && !playerEnhancementState.qualityDone.has(t.instanceKey);
+      const webPending = cfg.autoWebMode && !isBrowserFullscreen(getLivePlayerInfo(t.source.player)) && !playerEnhancementState.webDone.has(t.instanceKey);
+      // 自动切画质可能重建原生弹幕设置，先让已有初始化任务结束，再只应用一次字体。
+      if (enhancementsActive && (qualityPending || webPending)) { notify('等待自动画质和网页模式初始化完成'); schedule(200); return; }
+      const actual = readNativeDmFont(t.source.player);
+      if (sameDmFont(actual, t.desired)) {
+        if (!t.matchAt) { t.matchAt = now; schedule(500); return; }
+        t.done = true;
+        notify(t.visit.yielded ? '本页保留原生字体，自动应用已让权' : '原生字体设置已应用；系统字体以实际显示为准');
+        return;
+      }
+      t.matchAt = 0;
+      if (t.done) {
+        t.visit.yielded = true; t.visit.manual = actual; t.cancelled = true;
+        notify('本页已让权，不覆盖原生字体调整'); return;
+      }
+      if (actual && typeof t.source.player.updateDMSetting === 'function') {
+        if (t.submissions) {
+          // 没有可信的初始化回写来源时让权，不把未知变化当作再次覆盖的理由。
+          t.visit.yielded = true; t.visit.manual = actual; t.cancelled = true;
+          notify('字体出现其他变化，本页已让权；可重新应用'); return;
+        }
+        if (!current(t) || manualTimer !== null || mediaIsBusy()) return;
+        try {
+          t.submissions += 1; writes.set(t.source.player, t); notify('正在应用原生字体设置'); schedule(200);
+          await t.source.player.updateDMSetting({ ...t.desired }, false);
+          if (document.hidden || mediaIsBusy()) { pauseTime(t); return; }
+          if (!current(t)) return;
+          if (!sameDmFont(readNativeDmFont(t.source.player), t.desired)) throw new Error('原生值未确认');
+          controller.lastObserved = { ...t.desired };
+          if (timer !== null) clearTimeout(timer); timer = null;
+          t.matchAt = Date.now(); schedule(500); return;
+        } catch (error) { if (current(t)) { cancel(); notify('字体应用失败：' + String(error.message || error).slice(0, 120)); } return; }
+        finally { if (writes.get(t.source.player) === t) writes.delete(t.source.player); }
+      }
+      const delays = [200, 500, 1000, 2000, 4000];
+      if (t.attempt >= delays.length) { t.cancelled = true; notify('当前播放器不支持可靠的原生字体读写'); return; }
+      notify('等待原生弹幕设置就绪'); schedule(Math.min(delays[t.attempt++], Math.max(1, 8000 - t.elapsed)));
+    }
+    function refresh(reclaim = false) {
+      const saved = dmSaved(), source = sharedRuntime.mediaSources?.get(document);
+      let pageRoom = '';
+      try { pageRoom = roomIdFromUrl(panelWindow.location.href); } catch (error) { /* 父页面已离开可访问范围时不继续字体任务。 */ }
+      const remembered = readDmVisit();
+      if (!pageRoom) dmPreferences.visit = null;
+      const ready = !!pageRoom && sourceCurrent(source);
+      const instanceKey = ready ? getPlayerInstanceKey(getLivePlayerInfo(source.player)) : '', nativeKey = instanceKey.slice(instanceKey.indexOf(':') + 1);
+      const previousVisit = dmPreferences.visit;
+      // URL 兜底会随地址立即变化，不能把它当作原生播放器已换房的确认。
+      const unconfirmedRoom = !!(ready && previousVisit && (!canonicalRoom(document, false) || previousVisit.room === source.room) && previousVisit.urlRoom !== source.panelUrlRoom && source.panelUrlRoom !== previousVisit.room &&
+        previousVisit.player === source.player && previousVisit.video === source.video && previousVisit.nativeKey === nativeKey);
+      const owner = ready ? owners.get(source.player) : null;
+      const ownedByOther = !!(owner && owner !== controller && dmPreferences.controllers.has(owner) && sourceCurrent(owner.source));
+      // 关闭期间也记录只读身份，首次开启时才能识别尚未完成的换房；不建立写入任务或原生监听。
+      if (ready && !suspended && !unconfirmedRoom && !ownedByOther) {
+        const room = source.room, urlRoom = source.panelUrlRoom;
+        if (!dmPreferences.visit || dmPreferences.visit.room !== room) {
+          const retained = remembered?.room === room ? remembered : null;
+          if (remembered && !retained) panelDocument.documentElement?.removeAttribute(DM_VISIT_ATTRIBUTE);
+          dmPreferences.visit = { room, urlRoom, yielded: !!retained, manual: retained?.manual ? { ...retained.manual } : null, player: source.player, video: source.video, nativeKey };
+        } else Object.assign(dmPreferences.visit, { urlRoom, player: source.player, video: source.video, nativeKey });
+      }
+      if (!saved.auto || !saved.value || saved.error) {
+        cancel(); task = null; removeNativeEvents(); releaseOwner(); controller.source = source;
+        notify(saved.error || (!saved.auto ? '自动应用已关闭' : '尚未选择接管的字体')); return;
+      }
+      if (suspended) return;
+      if (mediaIsBusy() && task) { if (timer !== null) clearTimeout(timer); timer = null; pauseTime(task); notify('媒体模式中暂缓，恢复后再核对'); return; }
+      if (!ready || unconfirmedRoom) { cancel(); task = null; removeNativeEvents(); releaseOwner(); controller.source = null; notify(unconfirmedRoom ? '等待原生播放器确认当前房间' : '等待当前直播播放器'); return; }
+      if (ownedByOther) { cancel(); task = null; removeNativeEvents(); releaseOwner(); controller.source = null; notify('该播放器由另一文档协调字体'); return; }
+      if (controller.source?.player !== source.player) releaseOwner();
+      owners.set(source.player, controller); addNativeEvents();
+      if (controller.source?.player !== source.player || controller.source?.video !== source.video) controller.lastObserved = readNativeDmFont(source.player);
+      controller.source = source;
+      const visit = dmPreferences.visit;
+      if (visit.yielded && !visit.manual) { cancel(); notify('本页已让权，未继续写字体'); return; }
+      const desired = visit.yielded ? visit.manual : saved.value, preference = JSON.stringify(saved.value);
+      const same = task && task.source.player === source.player && task.source.video === source.video && task.source.root === source.root && task.instanceKey === instanceKey && task.visit === visit && task.preference === preference && sameDmFont(task.desired, desired);
+      if (!reclaim && same) {
+        if (task.done && !sameDmFont(readNativeDmFont(source.player), task.desired)) {
+          visit.yielded = true; visit.manual = readNativeDmFont(source.player); cancel();
+          notify('原生字体已变化，本次进入会话让权'); return;
+        }
+        if (task.done || task.cancelled) return;
+        schedule(0); return;
+      }
+      cancel();
+      task = { source, visit, instanceKey, preference, desired: { ...desired }, cancelled: false, elapsed: 0, activeAt: 0, attempt: 0, submissions: 0, matchAt: 0, done: false };
+      schedule(200);
+    }
+    function suspend() {
+      if (suspended) return;
+      suspended = true;
+      if (task) { task.wasCancelledBeforePause = task.cancelled; pauseTime(task); }
+      cancel(); removeNativeEvents(); publish();
+    }
+    function dispose() { suspend(); releaseOwner(); task = null; dmPreferences.controllers.delete(controller); publish(true); }
+    controller.resume = () => { if (!suspended) { refresh(); publish(); return; } suspended = false; if (task && !task.wasCancelledBeforePause) task.cancelled = false; refresh(); publish(); };
+    return controller;
+  }
+  function renderDmPreferences(content) {
+    const saved = dmSaved(), raw = saved.raw;
+    // GM 对象读取可返回新引用，保存冲突按内容快照核对。
+    if (!panelUi.dmDraft) panelUi.dmDraft = { base: JSON.stringify(raw), fontFamily: saved.value?.fontFamily || '', bold: saved.value?.bold ?? true, dirty: false };
+    const draft = panelUi.dmDraft;
+    content.appendChild(panelElement('p', '进入直播间时应用指定的原生弹幕字体；评论区和增强画中画的字体不随动。', 'blx-notice'));
+    const status = panelElement('p', dmPreferenceStatus(), 'bilivex-status'); status.dataset.dmStatus = '1'; status.setAttribute('role', 'status'); content.appendChild(status);
+    panelToggle(content, '进入直播间自动应用', saved.auto, enabled => {
+      const currentSaved = dmSaved();
+      if (enabled && (draft.dirty || !currentSaved.value || currentSaved.error)) { panelMessage('请先保存有效字体，或取消当前编辑'); return false; }
+      const error = saveDmPreference(DM_AUTO_KEY, enabled);
+      if (error) { panelMessage(error); return false; }
+      refreshDmPreferences(enabled); renderPanelView(); return true;
+    });
+    const label = panelElement('label', '字体'); label.htmlFor = 'bilivex-dm-font'; content.appendChild(label);
+    const select = panelElement('select'); select.id = 'bilivex-dm-font'; select.setAttribute('aria-label', '原生弹幕字体');
+    const following = panelElement('option', '跟随 B 站（不接管）'); following.value = ''; select.appendChild(following);
+    DM_FONTS.forEach(([value, name]) => { const option = panelElement('option', name); option.value = value; select.appendChild(option); });
+    if (draft.fontFamily && !DM_FONTS.some(item => item[0] === draft.fontFamily)) { const option = panelElement('option', '上次所选：' + draft.fontFamily + '（当前未适配）'); option.value = draft.fontFamily; option.disabled = true; select.appendChild(option); }
+    select.value = draft.fontFamily; select.disabled = !saved.writable; content.appendChild(select);
+    listenPanelNode(select, 'change', () => { draft.fontFamily = select.value; draft.bold = DM_FONTS.find(item => item[0] === select.value)?.[2] ?? true; draft.dirty = true; renderPanelView(); });
+    panelToggle(content, '字体加粗', draft.bold, value => { draft.bold = value; draft.dirty = true; refreshPanelStatus(); return true; });
+    const save = panelButton('保存字体', () => {
+      const current = dmSaved(), currentRaw = JSON.stringify(current.raw);
+      if (!current.writable) { panelMessage(current.error); return; }
+      if (currentRaw !== draft.base) { draft.base = currentRaw; panelMessage('字体已被其他页面修改，草稿保留；核对后再次保存'); return; }
+      if (!draft.dirty) { panelMessage('没有需要保存的修改'); return; }
+      if (draft.fontFamily && !DM_FONTS.some(item => item[0] === draft.fontFamily)) { panelMessage('当前字体未适配，原值已保留'); return; }
+      dmPreferences.saving = true;
+      const value = JSON.stringify({ schemaVersion: 1, fontFamily: draft.fontFamily, bold: draft.bold });
+      const error = saveDmPreference(DM_FONT_KEY, value); dmPreferences.saving = false;
+      if (error) { refreshDmPreferences(); renderPanelView(); panelMessage(error + '；本页已暂停，编辑草稿保留'); return; }
+      panelUi.dmDraft = null; refreshDmPreferences(true); renderPanelView(); panelMessage('字体偏好已保存' + (dmSaved().auto ? '，正在核对原生设置' : '，自动应用保持关闭'));
+    }); save.disabled = !saved.writable; content.appendChild(save);
+    content.appendChild(panelButton('取消字体编辑', () => { panelUi.dmDraft = null; renderPanelView(); }));
+    if (preferenceSaveFailures.has(DM_AUTO_KEY) || preferenceSaveFailures.has(DM_FONT_KEY)) content.appendChild(panelButton('重新核对字体保存结果', () => {
+      try {
+        const auto = GM_getValue(DM_AUTO_KEY), value = normalizeDmFont(GM_getValue(DM_FONT_KEY));
+        if (![true, false, '', null, undefined].includes(auto) || !value.writable || value.error) throw new Error(value.error || '自动应用配置无法确认');
+        preferenceSaveFailures.delete(DM_AUTO_KEY); preferenceSaveFailures.delete(DM_FONT_KEY); refreshDmPreferences(true); renderPanelView(); panelMessage('保存结果已重新读取；编辑草稿仍保留');
+      } catch (error) { panelMessage('仍未确认：' + error.message); }
+    }));
+    const retry = panelButton('重新应用', () => refreshDmPreferences(true)); retry.disabled = !saved.auto || !saved.value || !!saved.error; content.appendChild(retry);
+    content.appendChild(panelElement('p', '修改原生字体后，本次进入会话会优先保留你的选择。仅保存偏好不会保证系统已安装该字体；雅黑细体需在 Windows 实际显示中验收。', 'blx-notice'));
+  }
+
   // ---------- 统一面板：导航只定位，业务动作沿用原服务 ----------
   const PANEL_CATEGORIES = ['常用', '观看', '弹幕', '收藏', '关注', '设置'];
   const PANEL_FEATURES = [
     ['favorites', '弹幕收藏', '收藏', '收藏夹 搜索收藏'], ['wheel', '独轮车', '弹幕', '连续发送'],
     ['floating', '弹幕操作', '弹幕', '弹幕+1'], ['tail', '小尾巴', '弹幕', '尾巴内容'],
     ['quality', '自动最高画质', '观看', '画质'], ['web', '自动网页模式', '观看', '网页全屏'],
+    ['dm-display', '弹幕显示', '观看', '字体 雅黑 记住弹幕 直播间更多设置'],
     ['sync', '同步时间', '观看', '延迟 追上直播'], ['purify-room', '直播间净化', '观看', '礼物栏 排行榜 活动入口 聊天净化 礼物提示 进场提示 舰长 灯牌'],
     ['p2p', '防止 P2P 上传', '观看', '网络设置'],
     ['pip', '带弹幕画中画', '观看', '小窗 悬停 +1'], ['audio', '仅音频模式', '观看', '声音 恢复视频'],
     ['alerts', '开播提醒', '关注', '提醒'], ['following', '管理特别关注', '关注', '关注名单'],
     ['like', '一键点赞', '弹幕', '30连击'], ['theme', '外观主题', '设置', '蓝色 粉色'],
-    ['quick', '常用入口配置', '设置', '排序'], ['position', '恢复窗口位置', '设置', '拖动 锚点'],
+    ['quick', '常用入口配置', '设置', '排序'], ['entry', '插件入口', '设置', '固定插件入口到评论区 logo 悬浮按钮'], ['position', '恢复窗口位置', '设置', '拖动 锚点'],
     ['about', '版本与更新', '设置', '版本号']
   ];
   const PANEL_PRESENTATION = {
     favorites: ['弹幕收藏', '搜索和管理常用弹幕', '▤'], wheel: ['互动', '文字与表情的独立任务窗口', '♿'],
     floating: ['互动', '只控制画面内的悬停入口', '＋'], tail: ['互动', '开启并编辑弹幕后缀', '〰'],
     quality: ['播放方式', '自动选择当前账号可用的最高画质', '◈'], web: ['播放方式', '进入房间时使用网页全屏', '□'],
+    'dm-display': ['画面与声音', '进入直播间时应用指定的原生字体', '字'],
     sync: ['播放方式', '查看本地缓冲，手动同步', '↻'], 'purify-room': ['画面与声音', '页面区域与聊天提示，分别设置', '◇'],
     p2p: ['网络与播放调节', '切换此项将重载播放器', '⇄'],
     pip: ['画面与声音', '置顶小窗，悬停弹幕操作', '▣'], audio: ['画面与声音', '独立音频流，随时恢复视频', '♫'],
     alerts: ['特别关注', '在打开的 B 站页面提醒', '♧'], following: ['特别关注', '选择需要提醒的主播', '◎'],
     like: ['互动', '明确点击后执行 30 连击', '♡'], theme: ['界面', '蓝／粉主题配色', '◐'],
-    quick: ['界面', '最多四项，自由替换', '⊞'], position: ['界面', '恢复悬浮窗的默认停放位置', '⌖'],
+    quick: ['界面', '最多四项，自由替换', '⊞'], entry: ['界面', '固定到评论区，或保持悬浮入口', '⌂'], position: ['界面', '恢复悬浮窗的默认停放位置', '⌖'],
     about: ['偏好与版本', '查看版本与更新入口', 'ⓘ']
   };
   const PANEL_DEFAULT_QUICK = ['favorites', 'wheel', 'floating', 'tail'];
@@ -4624,6 +5215,7 @@
     }).join('|');
   }
   function animatePanelChange(panel, from, { entrance = false, folding = false, bodyWidth = 0 } = {}) {
+    if (fixedEntry()) { sharedRuntime.entryController.layout(panel); return; }
     const motion = sharedRuntime.panelMotion;
     if (!motion || motion.panel !== panel) return;
     const body = panel.querySelector('.bilivex-panel-body'), to = panelMotionSnapshot(panel);
@@ -4725,8 +5317,8 @@
       else panelUi.back = [];
     }
     panelUi.category = category; panelUi.detail = detail; panelUi.search = false;
-    closeWheelWindow();
-    if (cfg.panelCollapsed) { cfg = { ...cfg, panelCollapsed: false }; setPanelCollapsed(false); }
+    if (fixedEntry()) sharedRuntime.entryController.setOpen(true, 'navigation');
+    else { closeWheelWindow(); if (cfg.panelCollapsed) { cfg = { ...cfg, panelCollapsed: false }; setPanelCollapsed(false); } }
     renderPanelView(true);
   }
   function panelBack() {
@@ -4775,13 +5367,15 @@
     const favoriteDirty = favoriteDraft && (favoriteDraft.deleted.size || favoriteDraft.added.trim() || [...favoriteDraft.patches].some(([id, value]) => favoriteDraft.base.items.find(item => item.id === id)?.text !== value));
     const following = panelUi.followingDraft;
     const followingDirty = following && (following.selected.length !== following.original.length || following.original.some(id => !following.selected.includes(id)));
-    if (draftNote) { draftNote.textContent = [favoriteDirty ? '收藏未保存' : '', followingDirty ? '关注未保存' : '', panelUi.quickDraft ? '常用正在编辑' : ''].filter(Boolean).join(' · '); draftNote.hidden = !draftNote.textContent; }
+    if (draftNote) { draftNote.textContent = [favoriteDirty ? '收藏未保存' : '', followingDirty ? '关注未保存' : '', panelUi.quickDraft ? '常用正在编辑' : '', panelUi.dmDraft?.dirty ? '字体未保存' : ''].filter(Boolean).join(' · '); draftNote.hidden = !draftNote.textContent; }
+    panel.querySelectorAll('[data-dm-status]').forEach(node => { node.textContent = dmPreferenceStatus(); });
     const task = panel.querySelector('[data-panel-task]');
     const running = !!wheelRelease || wheelState.status === 'starting' || !!wheelResumeTimer;
     panel.dataset.taskRunning = String(running);
     if (task) { task.hidden = !running; task.querySelector('span').textContent = '独轮车：' + wheelState.reason; }
     const toggle = panel.querySelector('[data-panel-toggle]');
-    if (toggle) { toggle.setAttribute('aria-label', (cfg.panelCollapsed ? '展开 BiLivex' : '收起 BiLivex') + (running ? '，独轮车运行中' : '')); toggle.setAttribute('aria-expanded', String(!cfg.panelCollapsed)); }
+    if (toggle) { toggle.setAttribute('aria-label', fixedEntry() ? '关闭 BiLivex 菜单' : (cfg.panelCollapsed ? '展开 BiLivex' : '收起 BiLivex') + (running ? '，独轮车运行中' : '')); toggle.setAttribute('aria-expanded', String(fixedEntry() ? sharedRuntime.entryController.open : !cfg.panelCollapsed)); }
+    panel.querySelectorAll('[data-entry-status]').forEach(node => { node.textContent = entryPreference().error || sharedRuntime.entryController?.status || '当前使用悬浮入口'; });
     panel.querySelectorAll('[data-purify-status]').forEach(node => { node.textContent = purifyStatus(node.dataset.purifyStatus); });
     panel.querySelectorAll('[data-bilivex-setting] input').forEach(node => { if (!node.disabled) node.checked = cfg[node.closest('[data-bilivex-setting]').dataset.bilivexSetting] === true; });
     panel.querySelectorAll('[data-quick-setting]').forEach(node => { if (!node.disabled) node.checked = cfg[node.dataset.quickSetting] === true; });
@@ -4885,6 +5479,8 @@
       });
       content.appendChild(panelElement('p', '恢复原样会关闭以上五项净化。', 'blx-notice'));
       content.appendChild(panelButton('恢复原样', () => { const failed = PURIFY_KEYS.filter(key => !setPurifyPreference(key, false)); panelMessage(failed.length ? '本页已恢复，部分设置未保存，刷新后可能重新生效' : '已关闭全部五项净化，恢复原样'); }));
+    } else if (panelUi.detail === 'dm-display') {
+      renderDmPreferences(content);
     } else if (['pip', 'audio'].includes(panelUi.detail)) {
       renderMediaDetail(content, panelUi.detail);
     } else if (['quality', 'web', 'p2p', 'floating', 'tail'].includes(panelUi.detail)) {
@@ -4904,8 +5500,27 @@
       addLink(PANEL_FEATURES.find(f => f[0] === 'following'));
     } else if (panelUi.detail === 'theme') {
       ['blue', 'pink'].forEach(theme => { const button = panelButton(THEMES[theme].name, () => savePanelConfig({ theme })); button.dataset.bilivexTheme = theme; content.appendChild(button); });
+    } else if (panelUi.detail === 'entry') {
+      const preference = entryPreference();
+      content.appendChild(panelElement('p', '入口位于评论输入框上方，菜单固定展开；全屏隐藏评论区时，入口随播放器控制栏显示。', 'blx-notice'));
+      const toggle = panelToggle(content, '固定插件入口到评论区', preference.fixed, value => {
+        if (!entryPreference().writable) { panelMessage(entryPreference().error); return false; }
+        const raw = JSON.stringify({ schemaVersion: 1, mode: value ? 'comment' : 'floating' });
+        const error = saveDmPreference(ENTRY_MODE_KEY, raw);
+        if (error) { renderPanelView(); panelMessage(error + '；当前入口保持不变'); return false; }
+        refreshEntryPresentation(true); renderPanelView(); return true;
+      }); toggle.disabled = !preference.writable;
+      const status = panelElement('p', preference.error || sharedRuntime.entryController?.status || '当前使用悬浮入口', 'bilivex-status'); status.dataset.entryStatus = '1'; status.setAttribute('role', 'status'); content.appendChild(status);
+      if (preferenceSaveFailures.has(ENTRY_MODE_KEY)) content.appendChild(panelButton('重新核对入口保存结果', () => {
+        try {
+          const confirmed = normalizeEntryPreference(GM_getValue(ENTRY_MODE_KEY));
+          if (!confirmed.writable) throw new Error(confirmed.error);
+          preferenceSaveFailures.delete(ENTRY_MODE_KEY); refreshEntryPresentation(true); renderPanelView(); panelMessage('已按重新读取的入口设置同步');
+        } catch (error) { panelMessage('仍未确认：' + error.message); }
+      }));
     } else if (panelUi.detail === 'position') {
-      content.appendChild(panelButton('恢复窗口位置', () => { if (savePanelConfig({ panelPos: null, panelAnchor: 'right' })) { panel.style.left = 'auto'; panel.style.right = '18px'; panel.style.top = '96px'; ensurePanelVisible(panel, getUiHost()); } }));
+      const reset = panelButton('恢复窗口位置', () => { if (!fixedEntry() && savePanelConfig({ panelPos: null, panelAnchor: 'right' })) { panel.style.left = 'auto'; panel.style.right = '18px'; panel.style.top = '96px'; ensurePanelVisible(panel, getUiHost()); } }); reset.disabled = fixedEntry(); content.appendChild(reset);
+      if (fixedEntry()) content.appendChild(panelElement('p', '恢复窗口位置仅适用于悬浮入口。', 'blx-notice'));
     } else if (panelUi.detail === 'about') {
       content.appendChild(panelElement('p', 'BiLivex ' + getScriptVersion() + (/[-]rc[.]/.test(getScriptVersion()) ? ' · 候选版' : '')));
       content.appendChild(panelButton('检查更新', () => checkForUpdate(true)));
@@ -4938,6 +5553,7 @@
   function buildPanel() {
     const existing = getPanelRoot();
     if (document !== panelDocument) return !!existing;
+    if (!sharedRuntime.entryController) sharedRuntime.entryController = createEntryController();
     const host = getUiHost(); if (!host) return false;
     ensurePanelGuardStyle();
     if (existing) { ensurePanelVisible(existing, host); setCurrentPanel(existing); bindDragHandlers(); return true; }
@@ -5035,7 +5651,7 @@
 #bilivex-panel[data-collapsed=true] .blx-panel-head{padding:0;min-height:56px;height:56px;border:0;background:transparent;justify-content:center;border-radius:50%}
 #bilivex-panel[data-collapsed=true] .blx-brand-icon{width:56px;height:56px;border-radius:50%}
 #bilivex-panel[data-collapsed=true][data-task-running=true]::after{content:'';position:absolute;right:3px;bottom:3px;width:11px;height:11px;border:2px solid #fff;border-radius:50%;background:#bf7d28;pointer-events:none}
-@media(max-height:360px){#bilivex-panel[data-ui-version="3"]{overflow:auto!important}#bilivex-panel .bilivex-panel-body{overflow:visible;flex-shrink:0}#bilivex-panel [data-panel-content]{max-height:none;overflow:visible}}
+@media(max-height:360px){#bilivex-panel[data-ui-version="3"]:not([data-presentation="fixed"]){overflow:auto!important}#bilivex-panel:not([data-presentation="fixed"]) .bilivex-panel-body{overflow:visible;flex-shrink:0}#bilivex-panel:not([data-presentation="fixed"]) [data-panel-content]{max-height:none;overflow:visible}}
 @media(pointer:coarse){#bilivex-panel button{min-height:44px}#bilivex-panel .blx-switch{width:44px!important;height:28px!important;min-width:44px!important}#bilivex-panel .blx-switch::before{width:22px;height:22px}#bilivex-panel .blx-switch:checked::before{transform:translateX(16px)}}
 @media(prefers-reduced-motion:reduce){#bilivex-panel,#bilivex-panel *,#bilivex-panel *::before,#bilivex-panel *::after{transition:none!important;animation:none!important}}
     `;
@@ -5044,7 +5660,7 @@
     const logo = panelElement('img', null, 'blx-brand-icon'); logo.id = 'bilivex-logo'; logo.src = LOGO_DATA_URI; logo.alt = ''; logo.draggable = false; head.appendChild(logo);
     const title = panelElement('strong', 'BiLivex', 'blx-brand'); title.dataset.panelBrand = '1'; head.appendChild(title);
     const search = panelButton('⌕', () => { capturePanelView(); panelUi.back.push({ category: panelUi.category, detail: panelUi.detail, search: panelUi.search, query: panelUi.query }); panelUi.search = true; renderPanelView(true); }); search.className = 'blx-icon-button'; search.dataset.panelSearch = '1'; search.setAttribute('aria-label', '搜索功能'); head.appendChild(search);
-    const toggle = panelButton('−', e => { if (e.detail && Date.now() - Number(panel.dataset.pointerFinished || 0) < 500) return; cfg = { ...cfg, panelCollapsed: !cfg.panelCollapsed }; setPanelCollapsed(cfg.panelCollapsed); updateCfg({ panelCollapsed: cfg.panelCollapsed }); }); toggle.className = 'blx-icon-button'; toggle.dataset.panelToggle = '1'; head.appendChild(toggle); panel.appendChild(head);
+    const toggle = panelButton('−', e => { if (fixedEntry()) { sharedRuntime.entryController.setOpen(!sharedRuntime.entryController.open); return; } if (e.detail && Date.now() - Number(panel.dataset.pointerFinished || 0) < 500) return; cfg = { ...cfg, panelCollapsed: !cfg.panelCollapsed }; setPanelCollapsed(cfg.panelCollapsed); updateCfg({ panelCollapsed: cfg.panelCollapsed }); }); toggle.className = 'blx-icon-button'; toggle.dataset.panelToggle = '1'; head.appendChild(toggle); panel.appendChild(head);
     const body = panelElement('div', null, 'bilivex-panel-body'); body.id = 'bilivex-panel-body'; toggle.setAttribute('aria-controls', body.id); panel.appendChild(body);
     const nav = panelElement('nav'); nav.setAttribute('role', 'tablist'); nav.setAttribute('aria-label', '功能分类'); body.appendChild(nav);
     PANEL_CATEGORIES.forEach((name, i) => { const button = panelButton(name, () => openPanelView(name)); button.className = ''; button.setAttribute('role', 'tab'); button.id = 'bilivex-tab-' + i; button.setAttribute('aria-controls', 'bilivex-panel-content');
@@ -5053,12 +5669,24 @@
     const content = panelElement('section'); content.id = 'bilivex-panel-content'; content.dataset.panelContent = '1'; content.setAttribute('role', 'tabpanel'); body.appendChild(content);
     const draftNote = panelElement('p', '', 'bilivex-status'); draftNote.dataset.panelDrafts = '1'; draftNote.style.cssText = 'margin:4px 12px;flex-shrink:0'; body.appendChild(draftNote);
     const task = panelElement('footer'); task.dataset.panelTask = '1'; task.hidden = true; task.append(panelElement('span'), panelButton('查看', () => openWheelPanel()), panelButton('暂停', () => stopWheel('已暂停'))); body.appendChild(task);
-    listenPanelNode(panel, 'keydown', e => { if (e.key !== 'Escape' || e.isComposing) return; e.preventDefault(); if (panelUi.detail || panelUi.search) panelBack(); else { cfg = { ...cfg, panelCollapsed: true }; setPanelCollapsed(true); } });
+    listenPanelNode(panel, 'keydown', e => {
+      // 仅隔离插件内部事件；不取消控件默认动作和组合输入语义。
+      e.stopPropagation();
+      if (e.key !== 'Escape' || e.isComposing) return;
+      e.preventDefault();
+      if (panelUi.detail || panelUi.search) panelBack(); else if (fixedEntry()) sharedRuntime.entryController.setOpen(false, 'keyboard'); else { cfg = { ...cfg, panelCollapsed: true }; setPanelCollapsed(true); }
+    });
+    ['keypress', 'keyup'].forEach(type => listenPanelNode(panel, type, e => e.stopPropagation()));
     listenPanelNode(head, 'pointerdown', e => { panel.dataset.pointerFinished = '0'; if ((!cfg.panelCollapsed && e.target.closest('button,input,select,a')) || e.button !== 0) return;
+      if (fixedEntry()) return;
       pressState.down = true; pressState.x = e.clientX; pressState.y = e.clientY; pressState.moved = false; pressState.longPressed = false; pressState.panelRef = panel; pressState.pointerId = e.pointerId; head.setPointerCapture(e.pointerId); e.preventDefault(); });
     ensurePanelVisible(panel, host); setCurrentPanel(panel); bindDragHandlers();
     sharedRuntime.openPanelView = openPanelView;
     sharedRuntime.refreshPanelStatus = refreshPanelStatus;
+    sharedRuntime.syncDmPreferenceView = () => {
+      if (panelUi.detail !== 'dm-display' || panelUi.dmDraft?.dirty || entryIsComposing()) return;
+      panelUi.dmDraft = null; renderPanelView();
+    };
     sharedRuntime.restorePanel = (host = panelDocument.body || panelDocument.documentElement) => { const current = getPanelRoot(); if (current) ensurePanelVisible(current, host); };
     sharedRuntime.cancelPanelMotion = cancelPanelMotion;
     sharedRuntime.panelMotion = { panel, animations: new Set(), finish: null, last: panelMotionSnapshot(panel), viewSize: '' };
@@ -5141,6 +5769,7 @@
   // 保留同一面板和草稿，尺寸、标志及内容同步过渡；重复布局校正不重播动画。
   function setPanelCollapsed(collapsed, animate = true) {
     const panel = getPanelRoot(); if (!panel) return;
+    if (fixedEntry()) { sharedRuntime.entryController.layout(panel); return; }
     capturePanelView();
     const changed = panel.dataset.collapsed !== String(collapsed);
     const rect = preparePanelMotion(panel), anchor = getPanelAnchor(panel, rect);
@@ -5164,7 +5793,7 @@
     if (sharedRuntime.panelMotion) sharedRuntime.panelMotion.viewSize = panelViewSize(panel);
     if (animate && changed) animatePanelChange(panel, rect, { entrance: !collapsed, folding: collapsed, bodyWidth: Math.min(360, panelWindow.innerWidth - 16) - 2 });
     else if (sharedRuntime.panelMotion) sharedRuntime.panelMotion.last = panelMotionSnapshot(panel);
-    if (!collapsed) closeWheelWindow(false);
+    if (!collapsed && !sharedRuntime.entryController?.restoring) closeWheelWindow(false);
   }
 
   // 将面板/头部/标题/箭头切换到折叠或展开视觉（不处理 height，由调用方控制动画）。
@@ -5183,6 +5812,7 @@
   }
 
   function avoidChatCollision(panel) {
+    if (fixedEntry()) return;
     try {
       // 活动页聊天区在直播画面中，位置随画面布局变化，不做本地避让判断。
       if (panelDocument !== document) return;
@@ -5255,6 +5885,7 @@
   }
 
   function bindDragHandlers() {
+    if (fixedEntry()) { panelController.dragCleanup?.(); return; }
     const dragDocument = getPanelDocument();
     if (panelController.dragBound) {
       // 顶层实例拥有更稳定的生命周期；若面板曾由临时 iframe 初始化，顶层接管监听器。
@@ -5858,7 +6489,8 @@
     if (source && !wheelRelease) { wheelConfig.activeSource = source; saveWheelConfig(); }
     if (wheelRoomStatusTimer) clearTimeout(wheelRoomStatusTimer);
     wheelRoomStatusTimer = null;
-    if (!cfg.panelCollapsed) setPanelCollapsed(true);
+    if (fixedEntry()) sharedRuntime.entryController.setOpen(false, 'task');
+    else if (!cfg.panelCollapsed) setPanelCollapsed(true);
     const view = ensureWheelWindow();
     view.hidden = false; view.textContent = ''; syncWheelTheme();
     const head = panelDocument.createElement('header'); head.className = 'wheel-head';
@@ -6137,7 +6769,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '3.1.0';
+    return '3.2.0';
   }
 
   function compareVersions(a, b) {
@@ -6451,7 +7083,7 @@
       config: () => cfg, webMode: () => isWebMode(), refreshControls: () => refreshPlayerMediaControls(),
       dismissHover: () => { if (FloatingDmEngine.hovered) FloatingDmEngine.leave(FloatingDmEngine.hovered); },
       send: (payload, context) => sendPlusOne(payload, context),
-      suspend: () => resetPlayerEnhancementSchedule(), resume: () => { if (nativeSendPageActive) schedulePlayerEnhancements(true); },
+      suspend: () => resetPlayerEnhancementSchedule(), resume: () => { if (nativeSendPageActive) { schedulePlayerEnhancements(true); dmController?.refresh(); } },
       favorite: payload => addFavorite(payload.type === 'emoji-special' ? '' : payload.text, document) };
     const account = (document.cookie.match(/(?:^|;\s*)DedeUserID=(\d+)/) || [])[1] || '';
     const mediaCurrent = source.current;
@@ -7614,6 +8246,9 @@
   // ---------- 初始化 ----------
   function initRoom() {
     registerMediaSource();
+    refreshEntryPresentation();
+    if (!dmController) dmController = createDmPreferenceController();
+    dmController.refresh();
     refreshPurification();
     bindWheelEntry();
     const list = document.querySelector('.chat-history-list');
@@ -7635,6 +8270,8 @@
   function guardianCheck() {
     try {
       registerMediaSource();
+      refreshEntryPresentation();
+      dmController?.refresh();
       refreshPurification();
       bindWheelEntry();
       bindVideoSync();
@@ -7738,6 +8375,7 @@
       let browserFullscreen = isBrowserFullscreen(getLivePlayerInfo(getPageLivePlayer()));
       const onFullscreenChange = () => {
         syncFullscreenUi();
+        refreshEntryPresentation();
         const nowFullscreen = isBrowserFullscreen(getLivePlayerInfo(getPageLivePlayer()));
         const changed = browserFullscreen !== nowFullscreen;
         browserFullscreen = nowFullscreen;
@@ -7753,8 +8391,18 @@
         playerEnhancementState.readyInstanceKey = instanceKey;
         schedulePlayerEnhancements(changed);
       };
-      listenLifecycle(document, 'compositionstart', event => composingInputs.add(event.target), true);
-      listenLifecycle(document, 'compositionend', event => composingInputs.delete(event.target), true);
+      listenLifecycle(document, 'compositionstart', event => {
+        composingInputs.add(event.target); (sharedRuntime.entryComposing || (sharedRuntime.entryComposing = new Set())).add(event.target);
+        event.target.setAttribute?.('data-bilivex-composing-input', '1');
+        document.documentElement.setAttribute('data-bilivex-composing', '1');
+      }, true);
+      listenLifecycle(document, 'compositionend', event => {
+        composingInputs.delete(event.target); sharedRuntime.entryComposing?.delete(event.target);
+        event.target.removeAttribute?.('data-bilivex-composing-input');
+        if (!document.querySelector('[data-bilivex-composing-input]')) document.documentElement.removeAttribute('data-bilivex-composing');
+        refreshEntryPresentation();
+        if (document !== panelDocument) panelDocument.dispatchEvent(new panelWindow.Event('bilivex-entry-composition-change'));
+      }, true);
       listenLifecycle(document, 'fullscreenchange', onFullscreenChange);
       listenLifecycle(document, 'webkitfullscreenchange', onFullscreenChange);
       listenLifecycle(document, 'canplay', onPlayerReady, true);
@@ -7770,8 +8418,15 @@
       if (sharedRuntime.panelLeavingDocument === document) { sharedRuntime.panelLeavingDocument = null; sharedRuntime.restorePanel?.(getUiHost()); }
       if (event.persisted && purifyController) purifyController.resume();
       if (event.persisted) { tryInit(); guardianCheck(); }
+      if (event.persisted) dmController?.resume();
     };
     const onPageHide = (event) => {
+      if (document === panelDocument) sharedRuntime.entryController?.suspend();
+      // 后续自动任务取消仍依赖 WeakSet 保护组合文本，入口状态清理不能提前撤销该保护。
+      if (sharedRuntime.entryComposing) for (const input of sharedRuntime.entryComposing) if (input.ownerDocument === document) sharedRuntime.entryComposing.delete(input);
+      document.querySelectorAll('[data-bilivex-composing-input]').forEach(input => input.removeAttribute('data-bilivex-composing-input'));
+      document.documentElement?.removeAttribute('data-bilivex-composing');
+      if (event.persisted) dmController?.suspend(); else dmController?.dispose();
       sharedRuntime.mediaController?.suspendPage(document, event.persisted);
       sharedRuntime.mediaSources?.delete(document);
       nativeSendPageActive = false; cancelNativeSends('页面已离开，任务已取消');
@@ -7835,7 +8490,22 @@
       try { const id = GM_addValueChangeListener('bilivex_purify_v1_' + key, () => { purifyShared.controllers.forEach(c => c.refresh()); }); if (id != null) valueChangeListenerIds.push(id); } catch (e) {}
     });
     if (document === panelDocument) listenLifecycle(panelDocument, PURIFY_STATUS_EVENT, refreshPanelStatus);
+    if (document === panelDocument) {
+      listenLifecycle(panelDocument, DM_STATUS_EVENT, () => { refreshPanelStatus(); refreshEntryPresentation(); });
+      listenLifecycle(panelDocument, 'bilivex-entry-composition-change', () => refreshEntryPresentation());
+    } else {
+      listenLifecycle(panelDocument, DM_REAPPLY_EVENT, () => refreshDmPreferences(true));
+      listenLifecycle(panelDocument, DM_ROOM_EVENT, () => { registerMediaSource(); dmController?.refresh(); });
+    }
     listenLifecycle(document, 'visibilitychange', () => refreshPurification());
+    listenLifecycle(document, 'visibilitychange', () => { if (document.hidden) dmController?.suspend(); else dmController?.resume(); });
+    [DM_AUTO_KEY, DM_FONT_KEY].forEach(key => {
+      try { const id = GM_addValueChangeListener(key, () => { if (!dmPreferences.saving) refreshDmPreferences(false, true); }); if (id != null) valueChangeListenerIds.push(id); } catch (error) {}
+    });
+    if (document === panelDocument) {
+      // 本页保存由开关在确认后按本地交互刷新；忽略可能先到达的同实例通知，保留当前展开状态。
+      try { const id = GM_addValueChangeListener(ENTRY_MODE_KEY, (_key, _old, _value, remote) => { if (remote !== false) refreshEntryPresentation(); }); if (id != null) valueChangeListenerIds.push(id); } catch (error) {}
+    }
     listenLifecycle(window, 'focus', () => { refreshPurification(); refreshPanelStatus(); });
     tryInit();
     watchSpa();
@@ -7860,7 +8530,7 @@
     spaWatching = true;
     let lastUrl = location.href;
     let queued = false;
-    const lifecycleSelector = '#bilivex-panel, iframe, .chat-history-list, .chat-history-panel, .brush-prompt, .chat-overlay-layer, .chat-control-panel, button.send-btn,' +
+    const lifecycleSelector = '#bilivex-panel, iframe, .chat-history-list, .chat-history-panel, .brush-prompt, .chat-overlay-layer, .chat-control-panel, button.send-btn, input.chat-input, textarea.chat-input,' +
       '.gift-control-section.gift-control-panel, .right-module-measure, .rank-entries, .activity-gather-entry.activity-entry,' +
       '.bili-danmaku-x-dm-rotate, .danmaku-item-container, .web-player-danmaku, #live-player,' +
       '.live-web-player-controller, #web-player-controller-wrap-el .right-area, .quality-wrap,' +
@@ -7891,6 +8561,7 @@
             resetPlayerEnhancementSchedule();
             if (cfg.blockP2PUpload) applyEarlyP2PSetting(true);
             lastUrl = location.href;
+            if (document === panelDocument) panelDocument.dispatchEvent(new panelWindow.Event(DM_ROOM_EVENT));
           }
           clearTimeout(initTimer);
           initTimer = setTimeout(tryInit, currentUrlChanged ? 800 : 300);
