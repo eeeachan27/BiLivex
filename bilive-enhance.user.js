@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      3.2.0
+// @version      3.3.0
 // @license      MIT
-// @description  B站直播间增强工具：原生弹幕字体记忆、评论区固定入口、六分类悬浮窗、带弹幕画中画、仅音频模式、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞、同步时间及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
+// @description  B站直播间增强工具：同步时间状态、温和自动追帧、原生弹幕字体记忆、评论区固定入口、六分类悬浮窗、带弹幕画中画、仅音频模式、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
 // @icon         data:image/jpeg;base64,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
 // @match        https://live.bilibili.com/*
@@ -4809,7 +4809,7 @@
     }
     function setOpen(open, reason = 'button') {
       controller.open = open; const panel = getPanelRoot(); if (!panel) return;
-      capturePanelView(); ensurePanelVisible(panel, getUiHost());
+      capturePanelView(); ensurePanelVisible(panel, getUiHost()); refreshPlaybackPanel(panel);
       if (open) panel.querySelector('h3')?.focus({ preventScroll: true });
       else if (reason !== 'outside' && button?.isConnected && button.getBoundingClientRect().width) button.focus({ preventScroll: true });
     }
@@ -5150,7 +5150,7 @@
     ['floating', '弹幕操作', '弹幕', '弹幕+1'], ['tail', '小尾巴', '弹幕', '尾巴内容'],
     ['quality', '自动最高画质', '观看', '画质'], ['web', '自动网页模式', '观看', '网页全屏'],
     ['dm-display', '弹幕显示', '观看', '字体 雅黑 记住弹幕 直播间更多设置'],
-    ['sync', '同步时间', '观看', '延迟 追上直播'], ['purify-room', '直播间净化', '观看', '礼物栏 排行榜 活动入口 聊天净化 礼物提示 进场提示 舰长 灯牌'],
+    ['catchup', '播放调节', '观看', '同步时间 手动同步 延迟 追上直播 温和自动追帧 追帧 缓冲 倍速'], ['purify-room', '直播间净化', '观看', '礼物栏 排行榜 活动入口 聊天净化 礼物提示 进场提示 舰长 灯牌'],
     ['p2p', '防止 P2P 上传', '观看', '网络设置'],
     ['pip', '带弹幕画中画', '观看', '小窗 悬停 +1'], ['audio', '仅音频模式', '观看', '声音 恢复视频'],
     ['alerts', '开播提醒', '关注', '提醒'], ['following', '管理特别关注', '关注', '关注名单'],
@@ -5163,7 +5163,7 @@
     floating: ['互动', '只控制画面内的悬停入口', '＋'], tail: ['互动', '开启并编辑弹幕后缀', '〰'],
     quality: ['播放方式', '自动选择当前账号可用的最高画质', '◈'], web: ['播放方式', '进入房间时使用网页全屏', '□'],
     'dm-display': ['画面与声音', '进入直播间时应用指定的原生字体', '字'],
-    sync: ['播放方式', '查看本地缓冲，手动同步', '↻'], 'purify-room': ['画面与声音', '页面区域与聊天提示，分别设置', '◇'],
+    catchup: ['网络与播放调节', '查看本地缓冲、手动同步与温和自动追帧', '▷'], 'purify-room': ['画面与声音', '页面区域与聊天提示，分别设置', '◇'],
     p2p: ['网络与播放调节', '切换此项将重载播放器', '⇄'],
     pip: ['画面与声音', '置顶小窗，悬停弹幕操作', '▣'], audio: ['画面与声音', '独立音频流，随时恢复视频', '♫'],
     alerts: ['特别关注', '在打开的 B 站页面提醒', '♧'], following: ['特别关注', '选择需要提醒的主播', '◎'],
@@ -5179,8 +5179,8 @@
       if (!value || value.schemaVersion !== 1) return { ids: [...PANEL_DEFAULT_QUICK], writable: false, error: '未知常用配置版本，暂不可保存' };
       if (!Array.isArray(value.quickIds)) throw new Error('格式错误');
       const known = new Set(PANEL_FEATURES.map(item => item[0]));
-      // 旧聊天净化入口合并到直播间净化，保留首次出现的位置并去重。
-      return { ids: [...new Set(value.quickIds.map(id => id === 'purify-chat' ? 'purify-room' : id).filter(id => known.has(id)))].slice(0, 4), writable: true, error: '' };
+      // 合并旧入口，保留首次出现的位置并去重；浏览时不回写配置。
+      return { ids: [...new Set(value.quickIds.map(id => id === 'purify-chat' ? 'purify-room' : id === 'sync' ? 'catchup' : id).filter(id => known.has(id)))].slice(0, 4), writable: true, error: '' };
     } catch (error) { return { ids: [...PANEL_DEFAULT_QUICK], writable: true, error: '常用配置损坏，当前显示默认值；保存前不覆盖原值' }; }
   }
   const panelUi = { category: '常用', detail: '', query: '', search: false, back: [], positions: new Map(), quickDraft: null, quickBase: null, notice: '', favoriteDraft: null, favoriteMode: 'browse', favoriteQuery: '', followingDraft: null };
@@ -5354,6 +5354,11 @@
         if (input.dataset.purifyInput) {
           const purifyKey = input.dataset.purifyInput;
           checked = input.checked = !purifyShared.stopped.has(purifyKey) && readPurify(purifyKey);
+        } else if (input.dataset.catchupToggle) {
+          // 保存失败后以本页实际启停和配置可写性为准，不恢复旧开关状态。
+          const saved = catchupPreference();
+          checked = input.checked = saved.enabled;
+          input.disabled = !saved.writable;
         }
       }
     }); row.appendChild(input); parent.appendChild(row); return input;
@@ -5395,6 +5400,7 @@
     mediaTask.querySelector('span').textContent = media?.message || '';
     mediaTask.querySelector('button').textContent = media?.session?.kind === 'audio' || media?.mode === 'recovery-needed' ? '恢复视频' : '退出小窗';
     mediaTask.querySelector('button').disabled = media?.mode === 'restoring';
+    refreshPlaybackPanel(panel);
     panel.querySelectorAll('[data-purify-input]').forEach(node => { if (!node.disabled) node.checked = !purifyShared.stopped.has(node.dataset.purifyInput) && readPurify(node.dataset.purifyInput); });
     const categorySelect = panel.querySelector('[data-panel-category-select]'); if (categorySelect) categorySelect.value = panelUi.category;
     panel.querySelector('[data-panel-content]')?.setAttribute('aria-labelledby', 'bilivex-tab-' + PANEL_CATEGORIES.indexOf(panelUi.category));
@@ -5527,8 +5533,8 @@
     } else if (panelUi.detail === 'like') {
       content.appendChild(panelElement('p', '点击动作按钮会连续点赞 30 次。'));
       const like = panelButton('30连击 ♥', oneClickLike); like.classList.add('blx-primary'); like.dataset.bilivexLike = '1'; content.appendChild(like);
-    } else if (panelUi.detail === 'sync') {
-      content.appendChild(panelButton('立即同步', () => { const result = syncVideoToLiveEdge(findLiveSyncControl(panelDocument)); panelMessage(result.message || (result.status === 'synced' ? '已同步' : '暂不可用')); }));
+    } else if (panelUi.detail === 'catchup') {
+      renderPlaybackDetail(content);
     } else if (panelUi.category === '常用') {
       const edit = panelButton('编辑', () => openPanelFeature('quick')); edit.className = 'blx-link'; edit.setAttribute('aria-label', '编辑常用'); heading.appendChild(edit);
       const grid = panelElement('div', null, 'blx-quick-grid'); content.appendChild(grid);
@@ -6769,7 +6775,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '3.2.0';
+    return '3.3.0';
   }
 
   function compareVersions(a, b) {
@@ -7061,6 +7067,7 @@
     const video = findActiveLiveVideo(root), player = getPageLivePlayer();
     const previous = sources.get(document);
     if (previous && previous.video === video && previous.player === player && previous.room === canonicalRoom(document) && previous.current()) return;
+    playbackController?.interrupt('播放器或直播间正在变化');
     const controller = sharedRuntime.mediaController;
     if (['restoring', 'recovery-needed'].includes(controller?.mode) && controller.recovery?.source.document === document && !controller.recovery.source.current()) {
       controller.stop('恢复来源已变化，请手动恢复当前直播视频', false);
@@ -7083,7 +7090,7 @@
       config: () => cfg, webMode: () => isWebMode(), refreshControls: () => refreshPlayerMediaControls(),
       dismissHover: () => { if (FloatingDmEngine.hovered) FloatingDmEngine.leave(FloatingDmEngine.hovered); },
       send: (payload, context) => sendPlusOne(payload, context),
-      suspend: () => resetPlayerEnhancementSchedule(), resume: () => { if (nativeSendPageActive) { schedulePlayerEnhancements(true); dmController?.refresh(); } },
+      suspend: () => { playbackController?.interrupt('媒体模式正在切换，自动追帧暂缓'); resetPlayerEnhancementSchedule(); }, resume: () => { if (nativeSendPageActive) { schedulePlayerEnhancements(true); dmController?.refresh(); playbackController?.refresh(); } },
       favorite: payload => addFavorite(payload.type === 'emoji-special' ? '' : payload.text, document) };
     const account = (document.cookie.match(/(?:^|;\s*)DedeUserID=(\d+)/) || [])[1] || '';
     const mediaCurrent = source.current;
@@ -7894,6 +7901,7 @@
       if (!isInitialPlaybackStable(instanceKey)) return 'pending';
       if (typeof player.switchQualityAsync !== 'function') return 'terminal';
       try {
+        playbackController?.interrupt('正在切换画质，自动追帧暂缓');
         const result = await player.switchQualityAsync(
           highest.qn,
           highest.hdrType,
@@ -7933,6 +7941,7 @@
     if (!isPlayerReadyForWebMode()) return 'pending';
     if (!player || typeof player.setFullscreenStatus !== 'function') return 'pending';
     try {
+      playbackController?.interrupt('正在切换网页模式，自动追帧暂缓');
       // 慢网时播放器可能只把状态写成 1，却没有真正建立网页模式布局。
       // 先留出一次完整的状态回落，再重新进入，避免连续调用被播放器吞掉。
       if (Number(info && info.playerStatus) === 1) {
@@ -8043,6 +8052,7 @@
   }
 
   function reloadPlayerForP2P(enabled) {
+    playbackControllers.forEach(item => item.interrupt('播放器即将重载，自动追帧已停止'));
     if (document !== panelDocument) return false;
     if (mediaIsBusy()) { getMediaController().stop('正在退出媒体模式并重载播放器', false).then(() => reloadPlayerForP2P(enabled)); return true; }
     const frames = Array.from(panelDocument.querySelectorAll('iframe'));
@@ -8060,11 +8070,542 @@
     return reloading;
   }
 
+  // ---------- 同步状态与温和追帧：媒体写入始终由来源文档执行 ----------
+  const CATCHUP_KEY = 'bilivex_auto_catchup_v1';
+  const PLAYBACK_STATE = 'data-bilivex-playback-state';
+  const PLAYBACK_OWNER = 'data-bilivex-playback-owner';
+  const PLAYBACK_VISIT = 'data-bilivex-playback-visit';
+  const PLAYBACK_EVENT = 'bilivex-playback-state';
+  const PLAYBACK_ACTION = 'bilivex-playback-action';
+  let playbackController = null;
+  const playbackControllers = sharedRuntime.playbackControllers || (sharedRuntime.playbackControllers = new Set());
+  let catchupLocalOff = false, catchupSaving = false, catchupSaveError = '';
+
+  function normalizeCatchUpPreference(raw) {
+    if (raw == null || raw === '') return { enabled: false, writable: true, error: '' };
+    try {
+      const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!value || value.schemaVersion !== 1) return { enabled: false, writable: false, error: '自动追帧设置版本不受支持，原值已保留' };
+      if (typeof value.enabled !== 'boolean') throw new Error('格式错误');
+      return { enabled: value.enabled, writable: true, error: '' };
+    } catch (error) { return { enabled: false, writable: false, error: '自动追帧设置无法读取，原值已保留' }; }
+  }
+  function catchupPreference() {
+    try {
+      const value = normalizeCatchUpPreference(GM_getValue(CATCHUP_KEY));
+      return { ...value, enabled: value.enabled && !catchupLocalOff && !catchupSaveError, error: catchupSaveError || value.error };
+    } catch (error) { return { enabled: false, writable: false, error: '无法读取自动追帧设置，本页已关闭' }; }
+  }
+  function saveCatchupPreference(enabled) {
+    if (!enabled) {
+      catchupLocalOff = true;
+      playbackControllers.forEach(item => item.interrupt('自动追帧已关闭'));
+      sendPlaybackAction('close');
+    }
+    const saved = catchupPreference();
+    if (!saved.writable) { panelMessage(saved.error); refreshPanelStatus(); return false; }
+    catchupSaving = true;
+    try {
+      const raw = JSON.stringify({ schemaVersion: 1, enabled });
+      GM_setValue(CATCHUP_KEY, raw);
+      if (GM_getValue(CATCHUP_KEY) !== raw) throw new Error('保存结果未确认');
+      catchupSaveError = ''; catchupLocalOff = false;
+    } catch (error) {
+      catchupLocalOff = true; catchupSaveError = enabled ? '开启未保存，本页保持关闭' : '关闭未保存，本页已停止，重新进入后可能恢复';
+      playbackControllers.forEach(item => item.interrupt(catchupSaveError)); panelMessage(catchupSaveError);
+    } finally { catchupSaving = false; }
+    playbackControllers.forEach(item => item.refresh());
+    sendPlaybackAction(enabled && !catchupSaveError ? 'enable' : 'close');
+    refreshPanelStatus(); return !catchupSaveError;
+  }
+
+  function readVideoBufferState(video) {
+    const result = { kind: 'unavailable', target: null, targetKind: '', position: null, remaining: null, continuous: false, message: '等待当前直播视频' };
+    if (!video) return result;
+    try {
+      const position = Number(video.currentTime);
+      if (!Number.isFinite(position) || position < 0) throw new Error('播放位置无效');
+      result.position = position;
+      const read = ranges => {
+        const length = ranges?.length || 0, items = [];
+        if (!Number.isSafeInteger(length) || length < 0 || length > 256) throw new Error('缓冲分段无效');
+        for (let i = 0; i < length; i += 1) {
+          const start = Number(ranges.start(i)), end = Number(ranges.end(i));
+          if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || (i && start <= items[i - 1].end)) throw new Error('缓冲分段无效');
+          items.push({ start, end });
+        }
+        if (ranges && ranges.length !== length) throw new Error('缓冲分段正在更新');
+        return items;
+      };
+      const segments = read(video.buffered);
+      const seconds = value => value < .1 ? '小于 0.1 秒' : '约 ' + value.toFixed(1) + ' 秒';
+      if (!segments.length) {
+        const seekable = read(video.seekable), last = seekable[seekable.length - 1];
+        return { ...result, kind: last ? 'seekable' : 'empty', target: last ? getVideoSyncTarget(video, last) : null, targetKind: last ? 'seekable' : '',
+          message: last ? '暂无已缓冲数据；可尝试跳到可跳转范围末端' : '等待缓冲数据' };
+      }
+      const last = segments[segments.length - 1], current = segments.find(item => position >= item.start && position <= item.end);
+      Object.assign(result, { target: getVideoSyncTarget(video, last), targetKind: 'buffered', kind: 'outside', message: '当前位置未处于已缓冲区间' });
+      if (current) {
+        result.remaining = current.end - position; result.continuous = current === last;
+        result.kind = result.continuous ? 'continuous' : 'discontinuous';
+        result.message = result.continuous ? '距当前已缓冲末端' + seconds(result.remaining) : '当前段剩余' + seconds(result.remaining) + '；后续缓冲不连续';
+      } else if (position > last.end && position - last.end <= .1) result.message = '已接近缓冲末端';
+      if (video.paused) result.message += '；当前已暂停';
+      return result;
+    } catch (error) { return { ...result, target: null, continuous: false, kind: 'invalid', message: '缓冲状态暂不可用' }; }
+  }
+
+  function playbackPageState() {
+    const candidates = [];
+    for (const doc of liveUiDocuments()) {
+      try {
+        const raw = doc.documentElement?.getAttribute(PLAYBACK_STATE);
+        if (!raw || raw.length > 4096) continue;
+        const value = JSON.parse(raw);
+        if (value.owner !== doc.documentElement.getAttribute(PLAYBACK_OWNER) || value.room !== canonicalRoom(doc) || !value.room ||
+            value.urlRoom !== roomIdFromUrl(doc.defaultView.location.href) || value.panelUrlRoom !== roomIdFromUrl(panelWindow.location.href)) continue;
+        const topRoom = canonicalRoom(panelDocument, false) || (value.panelUrlRoom.length >= 5 ? value.panelUrlRoom : '');
+        if (topRoom && value.room !== topRoom) continue;
+        candidates.push({ ...value, document: doc });
+      } catch (error) { /* 跨源或过期文档不参与播放控制。 */ }
+    }
+    return candidates.length === 1 ? candidates[0] : null;
+  }
+  function sendPlaybackAction(action, target) {
+    const state = target || playbackPageState(); if (!state) return { status: 'unavailable' };
+    try {
+      const root = state.document.documentElement;
+      root.setAttribute('data-bilivex-playback-action', JSON.stringify({ owner: state.owner, action }));
+      state.document.dispatchEvent(new state.document.defaultView.Event(PLAYBACK_ACTION));
+      return { status: 'pending' };
+    } catch (error) { return { status: 'unavailable' }; }
+  }
+  function refreshPlaybackPanel(panel) {
+    const state = playbackPageState(), saved = catchupPreference();
+    const text = state?.buffer || '等待当前直播视频；当前布局不可用时请在来源页面操作';
+    panel.querySelectorAll('[data-playback-buffer]').forEach(node => { if (node.textContent !== text) node.textContent = text; });
+    panel.querySelectorAll('[data-playback-sync-result]').forEach(node => { const message = state?.syncMessage || ''; if (node.textContent !== message) node.textContent = message; });
+    panel.querySelectorAll('[data-playback-sync]').forEach(node => { node.disabled = !state?.canSync || state.syncStatus === 'pending'; });
+    panel.querySelectorAll('[data-catchup-toggle]').forEach(node => { node.checked = saved.enabled; node.disabled = !saved.writable; });
+    panel.querySelectorAll('[data-catchup-status]').forEach(node => { const message = saved.error || state?.message || (saved.enabled ? '已开启，等待当前直播播放器' : '自动追帧已关闭'); if (node.textContent !== message) node.textContent = message; });
+    panel.querySelectorAll('[data-catchup-retry]').forEach(node => { node.hidden = !state || !['yielded', 'attention', 'failed'].includes(state.status); node.textContent = state?.status === 'yielded' ? '重新接管' : state?.status === 'failed' && !saved.enabled ? '核对当前倍速' : '重试'; node.disabled = !saved.enabled && state?.status !== 'failed'; });
+    let task = panel.querySelector('[data-panel-catchup-task]');
+    if (!task) {
+      task = panelElement('div'); task.dataset.panelCatchupTask = '1'; task.style.cssText = 'padding:8px 12px;border-top:1px solid #e3edf3;display:flex;align-items:center;gap:8px';
+      const label = panelElement('span'); label.style.cssText = 'flex:1;font-size:12px';
+      task.append(label, panelButton('关闭追帧', () => saveCatchupPreference(false))); panel.querySelector('[data-panel-media-task]')?.after(task);
+    }
+    task.hidden = !saved.enabled && state?.status !== 'failed';
+    const summary = saved.error || state?.message || '自动追帧：等待直播视频';
+    if (task.querySelector('span').textContent !== summary) task.querySelector('span').textContent = summary;
+    const visible = panel.dataset.collapsed !== 'true' && (!fixedEntry() || sharedRuntime.entryController.open) && panelUi.detail === 'catchup' && !panelUi.search;
+    for (const doc of liveUiDocuments()) {
+      const watched = visible && state?.document === doc;
+      if (doc.documentElement?.getAttribute('data-bilivex-playback-watch') === String(watched)) continue;
+      doc.documentElement?.setAttribute('data-bilivex-playback-watch', String(watched));
+      try { doc.dispatchEvent(new doc.defaultView.Event(PLAYBACK_ACTION)); } catch (error) { /* 来源卸载后由生命周期回收。 */ }
+    }
+  }
+  function renderPlaybackDetail(content) {
+    const manual = panelElement('section'); content.appendChild(manual);
+    manual.appendChild(panelElement('h4', '同步时间', 'blx-group-label'));
+    const buffer = panelElement('p', '', 'blx-notice'); buffer.dataset.playbackBuffer = '1'; manual.appendChild(buffer);
+    const sync = panelButton('立即同步', () => syncVideoToLiveEdge()); sync.dataset.playbackSync = '1'; manual.appendChild(sync);
+    const result = panelElement('p', '', 'bilivex-status'); result.dataset.playbackSyncResult = '1'; result.setAttribute('role', 'status'); manual.appendChild(result);
+    manual.appendChild(panelElement('p', '这里显示本地已缓冲画面的距离，不代表直播总延迟。同步只调整播放位置，保留你的播放或暂停状态。', 'blx-notice'));
+    content.appendChild(panelElement('h4', '自动追帧', 'blx-group-label'));
+    if (getScriptVersion().includes('-rc.')) content.appendChild(panelElement('p', '当前为候选版，播放效果与音乐听感仍在验证。', 'blx-notice'));
+    const input = panelToggle(content, '温和自动追帧', catchupPreference().enabled, saveCatchupPreference); input.dataset.catchupToggle = '1';
+    const status = panelElement('p', '', 'bilivex-status'); status.dataset.catchupStatus = '1'; status.setAttribute('role', 'status'); content.appendChild(status);
+    content.appendChild(panelElement('p', '默认关闭。开启后，在后续直播间满足条件时自动工作。缓冲连续且至少 5 秒时观察后以 1.05 倍追帧，追到 1 秒后恢复；单轮最多 120 秒，不自动跳转。', 'blx-notice'));
+    content.appendChild(panelElement('p', '暂停、后台、画中画及仅音频期间暂缓；手动改速或回看后，本次观看保持让权。音乐听感和改善幅度因直播来源而异。', 'blx-notice'));
+    const retry = panelButton('重试', () => sendPlaybackAction('reclaim')); retry.dataset.catchupRetry = '1'; content.appendChild(retry);
+  }
+
+  function createPlaybackController() {
+    const owner = 'playback-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    const root = document.documentElement, now = () => panelWindow.performance.now();
+    let binding = null, generation = 0, timer = null, rateTimer = null, pending = null, held = null, rateWrite = null;
+    let cleanups = [], visit = null, lastRead = -Infinity, lastDecision = null, samples = [], effect = [], effectDone = false;
+    let cooldown = 0, stableAfter = 0, suspended = false, watched = false, tip = null, tipButton = null, tipTimer = null;
+    let syncStatus = 'idle', syncMessage = '', syncAt = 0, syncSequence = 0, status = 'off', message = '自动追帧已关闭';
+    const controller = { source: null, refresh, sync, interrupt, suspend, resume, dispose, reclaim };
+    const owns = () => root.getAttribute(PLAYBACK_OWNER) === owner;
+    const closeEnough = (left, right) => Number.isFinite(Number(left)) && Math.abs(Number(left) - right) <= .001;
+    const sourceCurrent = (b = binding, cleanup = false) => {
+      if (!b || !owns() || b.video.currentSrc !== b.src || b.video.srcObject !== b.srcObject) return false;
+      if (cleanup && !b.video.isConnected && b.video.ownerDocument === document) return true;
+      if (cleanup && b.video.ownerDocument === document && canonicalRoom(document, false) === b.room && getPageLivePlayer() === b.source.player && b.source.root.contains(b.video)) return true;
+      if (!nativeSendPageActive || !b.source.current() || canonicalRoom(document) !== b.room) return false;
+      const session = sharedRuntime.mediaController?.session;
+      if (session?.kind === 'pip' && session.source.video === b.video && session.source.current()) return true;
+      // 画质切换等过渡期可能同时保留多个就绪视频，此时不猜测写入来源。
+      const videos = [...b.source.root.querySelectorAll('video')].filter(video => video.readyState > 0);
+      return b.video.ownerDocument === document && b.video.isConnected && videos.length === 1 && videos[0] === b.video;
+    };
+    const remember = () => {
+      if (!visit || !owns()) return;
+      root.setAttribute('data-bilivex-playback-local-visit', JSON.stringify(visit));
+      const selected = playbackPageState();
+      if ((selected && selected.owner !== owner) || (!selected && root.hasAttribute(PLAYBACK_STATE))) {
+        // 来源不唯一时只合并同房间的保护，不让另一份旧快照清除用户让权。
+        try {
+          const raw = panelDocument.documentElement.getAttribute(PLAYBACK_VISIT);
+          const previous = raw && raw.length < 2048 ? JSON.parse(raw) : null;
+          if (previous?.room === visit.room && previous.urlRoom === visit.urlRoom && (visit.yielded || visit.block)) {
+            panelDocument.documentElement.setAttribute(PLAYBACK_VISIT, JSON.stringify({ ...previous,
+              yielded: previous.yielded || visit.yielded, block: previous.block || visit.block, reason: previous.yielded || previous.block ? previous.reason : visit.reason,
+              deadline: previous.deadline || visit.deadline, cooldown: Math.max(previous.cooldown || 0, visit.cooldown || 0) }));
+          }
+        } catch (error) { /* 不从无效记录恢复控制权。 */ }
+        return;
+      }
+      panelDocument.documentElement.setAttribute(PLAYBACK_VISIT, JSON.stringify(visit));
+    };
+    const blocked = () => visit?.yielded || !!visit?.block;
+    function setStatus(next, reason) {
+      if (visit && (visit.yielded || visit.block) && !(next === 'off' && visit.block !== 'failed')) { status = visit.yielded ? 'yielded' : visit.block; message = visit.reason; return; }
+      status = next; message = reason;
+    }
+    function publish(data = readVideoBufferState(binding?.video)) {
+      if (!owns() || !binding) return;
+      const valid = sourceCurrent();
+      const mode = sharedRuntime.mediaController?.mode || 'idle';
+      const modeAllowed = mode === 'idle' || (mode === 'pip-active' && sharedRuntime.mediaController.session?.source.video === binding.video);
+      const liveStatus = getLivePlayerInfo(binding.source.player)?.liveStatus;
+      const liveAllowed = liveStatus === undefined || liveStatus === 1;
+      const feedback = syncStatus === 'pending' || now() - syncAt <= 8000 ? syncMessage : '';
+      const buffer = valid && modeAllowed ? data.message : (modeAllowed ? '当前播放器来源已变化，等待重新确认' : '当前媒体模式下视频同步暂不可用');
+      const value = JSON.stringify({ owner, room: binding.room, urlRoom: binding.source.urlRoom, panelUrlRoom: binding.source.panelUrlRoom,
+        buffer, status, message, syncStatus, syncMessage: feedback, canSync: valid && modeAllowed && liveAllowed && data.target !== null && binding.video.readyState > 0 });
+      if (root.getAttribute(PLAYBACK_STATE) !== value) {
+        root.setAttribute(PLAYBACK_STATE, value);
+        panelDocument.dispatchEvent(new panelWindow.Event(PLAYBACK_EVENT));
+      }
+      document.querySelectorAll(VIDEO_SYNC_SELECTOR).forEach(button => {
+        const disabled = !valid || !modeAllowed || !liveAllowed || data.target === null;
+        button.setAttribute('aria-disabled', String(disabled)); button.setAttribute('aria-busy', String(syncStatus === 'pending'));
+        button.dataset.bilivexVideoSyncStatus = syncStatus;
+        button.title = '同步时间：' + buffer;
+      });
+      if (tip?.isConnected) tip.textContent = '同步时间\n' + buffer + (feedback ? '\n' + feedback : '') + (status === 'catching' ? '\n' + message : '');
+    }
+    const cancelTimer = () => { if (timer !== null) window.clearTimeout(timer); timer = null; };
+    function schedule(delay = 2000) {
+      if (!watched && (!catchupPreference().enabled || blocked())) { cancelTimer(); return; }
+      if (timer !== null || suspended || document.hidden || !binding || !sourceCurrent()) return;
+      if (!watched && (binding.video.paused || (sharedRuntime.mediaController?.mode || 'idle') !== 'idle' || document.pictureInPictureElement)) return;
+      timer = window.setTimeout(() => { timer = null; refresh(); }, delay);
+    }
+    function protect(kind, reason) {
+      if (kind === 'attention') cooldown = Math.max(cooldown, now() + 20000);
+      if (visit) visit.cooldown = cooldown;
+      if (visit) { visit[kind === 'yielded' ? 'yielded' : 'block'] = kind === 'yielded' ? true : kind; visit.reason = reason; remember(); }
+      setStatus(kind, reason); samples = []; cancelTimer();
+    }
+    function finishSync(result, reason) {
+      const request = pending; if (!request) return;
+      pending = null; request.cleanups.forEach(remove => remove()); window.clearTimeout(request.timer);
+      syncStatus = result; syncMessage = reason; syncAt = now();
+      if (result === 'confirmed' || result === 'already') {
+        cooldown = now() + 20000;
+        if (visit) visit.deadline = 0;
+        if (visit?.block === 'attention' && visit.reason?.includes('积累过大')) { visit.block = ''; visit.reason = ''; remember(); }
+      } else if (catchupPreference().enabled && !blocked()) protect('attention', '手动同步尚未确认，自动追帧等待处理');
+      publish(); refresh();
+    }
+    function cancelSync(reason) { if (pending) finishSync('cancelled', reason); }
+    function rateChanged() {
+      if (!binding) return;
+      if (!catchupPreference().enabled && !held && !rateWrite) return;
+      const video = binding.video, expected = rateWrite?.target ?? (held ? 1.05 : 1);
+      if (!closeEnough(video.playbackRate, expected) || !closeEnough(video.defaultPlaybackRate, 1)) {
+        held = null; rateWrite = null;
+        if (rateTimer !== null) window.clearTimeout(rateTimer); rateTimer = null;
+        cancelSync('播放控制已变化，本次同步已取消');
+        if (visit) protect('yielded', '本次观看已让权给其他播放控制');
+        publish();
+      }
+    }
+    function confirmRate(record) {
+      if (rateWrite !== record) return;
+      rateTimer = null; rateWrite = null;
+      if (record.generation !== generation || !sourceCurrent(record.binding, record.release)) return;
+      const video = record.binding.video;
+      if (!closeEnough(video.playbackRate, record.target) || !closeEnough(video.defaultPlaybackRate, 1)) { held = null; protect('yielded', '本次观看已让权给其他播放控制'); }
+      else if (now() > record.deadline) protect('failed', '未确认倍速恢复，已停止自动控制，请检查原生倍速');
+      else if (record.release && status === 'cooldown') setStatus('cooldown', '已恢复正常速度，稍后继续观察');
+      publish(); refresh();
+    }
+    function writeRate(b, target, release = false) {
+      if (!sourceCurrent(b, release)) return false;
+      if (rateTimer !== null) window.clearTimeout(rateTimer);
+      const record = { binding: b, target, release, generation, deadline: now() + 1000 };
+      rateWrite = record;
+      try {
+        b.video.playbackRate = target;
+        if (!closeEnough(b.video.playbackRate, target)) throw new Error('速率回读不符');
+      } catch (error) {
+        rateWrite = null;
+        protect('failed', release ? '正常速度恢复未确认，已停止自动控制，请检查原生倍速' : '自动追帧写入失败，已停止自动控制');
+        return false;
+      }
+      rateTimer = window.setTimeout(() => confirmRate(record), 0); return true;
+    }
+    function release() {
+      const previous = held; if (!previous) return true;
+      held = null;
+      if (!sourceCurrent(previous.binding, true)) { protect('failed', '播放来源已变化，未确认原倍速恢复，请检查原生倍速'); return false; }
+      if (!closeEnough(previous.binding.video.playbackRate, 1.05) || !closeEnough(previous.binding.video.defaultPlaybackRate, 1)) {
+        rateWrite = null;
+        if (rateTimer !== null) window.clearTimeout(rateTimer); rateTimer = null;
+        if (visit) protect('yielded', '本次观看已让权给其他播放控制');
+        return true;
+      }
+      return writeRate(previous.binding, previous.baseline, true);
+    }
+    function interrupt(reason = '播放状态变化，自动追帧暂缓') {
+      cancelTimer(); cancelSync(reason); samples = [];
+      const released = release();
+      if (released && !blocked()) setStatus('suspended', reason);
+      publish(); return released;
+    }
+    function sync() {
+      refresh();
+      if (pending) return { status: 'pending' };
+      const data = readVideoBufferState(binding?.video), mode = sharedRuntime.mediaController?.mode || 'idle';
+      const liveStatus = getLivePlayerInfo(binding?.source.player)?.liveStatus;
+      if (!sourceCurrent() || !['idle', 'pip-active'].includes(mode) || (liveStatus !== undefined && liveStatus !== 1) || data.target === null || binding.video.readyState === 0 || document.hidden) {
+        syncStatus = 'unavailable'; syncMessage = '当前媒体来源或缓冲暂不可用'; syncAt = now(); publish(); return { status: syncStatus };
+      }
+      if (Math.abs(data.target - data.position) <= .15) {
+        syncStatus = 'already'; syncMessage = '当前已接近缓冲末端'; syncAt = now(); publish(); return { status: syncStatus };
+      }
+      if (data.target < data.position) { syncStatus = 'unavailable'; syncMessage = '缓冲数据正在更新，请稍后再试'; syncAt = now(); publish(); return { status: syncStatus }; }
+      release(); cancelTimer(); samples = [];
+      const b = binding, video = b.video;
+      const request = { id: ++syncSequence, binding: b, generation, target: data.target, started: now(), maxRate: Math.max(1, Number(video.playbackRate)), initialRate: Number(video.playbackRate), initialDefaultRate: Number(video.defaultPlaybackRate), cleanups: [], seekingCount: 0, timer: null };
+      const listen = (name, callback) => { video.addEventListener(name, callback); request.cleanups.push(() => video.removeEventListener(name, callback)); };
+      pending = request; syncStatus = 'pending'; syncMessage = '正在同步，请等待位置确认';
+      listen('seeking', () => { if (pending === request && ++request.seekingCount > 1) finishSync('cancelled', '检测到其他跳转，本次同步已取消'); });
+      listen('seeked', () => {
+        if (pending !== request || generation !== request.generation || !sourceCurrent(b)) return;
+        const rate = Number(video.playbackRate), position = Number(video.currentTime);
+        const upper = request.target + (video.paused ? 0 : (now() - request.started) / 1000 * request.maxRate) + .3;
+        if (video.seeking || !Number.isFinite(rate) || rate <= 0 || position < request.target - .3 || position > upper) { finishSync('unconfirmed', '未确认同步完成，可稍后重试'); return; }
+        finishSync('confirmed', data.targetKind === 'seekable' ? '已调整到本次选定的可跳转位置' : '已同步到本次选定的缓冲位置');
+      });
+      listen('ratechange', () => { if (pending === request && (!closeEnough(video.playbackRate, request.initialRate) || !closeEnough(video.defaultPlaybackRate, request.initialDefaultRate))) finishSync('cancelled', '播放速度已变化，本次同步已取消'); });
+      listen('error', () => finishSync('unconfirmed', '同步失败，当前媒体发生错误'));
+      request.timer = window.setTimeout(() => { if (pending === request) finishSync('unconfirmed', '未确认同步完成，可稍后重试'); }, 4000);
+      publish();
+      try { video.currentTime = data.target; } catch (error) { finishSync('unavailable', '同步失败，播放位置无法调整'); }
+      return { status: syncStatus, target: data.target };
+    }
+    function median(values) { const sorted = [...values].sort((a, b) => a - b); return sorted.length ? sorted[Math.floor(sorted.length / 2)] : Infinity; }
+    function drive(data) {
+      const enabled = catchupPreference(), video = binding?.video, time = now();
+      if (!enabled.enabled) { release(); if (enabled.error) catchupLocalOff = true; if (!visit?.block || visit.block !== 'failed') setStatus('off', enabled.error || '自动追帧已关闭'); return; }
+      if (blocked()) { release(); setStatus(visit.yielded ? 'yielded' : visit.block, visit.reason); return; }
+      const selected = playbackPageState();
+      if (!selected || selected.owner !== owner) { release(); samples = []; setStatus('suspended', '当前媒体来源不唯一或不属于当前直播间，自动追帧暂缓'); return; }
+      if (visit.deadline && time >= visit.deadline) { release(); protect('attention', '本轮已达 120 秒上限，请明确重试'); return; }
+      if (!sourceCurrent() || suspended || document.hidden || sharedRuntime.mediaController?.mode && sharedRuntime.mediaController.mode !== 'idle' || document.pictureInPictureElement || panelDocument.pictureInPictureElement || panelWindow.documentPictureInPicture?.window) {
+        release(); samples = []; setStatus('suspended', '后台、媒体模式或来源变化，自动追帧暂缓'); return;
+      }
+      if ((cfg.autoHighestQuality || cfg.autoWebMode) && (playerEnhancementState.running || playerEnhancementState.timer !== null)) {
+        release(); samples = []; setStatus('suspended', '等待自动画质和网页模式初始化完成'); return;
+      }
+      if (!video || video.paused || video.seeking || video.ended || video.error || video.readyState < 3 || getLivePlayerInfo(binding.source.player)?.liveStatus !== 1 || !canonicalRoom(document, false)) {
+        release(); samples = []; setStatus('suspended', video?.paused ? '当前已暂停，自动追帧暂缓' : '等待当前直播视频稳定'); return;
+      }
+      if (!Number.isFinite(Number(video.playbackRate)) || Number(video.playbackRate) <= 0) { held = null; protect('failed', '当前播放速度无效，自动追帧已停止'); return; }
+      if (!closeEnough(video.playbackRate, held ? 1.05 : 1) || !closeEnough(video.defaultPlaybackRate, 1)) { held = null; protect('yielded', '当前使用其他倍速，本次观看已让权'); return; }
+      if (!data.continuous) { unstable('缓冲不连续，自动追帧暂缓'); return; }
+      if (data.remaining >= 20) { release(); protect('attention', '本地缓冲积累过大，可先手动同步'); return; }
+      if (held && data.remaining <= 1) {
+        if (release()) { cooldown = time + 20000; visit.deadline = 0; remember(); setStatus('cooldown', '正在核对正常速度，稍后继续观察'); }
+        samples = []; return;
+      }
+      if (lastDecision !== null && time - lastDecision < 2000) return;
+      if (held && time - lastDecision > 3000) { unstable('样本已过期，自动追帧暂缓'); lastDecision = time; return; }
+      lastDecision = time;
+      if (pending || rateWrite || time < stableAfter) { samples = []; return; }
+      if (time < cooldown) { setStatus('cooldown', '已恢复正常速度，稍后继续观察'); return; }
+      if (held) {
+        effect.push(data.remaining); if (effect.length > 3) effect.shift();
+        if (!effectDone && time - held.started >= 30000) {
+          if (held.initial - median(effect) < .5) { release(); protect('attention', '追帧效果不足，本次已停止，请按需重试'); return; }
+          effectDone = true;
+        }
+        setStatus('catching', '温和追帧中 · 1.05 倍'); return;
+      }
+      if (data.remaining < 5) { samples = []; setStatus('observing', '已开启，正在观察缓冲'); return; }
+      samples.push({ at: time, value: data.remaining }); if (samples.length > 3) samples.shift();
+      setStatus('observing', '已开启，正在观察连续缓冲');
+      if (samples.length < 3 || time - samples[0].at < 4000) return;
+      held = { binding, baseline: Number(video.playbackRate), started: time, initial: median(samples.map(item => item.value)) };
+      if (!visit.deadline) visit.deadline = time + 120000;
+      remember(); effect = []; effectDone = false;
+      if (!writeRate(binding, 1.05)) { if (held && closeEnough(video.playbackRate, 1.05)) release(); else held = null; return; }
+      setStatus('catching', '温和追帧中 · 1.05 倍');
+    }
+    function unstable(reason) {
+      const time = now(), wasHeld = !!held;
+      release(); samples = []; stableAfter = time + 10000;
+      if (wasHeld && visit) {
+        visit.unstable = (visit.unstable || []).filter(at => time - at <= 60000); visit.unstable.push(time); remember();
+        if (visit.unstable.length >= 2) { protect('attention', '追帧期间频繁卡顿，本次已停止，可手动同步'); return; }
+      }
+      if (!blocked()) setStatus('suspended', reason);
+    }
+    function onMedia(event) {
+      if (!binding) return;
+      if (event.type === 'ratechange') { rateChanged(); if (pending && Number(binding.video.playbackRate) > pending.maxRate) pending.maxRate = Number(binding.video.playbackRate); }
+      if (event.type === 'seeking' && !pending && catchupPreference().enabled) { release(); protect('yielded', '检测到回看或其他跳转，本次观看已让权'); }
+      if (['waiting', 'stalled'].includes(event.type)) unstable('播放正在等待，自动追帧暂缓');
+      if (['pause', 'ended', 'error', 'enterpictureinpicture'].includes(event.type)) interrupt(event.type === 'pause' ? '当前已暂停，自动追帧暂缓' : '播放状态变化，自动追帧暂缓');
+      let urgent = !['timeupdate', 'progress'].includes(event.type);
+      if (!urgent && held) {
+        // 低于1.5秒时优先复核，命中1秒目标即可退出；普通进度事件仍遵守采样节流。
+        try { const ranges = binding.video.buffered; urgent = !!ranges?.length && ranges.end(ranges.length - 1) - Number(binding.video.currentTime) <= 1.5; }
+        catch (error) { urgent = true; }
+      }
+      if (urgent || now() - lastRead >= 500) refresh();
+    }
+    function bindEvents(active) {
+      if (!active) { cleanups.splice(0).forEach(remove => remove()); return; }
+      if (cleanups.length || !binding) return;
+      const video = binding.video;
+      ['timeupdate', 'progress', 'playing', 'play', 'pause', 'seeking', 'seeked', 'waiting', 'stalled', 'ended', 'error', 'ratechange', 'canplay', 'enterpictureinpicture', 'leavepictureinpicture'].forEach(name => {
+        video.addEventListener(name, onMedia); cleanups.push(() => video.removeEventListener(name, onMedia));
+      });
+    }
+    function readVisit(source) {
+      try {
+        const text = panelDocument.documentElement.getAttribute(PLAYBACK_VISIT);
+        const value = text && text.length < 2048 ? JSON.parse(text) : null;
+        if (value?.room === source.room && (value.urlRoom === source.panelUrlRoom || source.room === source.panelUrlRoom) &&
+            typeof value.yielded === 'boolean' && ['', 'attention', 'failed'].includes(value.block) && typeof value.reason === 'string' && value.reason.length < 220 &&
+            Number.isFinite(value.deadline) && Number.isFinite(value.cooldown) && Array.isArray(value.unstable) && value.unstable.every(Number.isFinite)) return value;
+      } catch (error) { /* 无效会话记录不授予写权。 */ }
+      return { room: source.room, urlRoom: source.panelUrlRoom, yielded: false, block: '', reason: '', deadline: 0, cooldown: 0, unstable: [] };
+    }
+    function clearState() {
+      if (!owns() || !root.hasAttribute(PLAYBACK_STATE)) return;
+      root.removeAttribute(PLAYBACK_STATE);
+      if (tip?.isConnected) tip.textContent = '同步时间\n等待当前直播视频';
+      panelDocument.dispatchEvent(new panelWindow.Event(PLAYBACK_EVENT));
+    }
+    function refresh() {
+      if (suspended || !nativeSendPageActive) return;
+      if (tipButton && !tipButton.isConnected) { tip?.remove(); tip = null; tipButton = null; }
+      const media = sharedRuntime.mediaController;
+      const source = media?.session?.kind === 'pip' && media.session.source.document === document ? media.session.source : sharedRuntime.mediaSources?.get(document);
+      if (!source?.current()) {
+        if (binding) {
+          interrupt('当前播放器来源已变化'); bindEvents(false); generation += 1;
+          binding = null; controller.source = null;
+        }
+        clearState(); return;
+      }
+      const playerKey = getPlayerInstanceKey(getLivePlayerInfo(source.player));
+      if (visit && visit.room === source.room && visit.urlRoom !== source.panelUrlRoom && source.panelUrlRoom !== source.room && binding?.source.player === source.player && binding?.video === source.video && binding.playerKey === playerKey) {
+        interrupt('等待原生播放器确认当前房间'); clearState(); return;
+      }
+      const same = binding?.video === source.video && binding.source.player === source.player && binding.src === source.video.currentSrc && binding.srcObject === source.video.srcObject && binding.playerKey === playerKey && binding.room === source.room;
+      if (!same) {
+        interrupt('播放器来源正在变化'); bindEvents(false);
+        generation += 1;
+        syncStatus = 'idle'; syncMessage = '';
+        if (root.hasAttribute(PLAYBACK_OWNER) && !owns()) { setStatus('failed', '当前文档已有播放控制器，自动追帧未接管'); return; }
+        root.setAttribute(PLAYBACK_OWNER, owner);
+        const nextVisit = visit?.room === source.room ? visit : readVisit(source);
+        visit = nextVisit; visit.urlRoom = source.panelUrlRoom;
+        cooldown = Math.max(cooldown, visit.cooldown || 0);
+        binding = { source, video: source.video, room: source.room, src: source.video.currentSrc, srcObject: source.video.srcObject, playerKey, generation };
+        controller.source = source; samples = []; lastDecision = null; remember();
+      }
+      if (!owns()) { interrupt('当前来源已交给其他控制器'); return; }
+      const retained = readVisit(source);
+      if (!visit.yielded && retained.yielded) { visit.yielded = true; visit.reason = retained.reason; }
+      if (!visit.block && retained.block) { visit.block = retained.block; visit.reason = retained.reason; }
+      if (retained.deadline && !visit.deadline) visit.deadline = retained.deadline;
+      cooldown = Math.max(cooldown, retained.cooldown);
+      const saved = catchupPreference();
+      watched = root.getAttribute('data-bilivex-playback-watch') === 'true' || !!tip;
+      bindEvents(!document.hidden && (saved.enabled || watched || !!pending || !!held || !!rateWrite));
+      const snapshot = readVideoBufferState(binding.video);
+      lastRead = now(); publish(snapshot); drive(snapshot); publish(snapshot);
+      if (visit) { visit.cooldown = cooldown; remember(); }
+      schedule(watched && !saved.enabled ? 1000 : 2000);
+    }
+    function reclaim() {
+      refresh();
+      if (!visit || !binding || (!catchupPreference().enabled && visit.block !== 'failed') || !sourceCurrent()) return;
+      if (!closeEnough(binding.video.playbackRate, 1) || !closeEnough(binding.video.defaultPlaybackRate, 1)) { panelMessage('请先在原生播放器恢复正常速度，再重新接管'); return; }
+      visit.yielded = false; visit.block = ''; visit.reason = ''; visit.deadline = 0; visit.unstable = [];
+      samples = []; lastDecision = null; remember(); refresh();
+    }
+    function closeTip() {
+      if (tipTimer !== null) window.clearTimeout(tipTimer); tipTimer = null;
+      tip?.remove(); tip = null; tipButton?.removeAttribute('aria-describedby'); tipButton = null; refresh();
+    }
+    controller.showTip = button => {
+      if (tipTimer !== null) window.clearTimeout(tipTimer); tipTimer = null;
+      if (tipButton !== button) { tip?.remove(); tipButton?.removeAttribute('aria-describedby'); tip = null; }
+      tipButton = button;
+      if (!tip) {
+        tip = document.createElement('div'); tip.id = 'bilivex-sync-tooltip'; tip.setAttribute('role', 'tooltip');
+        tip.style.cssText = 'position:fixed;z-index:2147483646;max-width:min(320px,calc(100vw - 16px));box-sizing:border-box;padding:8px 10px;border-radius:6px;background:#17212d;color:#fff;font:13px/1.6 sans-serif;white-space:pre-line;box-shadow:0 2px 10px #0006';
+        tip.addEventListener('pointerenter', () => { if (tipTimer !== null) window.clearTimeout(tipTimer); tipTimer = null; });
+        tip.addEventListener('pointerleave', () => controller.hideTip());
+        (document.fullscreenElement || document.body).appendChild(tip);
+      }
+      button.setAttribute('aria-describedby', tip.id);
+      tip.textContent = '同步时间\n等待当前直播视频';
+      refresh();
+      const rect = button.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - tip.offsetWidth - 8)) + 'px'; tip.style.top = Math.max(8, rect.top - tip.offsetHeight - 8) + 'px';
+    };
+    controller.hideTip = (immediate = false) => { if (tipTimer !== null) window.clearTimeout(tipTimer); tipTimer = null; if (!immediate && document.activeElement === tipButton) return; tipTimer = window.setTimeout(closeTip, immediate ? 0 : 160); };
+    function suspend() { interrupt('页面已离开，自动追帧已暂缓'); suspended = true; cancelTimer(); bindEvents(false); closeTip(); clearState(); }
+    function resume() { suspended = false; refresh(); }
+    function dispose() { suspend(); playbackControllers.delete(controller); if (owns()) root.removeAttribute(PLAYBACK_OWNER); }
+    controller.action = () => {
+      const raw = root.getAttribute('data-bilivex-playback-action'); root.removeAttribute('data-bilivex-playback-action');
+      try {
+        const action = raw ? JSON.parse(raw) : null;
+        if (!action) { refresh(); return; }
+        if (!owns() || action.owner !== owner) return;
+        if (action.action === 'sync') sync();
+        else if (action.action === 'reclaim') reclaim();
+        else if (action.action === 'close') {
+          catchupLocalOff = true;
+          // 已确认存储为关闭时释放临时覆盖，让后续外页开启同步；未确认关闭继续保护本页。
+          try { const saved = normalizeCatchUpPreference(GM_getValue(CATCHUP_KEY)); if (saved.writable && !saved.enabled) catchupLocalOff = false; } catch (error) { /* 读取失败时保持关闭。 */ }
+          interrupt('自动追帧已关闭'); refresh();
+        }
+        else if (action.action === 'enable') { catchupLocalOff = false; catchupSaveError = ''; refresh(); }
+      } catch (error) { /* 动作只接受当前来源的有限命令。 */ }
+    };
+    controller.resetSource = () => { interrupt('视频来源正在重新加载'); generation += 1; bindEvents(false); binding = null; controller.source = null; clearState(); };
+    controller.manual = () => {
+      if (!binding) return;
+      cancelSync('检测到原生播放操作，本次同步已取消'); release();
+      if (catchupPreference().enabled) protect('yielded', '检测到原生倍速或进度操作，本次观看已让权');
+      publish();
+    };
+    controller.hidePage = () => { if (document.hidden) { interrupt('页面在后台，自动追帧暂缓'); cancelTimer(); closeTip(); } else refresh(); };
+    playbackControllers.add(controller); return controller;
+  }
+
   // ---------- 播放器同步时间 ----------
   const VIDEO_SYNC_SELECTOR = '[data-bilivex-video-sync="1"]';
   const VIDEO_SYNC_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.343-5.657L4 8"></path><path d="M4 4v4h4"></path><path d="M12 8.5V12l2.5 1.5"></path></svg>';
 
-  function getVideoSyncTarget(video) {
+  function getVideoSyncTarget(video, snapshotRange = null) {
+    if (snapshotRange) return Math.max(snapshotRange.start, snapshotRange.end - 0.05);
     if (!video) return null;
     try {
       const buffered = video.buffered;
@@ -8073,7 +8614,7 @@
       const lastRangeIndex = ranges.length - 1;
       const rangeStart = Number(ranges.start(lastRangeIndex));
       const rangeEnd = Number(ranges.end(lastRangeIndex));
-      if (!Number.isFinite(rangeStart) || !Number.isFinite(rangeEnd) || rangeEnd < rangeStart) return null;
+      if (!Number.isFinite(rangeStart) || !Number.isFinite(rangeEnd) || rangeStart < 0 || rangeEnd <= rangeStart) return null;
       // 与 DouyuEx 一样以本地最后一段缓冲区为准，并留 50 毫秒余量避免正好卡在 MSE 边界。
       return Math.max(rangeStart, rangeEnd - 0.05);
     } catch (e) {
@@ -8107,33 +8648,9 @@
     }) || videos.find((video) => video.readyState > 0) || videos[0] || null;
   }
 
-  function findLiveSyncControl(root, visited = new Set()) {
-    if (!root || visited.has(root)) return null;
-    visited.add(root);
-    const control = root.querySelector(VIDEO_SYNC_SELECTOR);
-    if (control) return control;
-    for (const frame of root.querySelectorAll('iframe')) {
-      try { const found = findLiveSyncControl(frame.contentDocument, visited); if (found) return found; }
-      catch (e) { /* 跨源播放器不参与控制 */ }
-    }
-    return null;
-  }
-
   function syncVideoToLiveEdge(button) {
-    if (sharedRuntime.mediaController?.session?.kind === 'audio') return { status: 'unavailable', message: '仅音频期间视频同步暂不可用' };
-    const player = button && button.closest('#live-player, .live-player-mounter');
-    const session = sharedRuntime.mediaController?.session;
-    const video = session?.kind === 'pip' && session.source.document === (button?.ownerDocument || document) && session.source.current() ? session.source.video : findActiveLiveVideo(player || document.querySelector('#live-player, .live-player-mounter'));
-    const target = getVideoSyncTarget(video);
-    if (!video || target === null) return { status: 'unavailable' };
-    const before = Number(video.currentTime) || 0;
-    try {
-      // 只调整播放位置，不调用 play/pause，保留用户原来的播放状态。
-      video.currentTime = target;
-      return { status: 'synced', before, target };
-    } catch (e) {
-      return { status: 'unavailable' };
-    }
+    if (button?.ownerDocument === document) return playbackController?.sync() || { status: 'unavailable' };
+    return sendPlaybackAction('sync');
   }
 
   function bindVideoSync() {
@@ -8151,14 +8668,17 @@
       button.setAttribute('aria-label', '同步到最新直播画面');
       button.title = '同步时间';
       button.innerHTML = VIDEO_SYNC_ICON;
-      const activate = () => {
-        const result = syncVideoToLiveEdge(button);
-        button.dataset.bilivexVideoSyncStatus = result.status;
-      };
+      const activate = () => { if (button.getAttribute('aria-disabled') !== 'true') syncVideoToLiveEdge(button); };
       button.addEventListener('click', activate);
+      button.addEventListener('pointerenter', () => playbackController?.showTip(button));
+      button.addEventListener('pointerleave', () => playbackController?.hideTip());
+      button.addEventListener('focus', () => playbackController?.showTip(button));
+      button.addEventListener('blur', () => playbackController?.hideTip(true));
       button.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') { playbackController?.hideTip(true); return; }
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
+        if (event.repeat) return;
         activate();
       });
     }
@@ -8189,10 +8709,8 @@
     const kind = controller?.session?.kind || (mode === 'recovery-needed' ? 'audio' : '');
     const available = !!controller?.sourceNow(document);
     const audioActive = kind === 'audio' && owner === document;
-    document.querySelectorAll(VIDEO_SYNC_SELECTOR).forEach(button => {
-      const title = audioActive ? '仅音频期间视频同步暂不可用' : '同步时间';
-      if (button.title !== title) button.title = title;
-      const disabled = String(audioActive); if (button.getAttribute('aria-disabled') !== disabled) button.setAttribute('aria-disabled', disabled);
+    if (!playbackController) document.querySelectorAll(VIDEO_SYNC_SELECTOR).forEach(button => {
+      button.title = audioActive ? '仅音频期间视频同步暂不可用' : '同步时间'; button.setAttribute('aria-disabled', String(audioActive));
     });
     document.querySelectorAll('[data-bilivex-media-control]').forEach(button => {
       const feature = button.dataset.bilivexMediaControl;
@@ -8204,6 +8722,7 @@
       button.style.opacity = disabled ? '.45' : '1';
       button.style.color = active ? '#00aeec' : '';
     });
+    playbackController?.refresh();
   }
 
   function bindPlayerMediaControls(mount) {
@@ -8246,6 +8765,8 @@
   // ---------- 初始化 ----------
   function initRoom() {
     registerMediaSource();
+    if (!playbackController) playbackController = createPlaybackController();
+    playbackController.refresh();
     refreshEntryPresentation();
     if (!dmController) dmController = createDmPreferenceController();
     dmController.refresh();
@@ -8270,6 +8791,7 @@
   function guardianCheck() {
     try {
       registerMediaSource();
+      playbackController?.refresh();
       refreshEntryPresentation();
       dmController?.refresh();
       refreshPurification();
@@ -8419,8 +8941,10 @@
       if (event.persisted && purifyController) purifyController.resume();
       if (event.persisted) { tryInit(); guardianCheck(); }
       if (event.persisted) dmController?.resume();
+      if (event.persisted) playbackController?.resume();
     };
     const onPageHide = (event) => {
+      if (event.persisted) playbackController?.suspend(); else playbackController?.dispose();
       if (document === panelDocument) sharedRuntime.entryController?.suspend();
       // 后续自动任务取消仍依赖 WeakSet 保护组合文本，入口状态清理不能提前撤销该保护。
       if (sharedRuntime.entryComposing) for (const input of sharedRuntime.entryComposing) if (input.ownerDocument === document) sharedRuntime.entryComposing.delete(input);
@@ -8498,6 +9022,24 @@
       listenLifecycle(panelDocument, DM_ROOM_EVENT, () => { registerMediaSource(); dmController?.refresh(); });
     }
     listenLifecycle(document, 'visibilitychange', () => refreshPurification());
+    listenLifecycle(document, 'visibilitychange', () => playbackController?.hidePage());
+    listenLifecycle(document, PLAYBACK_ACTION, () => playbackController?.action());
+    listenLifecycle(document, 'keydown', event => { if (event.key === 'Escape' && !event.isComposing && document.getElementById('bilivex-sync-tooltip')) playbackController?.hideTip(true); });
+    if (document === panelDocument) listenLifecycle(panelDocument, PLAYBACK_EVENT, refreshPanelStatus);
+    ['loadstart', 'emptied'].forEach(type => listenLifecycle(document, type, event => {
+      if (event.target === playbackController?.source?.video) playbackController.resetSource();
+    }, true));
+    ['pointerdown', 'keydown', 'change'].forEach(type => listenLifecycle(document, type, event => {
+      if (!event.isTrusted || !event.target?.closest?.('.live-web-player-controller, #web-player-controller-wrap-el')) return;
+      if (event.target.closest('.speed-wrap, .playback-rate, .rate-wrap, .progress-bar, input[type="range"][aria-label*="进度"]')) playbackController?.manual();
+    }, true));
+    try {
+      const id = GM_addValueChangeListener(CATCHUP_KEY, () => {
+        if (catchupSaving) return;
+        playbackControllers.forEach(item => item.refresh()); refreshPanelStatus();
+      });
+      if (id != null) valueChangeListenerIds.push(id);
+    } catch (error) { /* 页面恢复及每次决策仍重新读取配置，读取失败即关闭。 */ }
     listenLifecycle(document, 'visibilitychange', () => { if (document.hidden) dmController?.suspend(); else dmController?.resume(); });
     [DM_AUTO_KEY, DM_FONT_KEY].forEach(key => {
       try { const id = GM_addValueChangeListener(key, () => { if (!dmPreferences.saving) refreshDmPreferences(false, true); }); if (id != null) valueChangeListenerIds.push(id); } catch (error) {}
@@ -8553,6 +9095,7 @@
         const panelMissing = !getPanelRoot();
         if (currentUrlChanged || panelMissing) {
           if (currentUrlChanged) {
+            playbackControllers.forEach(item => item.interrupt('直播间已变化，旧播放任务已取消'));
             if (sharedRuntime.mediaController?.session?.source.document === document || sharedRuntime.mediaController?.recovery?.source.document === document || document === panelDocument) sharedRuntime.mediaController?.stop('直播间已变化', false);
             cancelNativeSends('直播间已变化，任务已取消');
             if (purifyController) purifyController.refresh();
