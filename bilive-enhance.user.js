@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      3.3.0
+// @version      3.3.1
 // @license      MIT
 // @description  B站直播间增强工具：同步时间状态、温和自动追帧、原生弹幕字体记忆、评论区固定入口、六分类悬浮窗、带弹幕画中画、仅音频模式、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -2101,12 +2101,16 @@
   if (!Object.prototype.hasOwnProperty.call(sharedRuntime, 'residentLayer')) sharedRuntime.residentLayer = null;
   if (!Object.prototype.hasOwnProperty.call(sharedRuntime, 'hoverOwner')) sharedRuntime.hoverOwner = null;
 
-  function applyConfigChange(previous, next) {
+  function applyConfigChange(previous, next, local = false) {
     cfg = next;
     if (previous.floatDmPlus !== next.floatDmPlus) toggleFloatingDmEnabled();
     if (previous.theme !== next.theme) applyTheme();
     syncMoreSettingsInputs();
-    if (previous.autoHighestQuality !== next.autoHighestQuality) resetPlayerEnhancementSchedule('quality');
+    if (previous.autoHighestQuality !== next.autoHighestQuality) {
+      resetPlayerEnhancementSchedule('quality');
+      if (local && next.autoHighestQuality) resetQualityVisit();
+      refreshQualityEnhancement();
+    }
     if (previous.autoWebMode !== next.autoWebMode) resetPlayerEnhancementSchedule('web');
     if (previous.autoHighestQuality !== next.autoHighestQuality || previous.autoWebMode !== next.autoWebMode) {
       schedulePlayerEnhancements();
@@ -4663,7 +4667,15 @@
       };
       const resize = event => {
         // 菜单正文滚动和详情恢复位置不改变外部入口；控制栏隐藏时也要保留最后锚点。
-        if (event?.type === 'scroll' && event.target?.closest?.('#bilivex-panel')) return;
+        if (event?.type === 'scroll') {
+          if (event.target?.closest?.('#bilivex-panel')) return;
+          let origin = button?.isConnected ? button : controlRoot || anchor;
+          try {
+            for (let depth = 0; origin && origin.ownerDocument !== doc && depth < 8; depth += 1) origin = origin.ownerDocument.defaultView.frameElement;
+          } catch (error) { origin = null; }
+          // 评论自动滚动等无关区域不移动入口，也不能清掉隐藏控制栏的有效锚点。
+          if (!origin || origin.ownerDocument !== doc || event.target !== doc && !event.target?.contains?.(origin)) return;
+        }
         lastRect = null; queue();
       };
       const observer = new panelWindow.MutationObserver(records => {
@@ -4712,9 +4724,11 @@
     }
     function mount(target) {
       if (!button || button.ownerDocument !== target.area.ownerDocument) { clearEntry(); button = createButton(target.area.ownerDocument); }
-      if (anchor !== target.anchor || kind !== target.kind) lastRect = null;
+      const nextControlRoot = target.kind === 'player' ? target.area.closest('#web-player-controller-wrap-el') : null;
+      // 同一控制栏可能先隐藏并拆下画质锚点，再卸载按钮；此时保留最后有效位置。
+      if (kind !== target.kind || (target.kind === 'player' ? controlRoot !== nextControlRoot : anchor !== target.anchor)) lastRect = null;
       anchor = target.anchor; kind = target.kind;
-      controlRoot = kind === 'player' ? target.area.closest('#web-player-controller-wrap-el') : null;
+      controlRoot = nextControlRoot;
       if (kind !== 'fallback') ['position', 'top', 'right', 'z-index'].forEach(name => button.style.removeProperty(name));
       const view = target.area.ownerDocument.defaultView, style = view.getComputedStyle(target.area);
       const before = (style.flexDirection === 'row-reverse') === (style.direction === 'rtl');
@@ -4737,7 +4751,7 @@
         controller.fixed = wanted; controller.open = controller.fixed && local ? !!wasOpen : false;
         if (!controller.fixed) {
           suspend(); cfg = loadCfg(); controller.status = preference.error || '当前使用悬浮入口';
-          if (panel) { panel.inert = false; panel.removeAttribute('aria-hidden'); delete panel.dataset.presentation; panel.dataset.bilivexPanelAnchor = cfg.panelAnchor || ''; panel.style.removeProperty('display'); panel.style.removeProperty('visibility'); panel.style.removeProperty('pointer-events'); panel.style.removeProperty('max-height'); panel.style.left = cfg.panelPos ? cfg.panelPos.left + 'px' : 'auto'; panel.style.right = cfg.panelPos ? 'auto' : '18px'; panel.style.top = cfg.panelPos ? cfg.panelPos.top + 'px' : '96px';
+          if (panel) { panel.inert = false; panel.removeAttribute('aria-hidden'); delete panel.dataset.presentation; syncPanelNavigation(panel, false); panel.dataset.bilivexPanelAnchor = cfg.panelAnchor || ''; panel.style.removeProperty('display'); panel.style.removeProperty('visibility'); panel.style.removeProperty('pointer-events'); panel.style.removeProperty('max-height'); panel.style.removeProperty('height'); panel.style.left = cfg.panelPos ? cfg.panelPos.left + 'px' : 'auto'; panel.style.right = cfg.panelPos ? 'auto' : '18px'; panel.style.top = cfg.panelPos ? cfg.panelPos.top + 'px' : '96px';
             controller.restoring = true; setPanelCollapsed(cfg.panelCollapsed, false); controller.restoring = false; bindDragHandlers(); }
           return;
         }
@@ -4763,11 +4777,14 @@
     }
     function layout(panel = getPanelRoot(), host = getUiHost()) {
       if (!controller.fixed || !panel || !host) return false;
+      // 与悬浮模式一致，尺寸过渡中不反复测量动画中间值；结束后再校正定位。
+      if (controller.open && panel.dataset.panelMotion === 'true') return true;
       panel.dataset.presentation = 'fixed'; panel.dataset.collapsed = 'false';
       panel.style.setProperty('display', controller.open ? 'flex' : 'none', 'important'); panel.style.setProperty('visibility', controller.open ? 'visible' : 'hidden', 'important');
       panel.style.setProperty('pointer-events', controller.open ? 'auto' : 'none', 'important'); panel.inert = !controller.open; panel.setAttribute('aria-hidden', String(!controller.open));
       const view = host.ownerDocument.defaultView, maxHeight = Math.max(0, Math.min(600, view.innerHeight - 24));
       const width = Math.max(0, Math.min(360, view.innerWidth - 16));
+      // 保留原有自然高度与视口上限，只移动导航，不为短内容撑满窗口。
       panel.style.height = 'auto'; panel.style.width = width + 'px'; panel.style.maxHeight = maxHeight + 'px';
       // 固定菜单只滚动正文，清除悬浮形态遗留的外层滚动，保证关闭按钮始终可达。
       if (panel.scrollTop) panel.scrollTop = 0;
@@ -4776,10 +4793,11 @@
       const close = head.querySelector('[data-panel-toggle]'); close.textContent = '×'; close.style.cssText = ''; close.setAttribute('aria-label', '关闭 BiLivex 菜单'); close.setAttribute('aria-expanded', String(controller.open));
       panel.querySelectorAll('[data-entry-status]').forEach(node => { node.textContent = controller.status; });
       if (button) { button.setAttribute('aria-expanded', String(controller.open)); button.setAttribute('aria-label', (controller.open ? '关闭' : '打开') + ' BiLivex 菜单'); }
+      syncPanelNavigation(panel, true, width);
       if (!controller.open) return true;
       const rect = button?.isConnected ? entryRect(button, host.ownerDocument) : null;
       if (rect?.width && rect.height) lastRect = rect;
-      if (!lastRect) { if (button && !entryIsComposing()) setOpen(false, 'layout'); return true; }
+      if (!lastRect) { if (button && !entryIsComposing()) setOpen(false, 'layout-anchor'); return true; }
       const size = panel.getBoundingClientRect();
       // 正文上下内边距共 38px，另留一行 44px 操作空间；不超过原视口高度上限。
       const minimumHeight = Math.min(maxHeight, size.height - (panel.querySelector('[data-panel-content]')?.clientHeight || 0) + 82);
@@ -4794,12 +4812,13 @@
         left = lastRect.right - bounded.width; top = up ? lastRect.top - 8 - bounded.height : lastRect.bottom + 8;
       } else if (width && maxHeight && Math.max(before, after) >= Math.min(280, width)) {
         const toLeft = before >= after;
-        panel.style.width = Math.min(width, toLeft ? before : after) + 'px';
+        const sideWidth = Math.min(width, toLeft ? before : after);
+        panel.style.width = sideWidth + 'px'; syncPanelNavigation(panel, true, sideWidth);
         const bounded = panel.getBoundingClientRect();
         left = toLeft ? lastRect.left - 8 - bounded.width : lastRect.right + 8; top = lastRect.bottom - bounded.height;
       } else {
         controller.status = '当前可见空间不足，请调整窗口后打开插件'; if (button) button.title = controller.status;
-        if (!entryIsComposing()) setOpen(false, 'layout'); return true;
+        if (!entryIsComposing()) setOpen(false, 'layout-space'); return true;
       }
       const bounded = panel.getBoundingClientRect();
       left = Math.max(8, Math.min(left, view.innerWidth - bounded.width - 8));
@@ -4808,8 +4827,17 @@
       return true;
     }
     function setOpen(open, reason = 'button') {
-      controller.open = open; const panel = getPanelRoot(); if (!panel) return;
+      const panel = getPanelRoot(), changed = open !== controller.open;
+      if (changed) cancelPanelMotion(panel);
+      controller.open = open; if (!panel) return;
+      // 仅在当前菜单节点保留关闭原因，便于区分主动关闭、空间不足与锚点失效。
+      if (open) delete panel.dataset.entryClosedBy; else panel.dataset.entryClosedBy = reason;
       capturePanelView(); ensurePanelVisible(panel, getUiHost()); refreshPlaybackPanel(panel);
+      // 先按自然高度定位；入口激活只做整窗淡入轻移，不从隐藏的零尺寸展开。
+      if (changed && sharedRuntime.panelMotion) {
+        sharedRuntime.panelMotion.viewSize = panelViewSize(panel); sharedRuntime.panelMotion.last = panelMotionSnapshot(panel);
+        if (controller.open && reason === 'button') animatePanelChange(panel, sharedRuntime.panelMotion.last, { opening: true });
+      }
       if (open) panel.querySelector('h3')?.focus({ preventScroll: true });
       else if (reason !== 'outside' && button?.isConnected && button.getBoundingClientRect().width) button.focus({ preventScroll: true });
     }
@@ -4907,6 +4935,7 @@
   }
   function refreshDmPreferences(reclaim = false, syncView = false) {
     if (reclaim) {
+      recoverQualityResult(getPageLivePlayer());
       panelDocument.documentElement?.removeAttribute(DM_VISIT_ATTRIBUTE);
       if (dmPreferences.visit) { dmPreferences.visit.yielded = false; dmPreferences.visit.manual = null; }
     }
@@ -4925,7 +4954,8 @@
   }
   function createDmPreferenceController() {
     let task = null, timer = null, manualTimer = null, removeEvents = [], suspended = false;
-    const controller = { source: null, status: '', refresh, suspend, dispose, retry: () => refreshDmPreferences(true) };
+    const controller = { source: null, status: '', refresh, suspend, dispose, retry: () => refreshDmPreferences(true),
+      prepareQuality: () => { if (task?.done && !dmPreferences.visit?.yielded && !manualTimer && sameDmFont(readNativeDmFont(task.source.player), task.desired)) refresh(true); } };
     const owners = dmPreferences.owners || (dmPreferences.owners = new Map());
     // 已提交的原生调用不能撤销，跨任务和协调实例等待它结束，避免迟到写入覆盖新选择。
     const writes = dmPreferences.writes || (dmPreferences.writes = new WeakMap());
@@ -4992,15 +5022,15 @@
       if (document.hidden || mediaIsBusy() || dmPreferences.saving) { pauseTime(t); notify(mediaIsBusy() ? '媒体模式中暂缓，恢复后再核对' : '已暂停，等待页面可见'); return; }
       if (!current(t)) return;
       if (manualTimer !== null) { pauseTime(t); notify('等待原生设置操作结束'); return; }
+      const quality = qualityStatus(t.source.player);
+      if (quality === 'uncertain') { cancel(); notify('画质切换结果未确认，稍后可重新应用字体'); return; }
+      const webPending = cfg.autoWebMode && !isBrowserFullscreen(getLivePlayerInfo(t.source.player)) && !playerEnhancementState.webDone.has(t.instanceKey);
+      const webActive = playerEnhancementState.running || playerEnhancementState.timer !== null || playerEnhancementState.retryIndex < PLAYER_RETRY_DELAYS.length;
+      if (quality === 'pending' || webActive && webPending) { pauseTime(t); notify('等待自动画质和网页模式初始化完成'); schedule(200); return; }
       const now = Date.now(); if (t.activeAt) t.elapsed += now - t.activeAt; t.activeAt = now;
       if (t.elapsed >= 8000) { t.cancelled = true; notify('未能稳定应用，可重新应用'); return; }
       // 原生接口可能异步完成；等待期间只检查预算，不将尚未完成的结果误判为外部修改。
       if (writes.has(t.source.player)) { schedule(200); return; }
-      const enhancementsActive = playerEnhancementState.running || playerEnhancementState.timer !== null || playerEnhancementState.retryIndex < PLAYER_RETRY_DELAYS.length;
-      const qualityPending = cfg.autoHighestQuality && !playerEnhancementState.qualityDone.has(t.instanceKey);
-      const webPending = cfg.autoWebMode && !isBrowserFullscreen(getLivePlayerInfo(t.source.player)) && !playerEnhancementState.webDone.has(t.instanceKey);
-      // 自动切画质可能重建原生弹幕设置，先让已有初始化任务结束，再只应用一次字体。
-      if (enhancementsActive && (qualityPending || webPending)) { notify('等待自动画质和网页模式初始化完成'); schedule(200); return; }
       const actual = readNativeDmFont(t.source.player);
       if (sameDmFont(actual, t.desired)) {
         if (!t.matchAt) { t.matchAt = now; schedule(500); return; }
@@ -5214,8 +5244,8 @@
       const node = panel.querySelector(selector); return node ? node.offsetWidth + ':' + node.offsetHeight : '';
     }).join('|');
   }
-  function animatePanelChange(panel, from, { entrance = false, folding = false, bodyWidth = 0 } = {}) {
-    if (fixedEntry()) { sharedRuntime.entryController.layout(panel); return; }
+  function animatePanelChange(panel, from, { entrance = false, folding = false, bodyWidth = 0, opening = false } = {}) {
+    if (fixedEntry() && !sharedRuntime.entryController.open) return;
     const motion = sharedRuntime.panelMotion;
     if (!motion || motion.panel !== panel) return;
     const body = panel.querySelector('.bilivex-panel-body'), to = panelMotionSnapshot(panel);
@@ -5224,7 +5254,7 @@
       if (folding) { body.hidden = true; body.style.display = 'none'; panel.querySelector('.blx-panel-head').style.width = ''; }
     };
     const moved = ['left', 'top', 'width', 'height'].some(key => Math.abs(from[key] - to[key]) > .5);
-    if (!panel.isConnected || sharedRuntime.panelMotionPreference?.matches || (!moved && !entrance && !folding)) {
+    if (!panel.isConnected || sharedRuntime.panelMotionPreference?.matches || (!moved && !entrance && !folding && !opening)) {
       finish(); motion.last = panelMotionSnapshot(panel); return;
     }
     motion.finish = finish;
@@ -5239,8 +5269,9 @@
       // 折叠头部以最终宽度定位标志，避免随外框居中造成二次位移。
       panel.querySelector('.blx-panel-head').style.width = COLLAPSED_BTN_SIZE + 'px';
     }
-    const frames = [from, to].map(rect => ({ width: rect.width + 'px', height: rect.height + 'px', left: rect.left + 'px', top: rect.top + 'px', borderRadius: rect.radius + 'px' }));
-    const geometry = animate(panel, frames, 300);
+    const frames = opening ? [{ opacity: .12, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }]
+      : [from, to].map(rect => ({ width: rect.width + 'px', height: rect.height + 'px', left: rect.left + 'px', top: rect.top + 'px', borderRadius: rect.radius + 'px' }));
+    const geometry = animate(panel, frames, opening ? 220 : 300);
     const logo = panel.querySelector('#bilivex-logo');
     if (from.logo?.width && to.logo?.width && bodyWidth) {
       animate(logo, [{ transform: `translate(${from.logo.left - to.logo.left}px,${from.logo.top - to.logo.top}px) scale(${from.logo.width / to.logo.width},${from.logo.height / to.logo.height})` }, { transform: 'none' }], 300);
@@ -5300,7 +5331,7 @@
       GM_setValue('bilivex_cfg', JSON.stringify(next));
       const actual = loadCfg();
       if (Object.keys(patch).some(key => JSON.stringify(actual[key]) !== JSON.stringify(patch[key]))) throw new Error('设置被其他页面修改');
-      applyConfigChange(previous, actual); panelMessage('已保存'); return true;
+      applyConfigChange(previous, actual, true); panelMessage('已保存'); return true;
     } catch (error) { cfg = previous; panelMessage('保存失败：' + error.message); return false; }
   }
   function panelViewKey() { return panelUi.search ? 'search:' + panelUi.query : panelUi.category + ':' + panelUi.detail; }
@@ -5381,6 +5412,7 @@
     const toggle = panel.querySelector('[data-panel-toggle]');
     if (toggle) { toggle.setAttribute('aria-label', fixedEntry() ? '关闭 BiLivex 菜单' : (cfg.panelCollapsed ? '展开 BiLivex' : '收起 BiLivex') + (running ? '，独轮车运行中' : '')); toggle.setAttribute('aria-expanded', String(fixedEntry() ? sharedRuntime.entryController.open : !cfg.panelCollapsed)); }
     panel.querySelectorAll('[data-entry-status]').forEach(node => { node.textContent = entryPreference().error || sharedRuntime.entryController?.status || '当前使用悬浮入口'; });
+    panel.querySelectorAll('[data-quality-status]').forEach(node => { const message = qualityMessage(); if (node.textContent !== message) node.textContent = message; });
     panel.querySelectorAll('[data-purify-status]').forEach(node => { node.textContent = purifyStatus(node.dataset.purifyStatus); });
     panel.querySelectorAll('[data-bilivex-setting] input').forEach(node => { if (!node.disabled) node.checked = cfg[node.closest('[data-bilivex-setting]').dataset.bilivexSetting] === true; });
     panel.querySelectorAll('[data-quick-setting]').forEach(node => { if (!node.disabled) node.checked = cfg[node.dataset.quickSetting] === true; });
@@ -5406,6 +5438,20 @@
     panel.querySelector('[data-panel-content]')?.setAttribute('aria-labelledby', 'bilivex-tab-' + PANEL_CATEGORIES.indexOf(panelUi.category));
     panel.querySelectorAll('[role=tab]').forEach(tab => { const selected = tab.textContent === panelUi.category; tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1; tab.classList.toggle('blx-dirty', (tab.textContent === '收藏' && !!favoriteDirty) || (tab.textContent === '关注' && !!followingDirty)); });
     panel.querySelector('[role=tablist]')?.style.setProperty('--blx-tab-index', PANEL_CATEGORIES.indexOf(panelUi.category));
+    syncPanelNavigation(panel, fixedEntry());
+  }
+  function syncPanelNavigation(panel, fixed, width = 0) {
+    const body = panel.querySelector('.bilivex-panel-body'), nav = panel.querySelector('[role=tablist]');
+    const select = panel.querySelector('[data-panel-category-select]'), content = panel.querySelector('[data-panel-content]');
+    if (!body || !nav || !select || !content) return;
+    if (fixed) {
+      if (nav.nextElementSibling !== select || select.nextElementSibling) body.append(nav, select);
+    } else if (body.firstElementChild !== nav || nav.nextElementSibling !== select || select.nextElementSibling !== content) {
+      body.insertBefore(nav, content); body.insertBefore(select, content);
+    }
+    const available = fixed ? (width || panel.getBoundingClientRect().width) : Math.min(360, panelWindow.innerWidth - 16);
+    const narrow = available - 34 < 288;
+    nav.hidden = narrow; select.hidden = !narrow; select.value = panelUi.category;
   }
   function renderPanelView(focus = false) {
     const panel = getPanelRoot();
@@ -5494,6 +5540,7 @@
       const [key, label] = map[panelUi.detail];
       if (key === 'blockP2PUpload') content.appendChild(panelElement('p', '修改此设置会重载播放器，请先保存页面草稿。'));
       panelToggle(content, label, cfg[key], value => savePanelConfig({ [key]: value }), key);
+      if (key === 'autoHighestQuality') { const status = panelElement('p', qualityMessage(), 'blx-notice'); status.dataset.qualityStatus = '1'; content.appendChild(status); }
       if (key === 'tailEnabled') { const input = panelElement('input'); input.value = cfg.tailText; input.placeholder = '如：喵'; input.setAttribute('aria-label', '尾巴内容'); listenPanelNode(input, 'change', () => savePanelConfig({ tailText: input.value })); content.appendChild(input); }
     } else if (panelUi.detail === 'alerts') {
       const account = liveAlertController?.account(liveAlertController.config());
@@ -5591,6 +5638,9 @@
 #bilivex-panel [role=tab].blx-dirty::after{content:'';position:absolute;right:3px;top:9px;width:5px;height:5px;border-radius:50%;background:#ba7427}
 #bilivex-panel [data-panel-category-select]{margin:0;padding:10px 12px;border:0;border-bottom:1px solid #e9eef2;background:white;color:var(--accent);font-size:13px;width:100%;flex-shrink:0;min-height:44px}
 #bilivex-panel [data-panel-content]{overflow:auto;min-height:0;max-height:490px;padding:18px 16px 20px;overscroll-behavior:contain;scrollbar-width:thin}
+#bilivex-panel[data-presentation="fixed"] [role=tablist],#bilivex-panel[data-presentation="fixed"] [data-panel-category-select]{border-top:1px solid #e9eef2;border-bottom:0}
+#bilivex-panel[data-presentation="fixed"][data-panel-motion="true"] .bilivex-panel-body{flex-grow:1}
+#bilivex-panel[data-presentation="fixed"][data-panel-motion="true"] [role=tablist],#bilivex-panel[data-presentation="fixed"][data-panel-motion="true"] [data-panel-category-select]{margin-top:auto}
 #bilivex-panel [data-panel-view]{display:flow-root;min-width:0}
 #bilivex-panel .blx-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
 #bilivex-panel .blx-section-head h3,#bilivex-panel .blx-detail-head h3{font-size:15px;margin:0;font-weight:650}
@@ -5696,7 +5746,7 @@
     sharedRuntime.restorePanel = (host = panelDocument.body || panelDocument.documentElement) => { const current = getPanelRoot(); if (current) ensurePanelVisible(current, host); };
     sharedRuntime.cancelPanelMotion = cancelPanelMotion;
     sharedRuntime.panelMotion = { panel, animations: new Set(), finish: null, last: panelMotionSnapshot(panel), viewSize: '' };
-    const resize = () => { cancelPanelMotion(panel); const narrow = Math.min(360, panelWindow.innerWidth - 16) - 34 < 288; nav.hidden = narrow; select.hidden = !narrow; select.value = panelUi.category; setPanelCollapsed(cfg.panelCollapsed, false); };
+    const resize = () => { cancelPanelMotion(panel); syncPanelNavigation(panel, fixedEntry()); setPanelCollapsed(cfg.panelCollapsed, false); };
     sharedRuntime.panelResizeCleanup?.();
     const removeResize = listenLifecycle(panelWindow, 'resize', resize);
     sharedRuntime.panelResizeCleanup = () => {
@@ -5717,7 +5767,7 @@
     sharedRuntime.panelViewResizeObserver?.disconnect();
     sharedRuntime.panelViewResizeObserver = new panelWindow.ResizeObserver(() => {
       const motion = sharedRuntime.panelMotion, size = panelViewSize(panel);
-      if (!panel.isConnected || cfg.panelCollapsed || size === motion.viewSize) return;
+      if (!panel.isConnected || !fixedEntry() && cfg.panelCollapsed || size === motion.viewSize) return;
       motion.viewSize = size;
       const from = motion.animations.size ? panelMotionSnapshot(panel) : motion.last;
       cancelPanelMotion(panel); ensurePanelVisible(panel, getUiHost());
@@ -6775,7 +6825,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '3.3.0';
+    return '3.3.1';
   }
 
   function compareVersions(a, b) {
@@ -7797,10 +7847,211 @@
     rerunResetRequested: false,
     readyVideo: null,
     readyInstanceKey: '',
-    qualityDone: new Set(),
     qualityReadyAt: new Map(),
     webDone: new Set(),
   };
+
+  const QUALITY_VISIT_ATTRIBUTE = 'data-bilivex-quality-visit';
+  const QUALITY_SOURCE_ATTRIBUTE = 'data-bilivex-quality-source';
+  const QUALITY_EVENT = 'bilivex-quality-state';
+  const QUALITY_OBSERVE_MS = 10000, QUALITY_CONFIRM_MS = 3000, QUALITY_CHECK_MS = 500;
+  const qualityOwner = 'quality-' + Math.random().toString(36).slice(2);
+  const qualityWrites = new WeakMap();
+  let qualityTask = null, qualityTimer = null, qualityManualCleanup = null, qualityEpoch = 0;
+
+  function normalizeQualityVisit(raw) {
+    if (raw == null || raw === '') return null;
+    try {
+      const v = JSON.parse(raw);
+      if (raw.length > 4096 || v.schemaVersion !== 1 || typeof v.room !== 'string' || typeof v.urlRoom !== 'string' || !/^\d+$/.test(v.room) || !/^\d+$/.test(v.urlRoom) ||
+          typeof v.epoch !== 'string' || !v.epoch || v.epoch.length > 100 || typeof v.owner !== 'string' || v.owner.length > 100 ||
+          (v.started !== null && (!Number.isFinite(v.started) || v.started < 0)) ||
+          !Number.isInteger(v.submitted) || v.submitted < 0 || v.submitted > 2 ||
+          !['idle', 'observing', 'confirming', 'done', 'failed', 'cancelled', 'yielded'].includes(v.status) ||
+          ['early', 'final', 'yielded', 'uncertain'].some(key => typeof v[key] !== 'boolean')) return undefined;
+      return v;
+    } catch (error) { return undefined; }
+  }
+  function qualityNow() { return panelWindow.performance.now(); }
+  function readQualityVisit() {
+    const v = normalizeQualityVisit(panelDocument.documentElement?.getAttribute(QUALITY_VISIT_ATTRIBUTE));
+    return v?.started > qualityNow() ? undefined : v;
+  }
+  function writeQualityVisit(value) {
+    const root = panelDocument.documentElement, raw = JSON.stringify(value);
+    if (!root || root.getAttribute(QUALITY_VISIT_ATTRIBUTE) === raw) return;
+    root.setAttribute(QUALITY_VISIT_ATTRIBUTE, raw);
+    panelDocument.dispatchEvent(new panelWindow.Event(QUALITY_EVENT));
+  }
+  function qualitySource(player = getPageLivePlayer()) {
+    const source = sharedRuntime.mediaSources?.get(document), room = canonicalRoom(document, false);
+    if (!source || !room || source.room !== room || source.player !== player || !source.current() ||
+        !source.video?.isConnected || source.video.ownerDocument !== document || findActiveLiveVideo(source.root) !== source.video) return null;
+    if (!qualityActiveVideos(document).includes(source.video)) return null;
+    const previous = readQualityVisit(), urlRoom = roomIdFromUrl(panelWindow.location.href);
+    if (!urlRoom || previous === undefined || previous && previous.urlRoom !== urlRoom && previous.room === room && urlRoom !== room) return null;
+    return { ...source, room, panelUrlRoom: urlRoom };
+  }
+  function qualityOwnerDocument(owner) {
+    // 文档仍存活但视频已不可用时，不能继续占住当前画质任务的所有权。
+    return liveUiDocuments().find(doc => doc.documentElement?.getAttribute(QUALITY_SOURCE_ATTRIBUTE) === owner && qualityActiveVideos(doc).length > 0);
+  }
+  function qualityActiveVideos(doc) {
+    return [...doc.querySelectorAll('#live-player video,.live-player-mounter video')].filter(video => {
+      const rect = entryRect(video, panelDocument); return video.readyState > 0 && rect?.width > 0 && rect.height > 0;
+    });
+  }
+  function resetQualityVisit() {
+    const previous = readQualityVisit();
+    if (!previous) return;
+    writeQualityVisit({ ...previous, epoch: qualityOwner + '-' + String(++qualityEpoch), owner: '', started: null, submitted: 0,
+      early: false, final: false, yielded: false, uncertain: false, status: 'idle' });
+  }
+  function qualityStatus(player = getPageLivePlayer()) {
+    const v = readQualityVisit(), source = sharedRuntime.mediaSources?.get(document);
+    const marker = player && qualityWrites.get(player);
+    // 当前所有者已记为不确定时，旧在途标记不能把终止的确认重新归为等待中。
+    if (marker) return marker.uncertain || (v?.owner === qualityOwner && v.uncertain) ? 'uncertain' : 'pending';
+    if (!v || !source || v.room !== source.room || v.urlRoom !== roomIdFromUrl(panelWindow.location.href)) {
+      return cfg.autoHighestQuality && source && (playerEnhancementState.running || playerEnhancementState.timer !== null || playerEnhancementState.retryIndex < PLAYER_RETRY_DELAYS.length) ? 'pending' : '';
+    }
+    if (v.uncertain) return 'uncertain';
+    return cfg.autoHighestQuality && ['observing', 'confirming'].includes(v.status) ? 'pending' : '';
+  }
+  function qualityMessage() {
+    if (!cfg.autoHighestQuality) return '自动最高画质已关闭；当前画质保持不变';
+    const v = readQualityVisit();
+    if (v === undefined) return '画质状态无法确认，请刷新页面后重试';
+    if (!v || v.urlRoom !== roomIdFromUrl(panelWindow.location.href)) return '等待当前直播播放器';
+    if (v.uncertain) return '画质切换结果未确认，请稍后手动选择或重新开启';
+    return { idle: '等待当前直播播放器', observing: '正在核对可用画质，稍后会完成本次检查', confirming: '正在等待原生画质切换',
+      done: '本次画质检查已完成；不会持续锁定画质', yielded: '本次观看保留手动选择；重新开启后可再次检查',
+      cancelled: '本次自动画质已停止；可重新开启', failed: '本次自动画质未完成，已保留当前画质；可重新开启' }[v.status];
+  }
+  function qualityMatches(info, target, requireEvidence = false) {
+    if (!target || currentQualityNumber(info) !== Number(target.qn)) return false;
+    const actual = playUrlQualityNumber(info);
+    if (actual !== null && actual !== Number(target.qn)) return false;
+    const selected = document.querySelector('.quality-wrap .selected,.quality-wrap [aria-checked="true"],.quality-wrap [aria-selected="true"]');
+    if (selected && /^自动/.test(selected.textContent.trim())) return false;
+    if (!requireEvidence || actual !== null) return true;
+    const label = text => String(text || '').replace(/\s+/g, '');
+    return !!selected && selected.getBoundingClientRect().width > 0 && (selected.getAttribute('data-qn') === String(target.qn) || !!target.desc && label(selected.textContent) === label(target.desc));
+  }
+  function scheduleQualityCheck(delay = QUALITY_CHECK_MS) {
+    if (!qualityTask || qualityTimer !== null || document.hidden || !nativeSendPageActive) return;
+    qualityTimer = setTimeout(() => { qualityTimer = null; refreshQualityEnhancement(); }, delay);
+  }
+  function clearQualityTimer() { if (qualityTimer !== null) clearTimeout(qualityTimer); qualityTimer = null; }
+  function finishQuality(status, uncertain = false) {
+    clearQualityTimer();
+    const v = readQualityVisit(), task = qualityTask;
+    qualityTask = null; playerEnhancementState.qualityReadyAt.clear();
+    if (uncertain && task) { const marker = qualityWrites.get(task.player); if (marker) marker.uncertain = true; }
+    if (task && v?.epoch === task.epoch && v.owner === qualityOwner) writeQualityVisit({ ...v, status, uncertain });
+    dmController?.refresh(); playbackController?.refresh();
+  }
+  function suspendQualityObservation(cancel = false) {
+    clearQualityTimer();
+    if (cancel && qualityTask) finishQuality('cancelled', !!qualityWrites.get(qualityTask.player));
+  }
+  function disposeQualityObservation() {
+    suspendQualityObservation(); qualityTask = null;
+    qualityManualCleanup?.(); qualityManualCleanup = null;
+    document.documentElement?.removeAttribute(QUALITY_SOURCE_ATTRIBUTE);
+  }
+  function yieldQuality() {
+    const v = readQualityVisit();
+    if (v?.owner !== qualityOwner || !cfg.autoHighestQuality) return;
+    writeQualityVisit({ ...v, yielded: true, status: 'yielded', uncertain: !!qualityWrites.get(getPageLivePlayer()) });
+    clearQualityTimer(); qualityTask = null; dmController?.refresh(); playbackController?.refresh();
+  }
+  function bindQualityManual() {
+    if (qualityManualCleanup) return;
+    const manual = event => {
+      if (!event.isTrusted || !cfg.autoHighestQuality) return;
+      const item = event.target?.closest?.('.quality-wrap .list-it,.quality-wrap [role=menuitemradio],.quality-wrap [role=option],.quality-wrap select');
+      if (!item || item.closest('#bilivex-panel') || item.matches('[disabled],[aria-disabled="true"]')) return;
+      if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
+      if (event.isComposing) return;
+      yieldQuality();
+    };
+    ['click', 'keydown', 'change'].forEach(type => document.addEventListener(type, manual, true));
+    qualityManualCleanup = () => ['click', 'keydown', 'change'].forEach(type => document.removeEventListener(type, manual, true));
+  }
+  function recoverQualityResult(player) {
+    const marker = player && qualityWrites.get(player);
+    if (marker && (!marker.settled || !qualityMatches(getLivePlayerInfo(player), marker.target, true))) return false;
+    if (marker) qualityWrites.delete(player);
+    const v = readQualityVisit();
+    if (v?.uncertain && v.owner === qualityOwner) {
+      if (!qualityMatches(getLivePlayerInfo(player), marker?.target) && !marker) return false;
+      writeQualityVisit({ ...v, uncertain: false });
+    }
+    return true;
+  }
+  function qualityCallSettled(marker, result, rejected) {
+    marker.settled = true; marker.accepted = !rejected && (result === undefined || qualitySwitchSucceeded(result));
+    if (qualityTask?.marker === marker && nativeSendPageActive) scheduleQualityCheck(0);
+  }
+  function refreshQualityEnhancement(player = getPageLivePlayer(), info = getLivePlayerInfo(player)) {
+    if (!roomIdFromUrl(panelWindow.location.href)) {
+      disposeQualityObservation(); panelDocument.documentElement?.removeAttribute(QUALITY_VISIT_ATTRIBUTE); return;
+    }
+    if (!cfg.autoHighestQuality || !nativeSendPageActive || mediaIsBusy()) {
+      suspendQualityObservation(true);
+      if (!cfg.autoHighestQuality) { qualityManualCleanup?.(); qualityManualCleanup = null; }
+      return;
+    }
+    if (document.hidden) { suspendQualityObservation(); return; }
+    const source = qualitySource(player);
+    if (!source || !info) {
+      playerEnhancementState.qualityReadyAt.clear();
+      if (qualityTask && qualityWrites.has(qualityTask.player)) finishQuality('failed', true);
+      else if (qualityTask) {
+        const v = readQualityVisit();
+        if (v?.started !== null && v?.epoch === qualityTask.epoch && qualityNow() < v.started + QUALITY_OBSERVE_MS + QUALITY_CONFIRM_MS) scheduleQualityCheck();
+        else finishQuality('cancelled');
+      }
+      document.documentElement.removeAttribute(QUALITY_SOURCE_ATTRIBUTE);
+      return;
+    }
+    document.documentElement.setAttribute(QUALITY_SOURCE_ATTRIBUTE, qualityOwner);
+    let v = readQualityVisit();
+    if (v === undefined) return;
+    if (!v || v.room !== source.room && v.urlRoom !== source.panelUrlRoom) {
+      v = { schemaVersion: 1, room: source.room, urlRoom: source.panelUrlRoom, epoch: qualityOwner + '-' + String(++qualityEpoch),
+        owner: '', started: null, submitted: 0, early: false, final: false, yielded: false, uncertain: false, status: 'idle' };
+    }
+    if (v.room !== source.room) return;
+    if (v.owner && v.owner !== qualityOwner && qualityOwnerDocument(v.owner)) return;
+    // 同一真实房间的短号归一只同步URL，不重建启用任务或清除手动让权。
+    if (v.urlRoom !== source.panelUrlRoom) {
+      v = { ...v, urlRoom: source.panelUrlRoom }; writeQualityVisit(v);
+    }
+    bindQualityManual();
+    if (liveUiDocuments().reduce((count, doc) => count + qualityActiveVideos(doc).length, 0) > 1) {
+      clearQualityTimer(); qualityTask = null;
+      writeQualityVisit({ ...v, owner: qualityOwner, status: 'cancelled', uncertain: !!qualityWrites.get(player) }); return;
+    }
+    const oldWrite = qualityWrites.get(player);
+    if (oldWrite && oldWrite.epoch !== v.epoch) {
+      if (oldWrite.settled && qualityMatches(info, oldWrite.target, true)) {
+        // 不确定记录保留旧调用的确认凭据，供明确重新应用字体时核对；不自动重放。
+        if (!v.uncertain) qualityWrites.delete(player);
+      } else { writeQualityVisit({ ...v, owner: qualityOwner, status: 'failed', uncertain: true }); return; }
+    }
+    if (v.yielded || ['done', 'failed', 'cancelled', 'yielded'].includes(v.status)) return;
+    if (v.owner !== qualityOwner || v.started === null) {
+      v = { ...v, urlRoom: source.panelUrlRoom, owner: qualityOwner, started: v.started ?? qualityNow(), status: 'observing' };
+      writeQualityVisit(v);
+    }
+    if (!qualityTask || qualityTask.epoch !== v.epoch || qualityTask.player !== player || qualityTask.video !== source.video || qualityTask.root !== source.root) {
+      clearQualityTimer();
+      qualityTask = { ...source, epoch: v.epoch, marker: qualityWrites.get(player) || null, observed: currentQualityNumber(info) };
+    }
+    applyHighestQuality(getPlayerInstanceKey(info), player, info);
+  }
 
   function syncMoreSettingsInputs() {
     try {
@@ -7821,7 +8072,7 @@
     const ranked = candidates.map((candidate) => ({
       candidate,
       qnNumber: Number(candidate && candidate.qn),
-    })).filter((item) => Number.isFinite(item.qnNumber) && item.qnNumber >= 0)
+    })).filter((item) => item.candidate && item.candidate.qn !== null && item.candidate.qn !== '' && typeof item.candidate.qn !== 'boolean' && Number.isFinite(item.qnNumber) && item.qnNumber >= 0)
       .sort((left, right) => right.qnNumber - left.qnNumber);
     return ranked.length ? ranked[0].candidate : null;
   }
@@ -7830,6 +8081,7 @@
     if (!info || typeof info !== 'object') return null;
     const value = info.quality && typeof info.quality === 'object' ? info.quality.qn :
       (info.quality != null ? info.quality : info.currentQuality);
+    if (value === null || value === undefined || value === '' || typeof value === 'boolean') return null;
     const number = Number(value);
     return Number.isFinite(number) ? number : null;
   }
@@ -7837,12 +8089,11 @@
   function playUrlQualityNumber(info) {
     const match = /[?&]qn=([^&]+)/.exec(String(info && info.playurl || ''));
     if (!match) return null;
-    const number = Number(decodeURIComponent(match[1]));
-    return Number.isFinite(number) ? number : null;
+    try { const number = Number(decodeURIComponent(match[1])); return Number.isFinite(number) ? number : null; }
+    catch (error) { return null; }
   }
 
-  function isInitialPlaybackStable(instanceKey) {
-    const video = document.querySelector('#live-player video, .live-player-mounter video');
+  function isInitialPlaybackStable(instanceKey, video) {
     if (!video || video.readyState < 4 || video.videoWidth <= 0 || video.videoHeight <= 0) {
       playerEnhancementState.qualityReadyAt.delete(instanceKey);
       return false;
@@ -7889,37 +8140,57 @@
     return [findRoomId(), String(playerId), String(streamName)].join(':');
   }
 
-  async function applyHighestQuality(instanceKey, player, info) {
-    if (player && info && Array.isArray(info.qualityCandidates)) {
-      const highest = selectHighestQualityCandidate(info.qualityCandidates);
-      if (!highest) return 'terminal';
-      const highestQnNumber = Number(highest.qn);
-      if (currentQualityNumber(info) === highestQnNumber) {
-        const playUrlQuality = playUrlQualityNumber(info);
-        return playUrlQuality === null || playUrlQuality === highestQnNumber ? 'done' : 'pending';
+  function applyHighestQuality(instanceKey, player, info) {
+    const task = qualityTask, v = readQualityVisit();
+    if (!task || !v || v.epoch !== task.epoch || v.owner !== qualityOwner || v.yielded) return;
+    const time = qualityNow(), elapsed = time - v.started;
+    const marker = task.marker;
+    if (marker) {
+      if (marker.settled && !marker.accepted) {
+        const uncertain = !qualityMatches(info, marker.target, true);
+        if (!uncertain) qualityWrites.delete(player); else marker.uncertain = true;
+        finishQuality('failed', uncertain); return;
       }
-      if (!isInitialPlaybackStable(instanceKey)) return 'pending';
-      if (typeof player.switchQualityAsync !== 'function') return 'terminal';
-      try {
-        playbackController?.interrupt('正在切换画质，自动追帧暂缓');
-        const result = await player.switchQualityAsync(
-          highest.qn,
-          highest.hdrType,
-          false,
-          'bilivex-auto-highest-quality'
-        );
-        if (!qualitySwitchSucceeded(result)) return 'terminal';
-        const verified = getLivePlayerInfo(player);
-        if (currentQualityNumber(verified) !== highestQnNumber) return 'terminal';
-        const verifiedPlayUrlQuality = playUrlQualityNumber(verified);
-        if (verifiedPlayUrlQuality !== null && verifiedPlayUrlQuality !== highestQnNumber) return 'pending';
-        showToast('已切换至' + String(highest.desc || '最高画质').slice(0, 24));
-        return 'done';
-      } catch (e) {
-        return 'terminal';
+      // 页面缓存返回时原生结果可能已迟到；成功确认仍受本次提交及整个任务的截止约束。
+      if (marker.settled && time <= marker.deadline && elapsed <= QUALITY_OBSERVE_MS + QUALITY_CONFIRM_MS && qualityMatches(info, marker.target, true)) {
+        qualityWrites.delete(player); task.marker = null; task.observed = currentQualityNumber(info);
+        if (marker.final) { showToast('已切换至' + String(marker.target.desc || '最高画质').slice(0, 24)); finishQuality('done'); return; }
+        writeQualityVisit({ ...v, status: 'observing', uncertain: false }); scheduleQualityCheck(); return;
       }
+      if (time >= marker.deadline || elapsed >= QUALITY_OBSERVE_MS + QUALITY_CONFIRM_MS) {
+        marker.uncertain = true; finishQuality('failed', true); return;
+      }
+      scheduleQualityCheck(Math.min(QUALITY_CHECK_MS, marker.deadline - time)); return;
     }
-    return 'pending';
+    if (elapsed >= QUALITY_OBSERVE_MS + QUALITY_CONFIRM_MS) { finishQuality('cancelled'); return; }
+    const stable = isInitialPlaybackStable(instanceKey, task.video);
+    const highest = selectHighestQualityCandidate(info.qualityCandidates);
+    const actual = currentQualityNumber(info);
+    // 仅本次提交能解释的变化可以继续观察；其余实际降档优先保留外部选择。
+    if (task.observed !== null && actual !== null && actual !== task.observed) { yieldQuality(); return; }
+    task.observed = actual;
+    const final = elapsed >= QUALITY_OBSERVE_MS;
+    if (!highest) { if (final) finishQuality('failed'); else scheduleQualityCheck(); return; }
+    if (qualityMatches(info, highest) || actual !== null && actual > Number(highest.qn)) {
+      if (final) finishQuality('done'); else scheduleQualityCheck(); return;
+    }
+    if (v.submitted >= 2 || v.final) { finishQuality('failed'); return; }
+    if (!final && (v.early || elapsed > QUALITY_OBSERVE_MS - QUALITY_CONFIRM_MS)) { scheduleQualityCheck(Math.max(1, Math.min(QUALITY_CHECK_MS, QUALITY_OBSERVE_MS - elapsed))); return; }
+    if (!stable) { if (final) finishQuality('failed'); else scheduleQualityCheck(); return; }
+    const normal = typeof player.switchQuality === 'function' && (!highest.hdrType || highest.hdrType === 0);
+    if (!normal && typeof player.switchQualityAsync !== 'function') { finishQuality('failed'); return; }
+    if (qualityWrites.has(player) || !qualitySource(player) || document.hidden || mediaIsBusy()) { finishQuality('failed', qualityWrites.has(player)); return; }
+    const next = { ...v, submitted: v.submitted + 1, early: v.early || !final, final: v.final || final, status: 'confirming', target: Number(highest.qn), method: normal ? 'switchQuality' : 'switchQualityAsync' };
+    const call = { epoch: v.epoch, target: highest, final, settled: false, accepted: true, uncertain: false,
+      deadline: Math.min(time + QUALITY_CONFIRM_MS, v.started + QUALITY_OBSERVE_MS + QUALITY_CONFIRM_MS) };
+    qualityWrites.set(player, call); task.marker = call;
+    writeQualityVisit(next); dmController?.prepareQuality(); playbackController?.interrupt('正在切换画质，自动追帧暂缓');
+    try {
+      const result = normal ? player.switchQuality(highest.qn) : player.switchQualityAsync(highest.qn, highest.hdrType, false, 'bilivex-auto-highest-quality');
+      if (result && typeof result.then === 'function') result.then(value => qualityCallSettled(call, value, false), () => qualityCallSettled(call, undefined, true));
+      else qualityCallSettled(call, result, false);
+    } catch (error) { qualityCallSettled(call, undefined, true); }
+    scheduleQualityCheck(0);
   }
 
   function isWebMode() {
@@ -7927,8 +8198,8 @@
   }
 
   function isPlayerReadyForWebMode() {
-    const video = document.querySelector('#live-player video, .live-player-mounter video');
-    return !!video && video.readyState >= 3 && video.videoWidth > 0 && video.videoHeight > 0;
+    const video = findActiveLiveVideo(document.querySelector('#live-player, .live-player-mounter'));
+    return !!video && qualityActiveVideos(document).includes(video) && video.readyState >= 3 && video.videoWidth > 0 && video.videoHeight > 0;
   }
 
   function isBrowserFullscreen(info) {
@@ -7940,6 +8211,14 @@
     if (isBrowserFullscreen(info)) return 'pending';
     if (!isPlayerReadyForWebMode()) return 'pending';
     if (!player || typeof player.setFullscreenStatus !== 'function') return 'pending';
+    const root = document.querySelector('#live-player, .live-player-mounter'), video = findActiveLiveVideo(root);
+    const room = canonicalRoom(document), urlRoom = roomIdFromUrl(location.href), panelUrlRoom = roomIdFromUrl(panelWindow.location.href);
+    // 等待回退或确认后重新核对来源和全屏状态；旧任务交回有限重试，不记作当前实例完成。
+    const current = () => sequence === playerEnhancementState.sequence && cfg.autoWebMode && nativeSendPageActive && !mediaIsBusy() &&
+      getPageLivePlayer() === player && root?.isConnected && document.querySelector('#live-player, .live-player-mounter') === root &&
+      findActiveLiveVideo(root) === video && canonicalRoom(document) === room && roomIdFromUrl(location.href) === urlRoom &&
+      roomIdFromUrl(panelWindow.location.href) === panelUrlRoom && !isBrowserFullscreen(getLivePlayerInfo(player)) && isPlayerReadyForWebMode();
+    if (!current()) return 'pending';
     try {
       playbackController?.interrupt('正在切换网页模式，自动追帧暂缓');
       // 慢网时播放器可能只把状态写成 1，却没有真正建立网页模式布局。
@@ -7947,10 +8226,11 @@
       if (Number(info && info.playerStatus) === 1) {
         player.setFullscreenStatus(0);
         await new Promise((resolve) => setTimeout(resolve, 300));
-        if (sequence !== playerEnhancementState.sequence || !cfg.autoWebMode) return 'terminal';
+        if (!current()) return 'pending';
       }
       player.setFullscreenStatus(1);
       await new Promise((resolve) => setTimeout(resolve, 350));
+      if (!current()) return 'pending';
       return isWebMode() ? 'done' : 'pending';
     } catch (e) {
       return 'terminal';
@@ -7963,8 +8243,8 @@
     playerEnhancementState.retryIndex = 0;
     playerEnhancementState.sequence += 1;
     if (!feature || feature === 'quality') {
-      playerEnhancementState.qualityDone.clear();
       playerEnhancementState.qualityReadyAt = new Map();
+      suspendQualityObservation(feature === 'quality');
     }
     if (!feature || feature === 'web') playerEnhancementState.webDone.clear();
   }
@@ -7989,14 +8269,9 @@
         pending = true;
         return;
       }
-      if (cfg.autoHighestQuality && !playerEnhancementState.qualityDone.has(instanceKey)) {
-        const result = await applyHighestQuality(instanceKey, player, info);
-        if (sequence !== playerEnhancementState.sequence) return;
-        if (result === 'pending') pending = true;
-        else {
-          playerEnhancementState.qualityDone.add(instanceKey);
-          playerEnhancementState.qualityReadyAt.delete(instanceKey);
-        }
+      if (cfg.autoHighestQuality) {
+        refreshQualityEnhancement(player, info);
+        if (!readQualityVisit() || !qualitySource(player)) pending = true;
       }
       const currentInfo = getLivePlayerInfo(player);
       if (cfg.autoWebMode && !playerEnhancementState.webDone.has(instanceKey)) {
@@ -8414,8 +8689,9 @@
       if (!sourceCurrent() || suspended || document.hidden || sharedRuntime.mediaController?.mode && sharedRuntime.mediaController.mode !== 'idle' || document.pictureInPictureElement || panelDocument.pictureInPictureElement || panelWindow.documentPictureInPicture?.window) {
         release(); samples = []; setStatus('suspended', '后台、媒体模式或来源变化，自动追帧暂缓'); return;
       }
-      if ((cfg.autoHighestQuality || cfg.autoWebMode) && (playerEnhancementState.running || playerEnhancementState.timer !== null)) {
-        release(); samples = []; setStatus('suspended', '等待自动画质和网页模式初始化完成'); return;
+      const quality = qualityStatus(binding?.source.player);
+      if (quality || cfg.autoWebMode && (playerEnhancementState.running || playerEnhancementState.timer !== null)) {
+        release(); samples = []; setStatus('suspended', quality === 'uncertain' ? '画质切换结果未确认，自动追帧暂缓' : '等待自动画质和网页模式初始化完成'); return;
       }
       if (!video || video.paused || video.seeking || video.ended || video.error || video.readyState < 3 || getLivePlayerInfo(binding.source.player)?.liveStatus !== 1 || !canonicalRoom(document, false)) {
         release(); samples = []; setStatus('suspended', video?.paused ? '当前已暂停，自动追帧暂缓' : '等待当前直播视频稳定'); return;
@@ -8765,6 +9041,7 @@
   // ---------- 初始化 ----------
   function initRoom() {
     registerMediaSource();
+    refreshQualityEnhancement();
     if (!playbackController) playbackController = createPlaybackController();
     playbackController.refresh();
     refreshEntryPresentation();
@@ -8941,9 +9218,10 @@
       if (event.persisted && purifyController) purifyController.resume();
       if (event.persisted) { tryInit(); guardianCheck(); }
       if (event.persisted) dmController?.resume();
-      if (event.persisted) playbackController?.resume();
+      if (event.persisted) { playbackController?.resume(); refreshQualityEnhancement(); }
     };
     const onPageHide = (event) => {
+      disposeQualityObservation();
       if (event.persisted) playbackController?.suspend(); else playbackController?.dispose();
       if (document === panelDocument) sharedRuntime.entryController?.suspend();
       // 后续自动任务取消仍依赖 WeakSet 保护组合文本，入口状态清理不能提前撤销该保护。
@@ -9022,6 +9300,21 @@
       listenLifecycle(panelDocument, DM_ROOM_EVENT, () => { registerMediaSource(); dmController?.refresh(); });
     }
     listenLifecycle(document, 'visibilitychange', () => refreshPurification());
+    listenLifecycle(document, 'visibilitychange', () => {
+      if (document.hidden) suspendQualityObservation();
+      else {
+        const v = readQualityVisit();
+        // 已提交的调用沿用自身确认期限；只有错过最终选择的观察任务直接停止，不补提交。
+        if (qualityTask && !qualityTask.marker && v?.started !== null && qualityNow() - v.started >= QUALITY_OBSERVE_MS) finishQuality('cancelled', !!qualityWrites.get(qualityTask.player));
+        else refreshQualityEnhancement();
+      }
+    });
+    listenLifecycle(panelDocument, QUALITY_EVENT, () => {
+      if (qualityTask) scheduleQualityCheck(0);
+      else if (cfg.autoHighestQuality && readQualityVisit()?.status === 'idle') refreshQualityEnhancement();
+      dmController?.refresh(); playbackController?.refresh();
+      if (document === panelDocument) refreshPanelStatus();
+    });
     listenLifecycle(document, 'visibilitychange', () => playbackController?.hidePage());
     listenLifecycle(document, PLAYBACK_ACTION, () => playbackController?.action());
     listenLifecycle(document, 'keydown', event => { if (event.key === 'Escape' && !event.isComposing && document.getElementById('bilivex-sync-tooltip')) playbackController?.hideTip(true); });
