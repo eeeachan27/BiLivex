@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      3.3.1
+// @version      3.3.2
 // @license      MIT
 // @description  B站直播间增强工具：同步时间状态、温和自动追帧、原生弹幕字体记忆、评论区固定入口、六分类悬浮窗、带弹幕画中画、仅音频模式、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -39,7 +39,7 @@
  *   9) 仅音频：独立音轨、停止视频加载、暂停卸载及原生视频恢复。
  */
 
-(function () {
+(function initBiLivex() {
   'use strict';
 
   // 开播提醒仅在 B 站 HTTPS 顶层页运行；直播 iframe 保留现有房间功能。
@@ -55,7 +55,11 @@
   try { liveAlertTopPage = window.top === window; } catch (e) { /* 跨源页不参加协调 */ }
   if (!liveAlertTopPage && !liveAlertRoomPage) return;
   if (!liveAlertTopPage && liveAlertRoomPage && !liveAlertEmbeddedRoom) {
-    try { if (window.top.location.origin !== location.origin) return; } catch (e) { return; }
+    try { if (window.top.location.origin !== location.origin) return; } catch (e) {
+      // 活动页可能尚未完成父子文档的域设置；就绪后仅重试一次，持续跨源仍停止。
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBiLivex, { once: true });
+      return;
+    }
   }
   const liveAlertController = liveAlertTopPage ? createLiveAlertController(liveAlertRoomPage) : null;
   if (!liveAlertRoomPage) return;
@@ -2097,7 +2101,9 @@
   function getPanelDocument() { return getPanelRoot()?.ownerDocument || panelDocument; }
 
   const valueChangeListenerIds = [];
-  const sharedRuntime = panelWindow.__bilivexRuntime || (panelWindow.__bilivexRuntime = {});
+  // 油猴的顶层窗口代理与子页所见窗口可能不同，统一在同一页面窗口保存共享状态。
+  const runtimeWindow = typeof unsafeWindow !== 'undefined' && unsafeWindow ? unsafeWindow.top : panelWindow;
+  const sharedRuntime = runtimeWindow.__bilivexRuntime || (runtimeWindow.__bilivexRuntime = {});
   if (!Object.prototype.hasOwnProperty.call(sharedRuntime, 'residentLayer')) sharedRuntime.residentLayer = null;
   if (!Object.prototype.hasOwnProperty.call(sharedRuntime, 'hoverOwner')) sharedRuntime.hoverOwner = null;
 
@@ -4171,7 +4177,8 @@
   // ---------- 净化：独立偏好、按文档适配、未知类别保留 ----------
   const PURIFY_KEYS = ['purifyGiftBar', 'purifyRanking', 'purifyActivityEntry', 'purifyEntryMessage', 'purifyGiftMessage'];
   const PURIFY_LABELS = { purifyGiftBar: '隐藏礼物栏', purifyRanking: '隐藏排行榜', purifyActivityEntry: '隐藏活动入口', purifyEntryMessage: '隐藏进场提示', purifyGiftMessage: '隐藏礼物提示' };
-  const PURIFY_AREAS = { purifyGiftBar: '.gift-control-section.gift-control-panel', purifyRanking: '.right-module-measure > .rank-entries', purifyActivityEntry: '.right-module-measure > .activity-gather-entry.activity-entry' };
+  // 原生礼物栏的ID显示规则优先级更高；保留旧布局的类名兜底。
+  const PURIFY_AREAS = { purifyGiftBar: '#gift-control-vm.gift-control-section.gift-control-panel, .gift-control-section.gift-control-panel', purifyRanking: '.right-module-measure > .rank-entries', purifyActivityEntry: '.right-module-measure > .activity-gather-entry.activity-entry' };
   const PURIFY_PROTECTED = 'video,textarea,input,button.send-btn,.chat-control-panel,.danmaku-menu,.live-web-player-controller,#web-player-controller-wrap-el,#bilivex-panel,#bilivex-wheel-window,[data-bilivex-wheel-entry]';
   const PURIFY_OVERLAY_ROOT = '.chat-history-panel > .chat-overlay-layer';
   const PURIFY_WELCOME = PURIFY_OVERLAY_ROOT + ' > .welcome-section-bottom';
@@ -5495,7 +5502,7 @@
       if (focus) input.focus();
     } else if (panelUi.detail === 'favorites' || (!panelUi.detail && panelUi.category === '收藏')) {
       const view = panelElement('div', null, 'bilivex-favorites-view'); content.appendChild(view);
-      heading.appendChild(panelElement('span', getFavorites().length + ' 条', 'bilivex-status'));
+      const count = panelElement('span', getFavorites().length + ' 条', 'bilivex-status'); count.dataset.favoriteCount = '1'; heading.appendChild(count);
       renderFavoritesView(panelUi.favoriteMode, panelUi.favoriteQuery);
     } else if (panelUi.detail === 'following') {
       openLiveAlertManager();
@@ -6682,6 +6689,8 @@
     const body = panel && panel.querySelector('.bilivex-panel-body');
     const view = body && body.querySelector('.bilivex-favorites-view');
     if (!view) return;
+    const count = panel.querySelector('[data-favorite-count]');
+    if (count) count.textContent = getFavorites().length + ' 条';
     const composingSearch = view.querySelector('input[type="search"]');
     if (mode === 'browse' && composingSearch && composingInputs.has(composingSearch)) return;
     const currentQuery = query == null ? (view.dataset.bilivexQuery || '') : query;
@@ -6825,7 +6834,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '3.3.1';
+    return '3.3.2';
   }
 
   function compareVersions(a, b) {
@@ -7116,6 +7125,7 @@
     const root = document.querySelector('#live-player, .live-player-mounter');
     const video = findActiveLiveVideo(root), player = getPageLivePlayer();
     const previous = sources.get(document);
+    let openingMove = null;
     if (previous && previous.video === video && previous.player === player && previous.room === canonicalRoom(document) && previous.current()) return;
     playbackController?.interrupt('播放器或直播间正在变化');
     const controller = sharedRuntime.mediaController;
@@ -7125,8 +7135,13 @@
     if (controller?.session?.source.document === document) {
       const s = controller.session;
       if (s.kind === 'audio' && s.nativeStopped && root === s.source.root && s.source.current()) return;
-      if (s.route === 'move' && s.video?.ownerDocument === s.pip?.document && root === s.source.root && s.source.current() && s.source.canReturnVideo(s)) return;
-      controller.stop('播放器或直播间已变化', false);
+      if (s.route === 'move' && s.video?.ownerDocument === s.pip?.document && root === s.source.root && s.source.current()) {
+        if (s.source.canReturnVideo(s)) return;
+        // 部分原生播放器在视频搬出时立即重建节点；只允许首次开窗中的唯一同源替代视频回退捕获。
+        if (controller.mode === 'pip-opening' && player === s.source.player && video && video !== s.source.video &&
+            root.querySelectorAll('video').length === 1 && typeof video.captureStream === 'function') openingMove = s;
+      }
+      if (!openingMove) controller.stop('播放器或直播间已变化', false);
     }
     if (!video || !player || !/^\d+$/.test(canonicalRoom(document))) { sources.delete(document); return; }
     const source = { document, window, root, video, player, room: canonicalRoom(document),
@@ -7138,6 +7153,16 @@
         } catch (e) { return false; }
       },
       config: () => cfg, webMode: () => isWebMode(), refreshControls: () => refreshPlayerMediaControls(),
+      readQuality: (requireReady = false) => {
+        try {
+          const info = getLivePlayerInfo(player), value = readMediaQuality(info), visit = readQualityVisit();
+          const key = JSON.stringify([currentQualityNumber(info), value?.hdrType ?? info?.hdrType ?? null]);
+          const unavailable = requireReady && (!source.current() || video.readyState < 2 || qualityWrites.has(player) || visit === undefined || visit?.uncertain ||
+            liveUiDocuments().reduce((count, doc) => count + qualityActiveVideos(doc).length, 0) !== 1);
+          return { value: unavailable ? null : value, key };
+        } catch (error) { return { value: null, key: '' }; }
+      },
+      restoreQuality: (target, signal, duration, allowed) => restoreMediaQuality(source, target, signal, duration, allowed),
       dismissHover: () => { if (FloatingDmEngine.hovered) FloatingDmEngine.leave(FloatingDmEngine.hovered); },
       send: (payload, context) => sendPlusOne(payload, context),
       suspend: () => { playbackController?.interrupt('媒体模式正在切换，自动追帧暂缓'); resetPlayerEnhancementSchedule(); }, resume: () => { if (nativeSendPageActive) { schedulePlayerEnhancements(true); dmController?.refresh(); playbackController?.refresh(); } },
@@ -7149,6 +7174,7 @@
       [...root.querySelectorAll('video')].every(video => s.retainedVideos?.has(video));
     source.current = () => mediaCurrent() && ((document.cookie.match(/(?:^|;\s*)DedeUserID=(\d+)/) || [])[1] || '') === account;
     sources.set(document, source);
+    if (openingMove) openingMove.openingMoveSource = source;
     sharedRuntime.refreshPanelStatus?.();
   }
 
@@ -7213,10 +7239,12 @@
     };
     const begin = (kind, source) => {
       cachedRecovery = null; cancelRestore();
+      const quality = kind === 'audio' ? source.readQuality?.(true) : null;
       const s = { kind, source, route: state.route, generation: ++state.generation,
         abort: new panelWindow.AbortController(), timers: new Set(), cleanups: [], tracks: [], actions: new Set(),
         volume: source.video.volume, muted: source.video.muted, paused: source.video.paused, nativeStopped: false,
-        webMode: source.webMode(), trigger: panelDocument.activeElement };
+        webMode: source.webMode(), trigger: panelDocument.activeElement,
+        qualitySnapshot: quality?.value, qualityAtStart: quality?.key, qualityPreference: source.config().autoHighestQuality };
       state.session = s; state.mode = kind === 'pip' ? 'pip-opening' : 'audio-preparing'; state.recovery = null;
       // 使当前文档的画质/网页模式旧任务失效，实例间通过共享忙碌状态让权。
       source.suspend?.(); update('正在' + (kind === 'pip' ? '打开画中画' : '准备仅音频'));
@@ -7226,6 +7254,9 @@
       [...new Set([panelDocument, source.document])].forEach(doc => {
         watch(s, doc, 'fullscreenchange', onFullscreen); watch(s, doc, 'webkitfullscreenchange', onFullscreen);
       });
+      if (kind === 'audio') ['click', 'keydown', 'change'].forEach(type => watch(s, source.document, type, event => {
+        if (isNativeQualityIntent(event)) s.qualityIntent = true;
+      }, true));
       return s;
     };
     const resolveRoom = async s => {
@@ -7241,7 +7272,16 @@
       if (!s.nativeStopped) return;
       if (!s.source.current()) throw new Error('原播放器已失效，请在当前直播间手动恢复视频');
       cancelRestore();
-      const task = { abort: new panelWindow.AbortController(), generation: state.generation };
+      const latestQuality = s.source.readQuality?.();
+      let targetQuality = s.qualitySnapshot, qualityUpdated = false;
+      // 停止视频后的元数据若又变化，采用新的选择；未确认的新选择不套用旧快照。
+      if (targetQuality && (s.qualityIntent || latestQuality?.key !== (s.stoppedQualityKey ?? s.qualityAtStart))) {
+        targetQuality = latestQuality?.key !== (s.stoppedQualityKey ?? s.qualityAtStart) ? latestQuality?.value : null;
+        qualityUpdated = true;
+      }
+      if (s.source.config().autoHighestQuality !== s.qualityPreference) targetQuality = null;
+      s.qualityRestoreMessage = '';
+      const task = { abort: new panelWindow.AbortController(), generation: state.generation, deadline: qualityNow() + 6000, qualityDone: false };
       restoreTask = task; state.recovery = s;
       try {
         // 整个恢复过程共用截止时间；页面取消可立即结束，迟到的 SDK 回调不再改动状态。
@@ -7251,9 +7291,13 @@
             if (settled) return; settled = true;
             panelWindow.clearTimeout(poll); panelWindow.clearTimeout(deadline);
             task.abort.signal.removeEventListener('abort', cancel);
+            ['play', 'playing'].forEach(type => s.source.document.removeEventListener(type, keepPaused, true));
             if (error) reject(error); else resolve();
           };
           const cancel = () => finish(new Error('视频恢复已取消'));
+          const keepPaused = event => {
+            if (!settled && s.paused && s.source.current() && event.target?.tagName === 'VIDEO' && !event.target.paused && s.source.root.contains(event.target)) event.target.pause();
+          };
           const fail = error => finish(error || new Error('原生视频重载失败，请点击恢复视频重试'));
           const current = () => {
             if (settled) return false;
@@ -7265,8 +7309,28 @@
           const check = () => {
             try {
               if (!current()) return;
-              const video = s.source.root.querySelector('video');
+              const ready = Array.from(s.source.root.querySelectorAll('video')).filter(video => video.readyState >= 2);
+              const visible = ready.filter(video => { const rect = video.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; });
+              const candidates = visible.length ? visible : ready;
+              const video = candidates.length === 1 ? candidates[0] : null;
               if (video?.readyState >= 2) {
+                if (s.paused && !video.paused) video.pause();
+                if (!task.qualityStarted) {
+                  task.qualityStarted = true;
+                  if (targetQuality && s.source.restoreQuality) {
+                    const duration = Math.max(0, task.deadline - qualityNow() - 750);
+                    s.source.restoreQuality(targetQuality, task.abort.signal, duration,
+                      () => s.source.config().autoHighestQuality === s.qualityPreference).then(result => {
+                      if (!current()) return;
+                      task.qualityDone = true;
+                      s.qualityRestoreMessage = qualityUpdated && result.status === 'restored' ? '已恢复新的画质选择' : result.message;
+                      check();
+                    }, fail);
+                    return;
+                  }
+                  task.qualityDone = true;
+                }
+                if (!task.qualityDone) return;
                 video.volume = s.volume; video.muted = s.muted;
                 if (s.paused) { video.pause(); finish(); }
                 else Promise.resolve(video.play()).then(() => { if (current()) finish(); }, () => finish(new Error('请点击原生播放器恢复播放'))).catch(finish);
@@ -7274,15 +7338,16 @@
             } catch (error) { fail(error); }
           };
           task.abort.signal.addEventListener('abort', cancel, { once: true });
+          if (s.paused) ['play', 'playing'].forEach(type => s.source.document.addEventListener(type, keepPaused, true));
           deadline = panelWindow.setTimeout(() => finish(new Error('视频恢复超时，请点击恢复视频重试')), 6000);
           try { if (current()) Promise.resolve(s.source.player.reload()).then(check, fail); }
           catch (error) { fail(error); }
         });
         if (restoreTask === task) state.recovery = null;
-      } finally { if (restoreTask === task) restoreTask = null; }
+      } finally { task.abort.abort(); if (restoreTask === task) restoreTask = null; }
     }
 
-    async function stop(message = '已退出媒体模式', restoreVideo = true) {
+    async function stop(message = '已退出媒体模式', restoreVideo = true, keepPip = false) {
       cachedRecovery = null;
       const s = state.session;
       if (!s) {
@@ -7310,10 +7375,10 @@
         else s.video.remove();
       } else if (s.video) s.video.srcObject = null;
       s.anchor?.remove();
-      s.pip?.close();
+      if (!keepPip) s.pip?.close();
       try {
         if (restoreVideo) await restore(s);
-        if (state.generation === generation && state.mode === 'restoring') { state.mode = 'idle'; state.recovery = null; update(message); s.source.resume?.(); if (s.trigger?.isConnected) s.trigger.focus({ preventScroll: true }); }
+        if (state.generation === generation && state.mode === 'restoring') { state.mode = 'idle'; state.recovery = null; update(message + (s.qualityRestoreMessage ? '；' + s.qualityRestoreMessage : '')); s.source.resume?.(); if (s.trigger?.isConnected) s.trigger.focus({ preventScroll: true }); }
       } catch (e) { if (state.generation !== generation) return; state.mode = s.source.current() ? 'recovery-needed' : 'idle'; state.recovery = state.mode === 'recovery-needed' ? s : null; update(e.message); }
     }
 
@@ -7387,11 +7452,12 @@
       const doc = s.pip.document;
       doc.title = 'BiLivex · 弹幕画中画';
       const style = doc.createElement('style');
+      // 搬移视频可能自带原生层级；仅在小窗中约束其叠放，归还时保留原样式。
       style.textContent = `html,body{margin:0;height:100%;background:#111;color:#fff;font:14px system-ui}
         body{position:relative;overflow:hidden}button,select{font:inherit;border:0;border-radius:8px;padding:5px 9px;cursor:pointer;background:#34404c;color:#fff}
         button:disabled{opacity:.5;cursor:default}button:focus-visible,input:focus-visible{outline:2px solid #ff86b0}
         #stage{position:relative;height:100%;overflow:hidden}video{width:100%;height:100%;object-fit:contain}
-        #dm,#resident{position:absolute;inset:0;overflow:hidden;pointer-events:none}.dm{position:absolute;white-space:nowrap;font-size:20px;font-weight:600;text-shadow:1px 1px 3px #000;pointer-events:none}.dm img{height:32px;vertical-align:middle}
+        #stage>video{z-index:0!important}#dm,#resident{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}.dm{position:absolute;white-space:nowrap;font-size:20px;font-weight:600;text-shadow:1px 1px 3px #000;pointer-events:none}.dm img{height:32px;vertical-align:middle}
         #actions{position:fixed;display:flex;gap:4px;padding:4px;border-radius:10px;background:#253240ee;z-index:4}#actions button{min-height:30px}#plus{background:#c44174}
         #bar{position:absolute;bottom:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:7px;background:#20242bee;z-index:6;opacity:0;visibility:hidden;transform:translateY(100%);pointer-events:none;transition:opacity .2s ease,transform .2s ease,visibility 0s linear .2s}
         #bar[data-visible="1"]{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto;transition-delay:0s}#volume{width:80px}
@@ -7399,6 +7465,7 @@
         #notice[hidden]{display:none}#notice-text{flex:1;min-width:0;overflow-wrap:anywhere}#notice-close{flex:none;min-width:28px;min-height:28px;padding:2px 6px;pointer-events:auto}
         @media(prefers-reduced-motion:reduce){#bar{transition:none}}`;
       doc.head.appendChild(style);
+      s.cleanups.push(() => style.remove());
       doc.body.innerHTML = '<main id="stage" tabindex="-1"><video muted playsinline></video><div id="dm"></div><div id="resident"></div></main><nav id="bar" aria-label="画中画控制"><button id="play">暂停</button><button id="mute">静音</button><input id="volume" type="range" min="0" max="1" step="0.05" aria-label="音量"><button id="dm-toggle">隐藏弹幕</button></nav><aside id="notice" hidden><span id="notice-text" role="status" aria-live="polite"></span><button id="notice-close" type="button" aria-label="关闭提示" title="关闭提示">×</button></aside>';
       const stage = doc.getElementById('stage'), layer = doc.getElementById('dm'), resident = doc.getElementById('resident');
       const bar = doc.getElementById('bar'), tip = doc.getElementById('notice'), tipText = doc.getElementById('notice-text');
@@ -7600,37 +7667,64 @@
 
     async function openPip(ownerDocument) {
       if (state.mode !== 'idle') { update('请先退出当前模式，再开启画中画'); return false; }
-      const source = sourceNow(ownerDocument);
+      let source = sourceNow(ownerDocument);
       if (!source) { update('未找到正在直播的原生视频'); return false; }
       if (!panelWindow.documentPictureInPicture) { update('当前浏览器不支持带弹幕画中画'); return false; }
       if (nativeModeConflict(source)) { update('请先退出全屏或已有画中画，再开启带弹幕画中画'); return false; }
-      const s = begin('pip', source); s.width = source.video.videoWidth; s.height = source.video.videoHeight;
+      let s = begin('pip', source), fallback = false;
+      s.width = source.video.videoWidth; s.height = source.video.videoHeight;
       try {
         // 开窗在用户点击链内发起；消息接口与媒体准备在获得窗口后进行。
         const pip = await panelWindow.documentPictureInPicture.requestWindow({ width: 670, height: 430 });
         if (!live(s)) { pip.close(); return false; }
-        s.pip = pip; watch(s, pip, 'pagehide', () => { if (state.session === s) stop(); });
-        buildPip(s);
-        if (s.route === 'move') {
-          s.moveStyle = { width: source.video.style.width, height: source.video.style.height };
-          s.retainedVideos = new Set([...source.root.querySelectorAll('video')].filter(video => video !== source.video));
-          s.anchor = source.document.createComment('BiLivex 视频原位'); source.video.before(s.anchor);
-          s.video.replaceWith(source.video); s.video = source.video;
-          s.video.style.width = '100%'; s.video.style.height = '100%';
-          await wait(s, () => s.video.readyState >= 2 && s.video.videoWidth > 0 && s.video.videoHeight > 0, 5000, '原视频尚未就绪，请在直播画面恢复后重试');
-        } else {
-          if (typeof source.video.captureStream !== 'function') throw new Error('当前视频无法捕获，请选择搬移原视频后重试');
-          const stream = source.video.captureStream(); s.tracks = stream.getTracks();
-          const tracks = stream.getVideoTracks(); if (!tracks.length) throw new Error('没有可捕获的视频轨道');
-          s.video.srcObject = new panelWindow.MediaStream(tracks); s.video.muted = true;
-          await wait(s, () => s.video.videoWidth > 0 && s.video.readyState >= 2, 5000, '画面捕获不可用，请选择搬移原视频后重试', () => s.video.play());
-          tracks.forEach(track => watch(s, track, 'ended', () => stop('源视频轨道已结束')));
+        // 首次搬移失败最多回退一次；旧会话完整清理，保留此次用户手势已打开的小窗。
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (!live(s)) return false;
+          const currentSession = s;
+          s.pip = pip; watch(s, pip, 'pagehide', () => { if (state.session === currentSession) stop(); });
+          buildPip(s);
+          if (s.route === 'move') {
+            s.moveStyle = { width: source.video.style.width, height: source.video.style.height };
+            s.retainedVideos = new Set([...source.root.querySelectorAll('video')].filter(video => video !== source.video));
+            s.anchor = source.document.createComment('BiLivex 视频原位'); source.video.before(s.anchor);
+            s.video.replaceWith(source.video); s.video = source.video;
+            s.video.style.width = '100%'; s.video.style.height = '100%';
+            await wait(s, () => !!s.openingMoveSource || s.video.readyState >= 2 && s.video.videoWidth > 0 && s.video.videoHeight > 0, 5000, '原视频尚未就绪，请在直播画面恢复后重试');
+          } else {
+            if (fallback) await wait(s, () => source.video.readyState >= 2 && source.video.videoWidth > 0 && source.video.videoHeight > 0, 5000, '重建的原生视频尚未就绪');
+            if (!live(s)) return false;
+            if (typeof source.video.captureStream !== 'function') throw new Error('当前视频无法捕获，请选择搬移原视频后重试');
+            const stream = source.video.captureStream(); s.tracks = stream.getTracks();
+            const tracks = stream.getVideoTracks(); if (!tracks.length) throw new Error('没有可捕获的视频轨道');
+            s.video.srcObject = new panelWindow.MediaStream(tracks); s.video.muted = true;
+            await wait(s, () => s.video.videoWidth > 0 && s.video.readyState >= 2, 5000, '画面捕获不可用，请选择搬移原视频后重试', () => s.video.play());
+            tracks.forEach(track => watch(s, track, 'ended', () => stop('源视频轨道已结束')));
+          }
+          // 就绪 Promise 返回前可能已被换房或关闭取消，不能在清理之后再插入遮罩。
+          if (!live(s)) return false;
+          if (!s.openingMoveSource) { coverPipSource(s); await connectMessages(s, s.receive); }
+          if (!live(s)) return false;
+          if (s.openingMoveSource) {
+            const next = s.openingMoveSource, paused = s.paused;
+            if (attempt || !next.current() || sharedRuntime.mediaSources?.get(next.document) !== next || next.root !== source.root ||
+                next.player !== source.player || next.room !== source.room || next.document !== source.document ||
+                next.root.querySelectorAll('video').length !== 1 || next.root.querySelector('video') !== next.video) throw new Error('重建的视频来源无法确认');
+            const generation = state.generation + 1;
+            await stop('原生播放器重建，正在改用捕获画面', false, true);
+            if (pip.closed || state.mode !== 'idle' || state.generation !== generation || !next.current()) {
+              if (!pip.closed && state.session?.pip !== pip) pip.close();
+              return false;
+            }
+            source = next; state.route = 'capture'; fallback = true;
+            s = begin('pip', source); s.pip = pip;
+            s.width = source.video.videoWidth; s.height = source.video.videoHeight;
+            if (paused) source.video.pause();
+            continue;
+          }
+          state.mode = 'pip-active'; update(fallback ? '画中画生效 · 原生播放器重建，已改用捕获画面' : '画中画生效 · 悬停弹幕可 +1');
+          health(s); return true;
         }
-        coverPipSource(s);
-        await connectMessages(s, s.receive);
-        if (!live(s)) return false;
-        state.mode = 'pip-active'; update('画中画生效 · 悬停弹幕可 +1');
-        health(s); return true;
+        return false;
       } catch (error) { if (state.session === s) await stop('画中画开启失败：' + error.message); return false; }
     }
 
@@ -7691,6 +7785,7 @@
         // 先核实独立音轨，再停止原生下载；新音频流只在停止之后启动。
         s.nativeStopped = true;
         await wait(s, () => { const v = source.root.querySelector('video'); return !v || v.readyState < 2 || !v.currentSrc; }, 5000, '原生视频未能停止加载', () => source.player.stopPlayback());
+        s.stoppedQualityKey = source.readQuality?.().key;
         const audio = source.document.createElement('audio'); s.audio = audio; audio.volume = s.volume; audio.muted = s.muted;
         // 准备期间已允许调节音量和静音，立即保留用户设置。
         watch(s, audio, 'volumechange', () => { s.volume = audio.volume; s.muted = audio.muted; });
@@ -7757,7 +7852,7 @@
         } else {
           if (!s.audio?.isConnected || !s.placeholder?.isConnected) { stop('音频控制区域已重建，已尝试恢复视频'); return; }
           const video = s.source.root.querySelector('video');
-          if (video?.readyState >= 2 && !video.paused) { stop('原生视频已重新启动，退出仅音频'); return; }
+          if (video?.readyState >= 2 && !video.paused) { stop('原生视频已重新启动，退出仅音频', false); return; }
         }
         health(s);
       }, 1500);
@@ -7766,7 +7861,7 @@
     async function recover() {
       const s = state.recovery; if (!s || state.mode !== 'recovery-needed') return;
       const generation = ++state.generation; state.mode = 'restoring'; update('正在恢复视频');
-      try { await restore(s); if (state.generation !== generation) return; state.mode = 'idle'; update('视频已恢复'); s.source.resume?.(); }
+      try { await restore(s); if (state.generation !== generation) return; state.mode = 'idle'; update('视频已恢复' + (s.qualityRestoreMessage ? '；' + s.qualityRestoreMessage : '')); s.source.resume?.(); }
       catch (error) { if (state.generation !== generation) return; state.mode = s.source.current() ? 'recovery-needed' : 'idle'; state.recovery = state.mode === 'recovery-needed' ? s : null; update(error.message); }
     }
     function suspendPage(ownerDocument, persisted) {
@@ -7824,7 +7919,7 @@
       [['capture', '捕获原视频流（优先）'], ['move', '搬移原视频（兼容选项）']].forEach(([value, text]) => { const option = panelElement('option', text); option.value = value; select.appendChild(option); });
       select.value = controller.route; select.disabled = controller.mode !== 'idle';
       listenPanelNode(select, 'change', () => { controller.route = select.value; }); content.appendChild(select);
-    } else content.appendChild(panelElement('p', '独立音频播放；仅音频期间暂不执行自动画质、网页模式与视频同步。失败时尝试恢复视频。'));
+    } else content.appendChild(panelElement('p', '独立音频播放；期间暂不执行自动画质、网页模式与视频同步。退出后恢复进入前可确认的画质，新的手动选择优先。失败时尝试恢复视频。'));
     const start = panelButton(kind === 'pip' ? '开启带弹幕画中画' : '开启仅音频', () => kind === 'pip' ? controller.openPip() : controller.openAudio());
     start.dataset.mediaStart = kind; start.disabled = controller.mode !== 'idle'; content.appendChild(start);
     const exit = panelButton(controller.mode === 'recovery-needed' ? '重试恢复视频' : '退出当前模式', () => controller.mode === 'recovery-needed' ? controller.recover() : controller.stop());
@@ -7966,14 +8061,16 @@
     writeQualityVisit({ ...v, yielded: true, status: 'yielded', uncertain: !!qualityWrites.get(getPageLivePlayer()) });
     clearQualityTimer(); qualityTask = null; dmController?.refresh(); playbackController?.refresh();
   }
+  function isNativeQualityIntent(event) {
+    if (!event.isTrusted || event.isComposing) return false;
+    const item = event.target?.closest?.('.quality-wrap .list-it,.quality-wrap [role=menuitemradio],.quality-wrap [role=option],.quality-wrap select');
+    return !!item && !item.closest('#bilivex-panel') && !item.matches('[disabled],[aria-disabled="true"]') &&
+      (event.type !== 'keydown' || ['Enter', ' '].includes(event.key));
+  }
   function bindQualityManual() {
     if (qualityManualCleanup) return;
     const manual = event => {
-      if (!event.isTrusted || !cfg.autoHighestQuality) return;
-      const item = event.target?.closest?.('.quality-wrap .list-it,.quality-wrap [role=menuitemradio],.quality-wrap [role=option],.quality-wrap select');
-      if (!item || item.closest('#bilivex-panel') || item.matches('[disabled],[aria-disabled="true"]')) return;
-      if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
-      if (event.isComposing) return;
+      if (!cfg.autoHighestQuality || !isNativeQualityIntent(event)) return;
       yieldQuality();
     };
     ['click', 'keydown', 'change'].forEach(type => document.addEventListener(type, manual, true));
@@ -8093,8 +8190,103 @@
     catch (error) { return null; }
   }
 
+  function readMediaQuality(info, requireCandidate = true) {
+    try {
+      const qn = currentQualityNumber(info), actual = playUrlQualityNumber(info);
+      if (!Number.isSafeInteger(qn) || qn <= 0 || actual !== null && actual !== qn) return null;
+      const candidates = (Array.isArray(info.qualityCandidates) ? info.qualityCandidates : []).filter(item =>
+        item && typeof item.qn !== 'boolean' && item.qn !== '' && Number(item.qn) === qn);
+      const hdrOf = item => item.hdrType == null || item.hdrType === '' ? 0 : typeof item.hdrType === 'boolean' ? null : Number(item.hdrType);
+      const variants = [...new Set(candidates.map(hdrOf).filter(value => Number.isSafeInteger(value) && value >= 0))];
+      const raw = info.hdrType ?? (info.quality && typeof info.quality === 'object' ? info.quality.hdrType : undefined);
+      const hdrType = raw == null || raw === '' ? (variants.length === 1 ? variants[0] : null) : typeof raw === 'boolean' ? null : Number(raw);
+      if (!Number.isSafeInteger(hdrType) || hdrType < 0) return null;
+      const candidate = candidates.find(item => hdrOf(item) === hdrType);
+      if (requireCandidate && !candidate) return null;
+      return { qn, hdrType, desc: String(candidate?.desc || '').slice(0, 80) };
+    } catch (error) { return null; }
+  }
+
+  // SDK 调用和临时监听归属于来源文档，父页只提供恢复期限与取消信号。
+  function restoreMediaQuality(source, target, signal, duration, allowed) {
+    return new Promise(resolve => {
+      let settled = false, timer = null, call = null, readyKey = '', readyRecord = null;
+      const end = qualityNow() + duration, player = source.player;
+      const matches = info => {
+        const value = readMediaQuality(info, false);
+        return value && value.qn === target.qn && value.hdrType === target.hdrType;
+      };
+      const finish = (status, message) => {
+        if (settled) return; settled = true;
+        if (timer !== null) window.clearTimeout(timer);
+        signal.removeEventListener('abort', cancel);
+        ['click', 'keydown', 'change'].forEach(type => document.removeEventListener(type, manual, true));
+        if (readyKey && playerEnhancementState.qualityReadyAt.get(readyKey) === readyRecord) playerEnhancementState.qualityReadyAt.delete(readyKey);
+        if (call && qualityWrites.get(player) === call) {
+          if (!source.current() || call.settled && matches(getLivePlayerInfo(player))) qualityWrites.delete(player);
+          else {
+            call.uncertain = true;
+            const visit = readQualityVisit();
+            if (visit?.owner === qualityOwner && visit.room === source.room) writeQualityVisit({ ...visit, uncertain: true });
+          }
+        }
+        resolve({ status, message });
+      };
+      const cancel = () => finish('cancelled', '画质恢复已取消');
+      const manual = event => { if (isNativeQualityIntent(event)) finish('cancelled', '已停止旧画质恢复，采用新的手动选择'); };
+      const check = () => {
+        if (settled) return;
+        try {
+          if (signal.aborted || !source.current() || getPageLivePlayer() !== player) { cancel(); return; }
+          if (!allowed()) { finish('cancelled', '画质偏好已改变，已保留当前画质'); return; }
+          if (document.hidden) { finish('cancelled', '页面已切至后台，原画质恢复已停止'); return; }
+          const info = getLivePlayerInfo(player), videos = liveUiDocuments().flatMap(doc => qualityActiveVideos(doc));
+          if (info && info.liveStatus !== 1) { finish('cancelled', '直播状态已改变，原画质恢复已停止'); return; }
+          const video = videos.length === 1 && videos[0].ownerDocument === document ? videos[0] : null;
+          if (matches(info) && (!call || call.settled && call.accepted) && video?.readyState >= 2) {
+            finish(call ? 'restored' : 'unchanged', call ? '已恢复进入前的画质' : ''); return;
+          }
+          if (call?.settled && !call.accepted) { finish('unconfirmed', '原画质恢复未确认，请手动选择画质'); return; }
+          if (qualityNow() >= end || call && qualityNow() >= call.deadline) {
+            finish('unconfirmed', call ? '原画质恢复未确认，请手动选择画质' : '原画质暂不可用，已保留原生画质'); return;
+          }
+          if (!call && video) {
+            if (qualityWrites.has(player)) { finish('unconfirmed', '原画质仍有未完成切换，请稍后手动选择'); return; }
+            const key = getPlayerInstanceKey(info);
+            if (readyKey && readyKey !== key && playerEnhancementState.qualityReadyAt.get(readyKey) === readyRecord) playerEnhancementState.qualityReadyAt.delete(readyKey);
+            readyKey = key;
+            // 沿用原有1.8秒稳定期，不重新启动进房最高画质任务。
+            const stable = isInitialPlaybackStable(key, video);
+            readyRecord = playerEnhancementState.qualityReadyAt.get(key);
+            const candidate = Array.isArray(info?.qualityCandidates) && info.qualityCandidates.find(item => item &&
+              typeof item.qn !== 'boolean' && item.qn !== '' && Number(item.qn) === target.qn &&
+              typeof item.hdrType !== 'boolean' && Number(item.hdrType || 0) === target.hdrType);
+            if (stable && candidate) {
+              const normal = target.hdrType === 0 && typeof player.switchQuality === 'function';
+              if (!normal && typeof player.switchQualityAsync !== 'function') { finish('unconfirmed', '原画质恢复接口不可用，请手动选择画质'); return; }
+              call = { epoch: readQualityVisit()?.epoch || 'media-restore', target, final: true, settled: false, accepted: true,
+                uncertain: false, deadline: Math.min(end, qualityNow() + QUALITY_CONFIRM_MS) };
+              // 共用原有在途标记；结果未知时，后续操作不能再提交另一轮切流。
+              qualityWrites.set(player, call);
+              try {
+                const result = normal ? player.switchQuality(candidate.qn) : player.switchQualityAsync(candidate.qn, candidate.hdrType, false, 'bilivex-audio-restore-quality');
+                if (result && typeof result.then === 'function') result.then(value => qualityCallSettled(call, value, false), () => qualityCallSettled(call, undefined, true));
+                else qualityCallSettled(call, result, false);
+              } catch (error) { qualityCallSettled(call, undefined, true); }
+            }
+          }
+          timer = window.setTimeout(check, 100);
+        } catch (error) { finish('unconfirmed', '原画质恢复未确认，请手动选择画质'); }
+      };
+      signal.addEventListener('abort', cancel, { once: true });
+      ['click', 'keydown', 'change'].forEach(type => document.addEventListener(type, manual, true));
+      check();
+    });
+  }
+
   function isInitialPlaybackStable(instanceKey, video) {
-    if (!video || video.readyState < 4 || video.videoWidth <= 0 || video.videoHeight <= 0) {
+    // Firefox直播可持续停在可播放状态3；沿用稳定等待，不把状态4作为切流前提。
+    if (!video || video.readyState < 3 || video.videoWidth <= 0 || video.videoHeight <= 0) {
       playerEnhancementState.qualityReadyAt.delete(instanceKey);
       return false;
     }
