@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      3.3.2
+// @version      3.3.3
 // @license      MIT
 // @description  B站直播间增强工具：同步时间状态、温和自动追帧、原生弹幕字体记忆、评论区固定入口、六分类悬浮窗、带弹幕画中画、仅音频模式、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -61,8 +61,122 @@
       return;
     }
   }
+  const appearanceController = createAppearanceController(document);
   const liveAlertController = liveAlertTopPage ? createLiveAlertController(liveAlertRoomPage) : null;
   if (!liveAlertRoomPage) return;
+
+  function normalizeAppearancePreference(value) {
+    return {
+      theme: value?.theme === 'pink' ? 'pink' : 'blue',
+      colorMode: ['auto', 'light', 'dark'].includes(value?.colorMode) ? value.colorMode : 'auto',
+      showWheelEntry: value?.showWheelEntry !== false,
+    };
+  }
+
+  function readSiteColorMode(ownerDocument) {
+    const root = ownerDocument?.documentElement;
+    if (!root) return '';
+    try { if (ownerDocument.defaultView.location.hostname !== 'live.bilibili.com') return ''; } catch (error) { return ''; }
+    const lab = String(root.getAttribute('lab-style') || '').toLowerCase().split(/[\s,;]+/);
+    if (lab.includes('dark')) return 'dark';
+    if (lab.includes('light')) return 'light';
+    return '';
+  }
+
+  function resolveColorMode(preference, ownerDocument, authorityDocument) {
+    if (preference.colorMode !== 'auto') return { mode: preference.colorMode, source: '手动设置' };
+    const site = readSiteColorMode(authorityDocument) || readSiteColorMode(ownerDocument);
+    if (site) return { mode: site, source: '直播间' };
+    return { mode: 'light', source: '直播间默认外观' };
+  }
+
+  function appearanceColors(mode, theme) {
+    const dark = mode === 'dark', pink = theme === 'pink';
+    return {
+      bg: dark ? '#1b1e24' : '#ffffff', surface: dark ? '#232832' : '#f4f8fb', input: dark ? '#161b22' : '#ffffff',
+      text: dark ? '#e6edf3' : '#283746', muted: dark ? '#a9b7c6' : '#526979', border: dark ? '#647386' : '#8295a4',
+      edge: dark ? '#3c4b5b' : '#d5e3ec', tint: dark ? (pink ? '#392632' : '#20333f') : (pink ? '#fff0f5' : '#eaf7fc'),
+      accent: dark ? (pink ? '#ff9ebd' : '#68cef5') : (pink ? '#b73d6d' : '#007398'),
+      solid: pink ? '#a5345f' : '#086e91', bright: dark ? (pink ? '#ed94b2' : '#5ab8de') : (pink ? '#b73d6d' : '#007da7'),
+      success: dark ? '#83d5af' : '#176847', warning: dark ? '#f3cd89' : '#82520f', warningSolid: '#82520f', error: dark ? '#ffabab' : '#a32132',
+      shadow: dark ? 'rgba(0,0,0,.5)' : 'rgba(36,62,84,.18)',
+    };
+  }
+
+  function applyAppearanceColors(root, colors, mode) {
+    for (const [key, value] of Object.entries(colors)) {
+      if (root.style.getPropertyValue('--blx-' + key) !== value) root.style.setProperty('--blx-' + key, value);
+    }
+    if (root.getAttribute('data-bilivex-color-mode') !== mode) root.setAttribute('data-bilivex-color-mode', mode);
+  }
+
+  function createAppearanceController(ownerDocument, authorityDocument) {
+    const ownerWindow = ownerDocument.defaultView;
+    if (!authorityDocument) {
+      try { authorityDocument = ownerWindow.top.document; } catch (error) { authorityDocument = ownerDocument; }
+    }
+    let observer = null, listenerId = null, active = false, queued = false, previous = '';
+    const controller = { state: null, onChange: null, refresh, dispose };
+    function refresh(confirmedPreference) {
+      if (!active || !ownerDocument.documentElement) return;
+      let stored = confirmedPreference || controller.state || {};
+      if (!confirmedPreference) {
+        try { stored = JSON.parse(GM_getValue('bilivex_cfg') || '{}'); } catch (error) { /* 读取失败时保留已确认的外观。 */ }
+      }
+      const preference = normalizeAppearancePreference(stored);
+      const resolved = resolveColorMode(preference, ownerDocument, authorityDocument);
+      const colors = appearanceColors(resolved.mode, preference.theme);
+      const state = { ...preference, ...resolved, colors };
+      applyAppearanceColors(ownerDocument.documentElement, colors, state.mode);
+      if (!ownerDocument.getElementById('bilivex-appearance-style')) {
+        const style = ownerDocument.createElement('style'); style.id = 'bilivex-appearance-style';
+        style.textContent = `
+#bilivex-panel,#bilivex-wheel-window,#bilivex-live-alert-host,.bilivex-float-actions,#bilivex-toast{color-scheme:var(--blx-scheme);}
+.bilivex-float-actions{background:var(--blx-bg)!important;color:var(--blx-text)!important;}
+.bilivex-float-actions button,.bilivex-float-plus-btn{color:#fff!important;background:var(--blx-solid)!important;}
+#bilivex-toast{background:var(--blx-text)!important;color:var(--blx-bg)!important;}
+[data-bilivex-comment-action]:focus-visible{outline:2px solid currentColor;outline-offset:-2px;}
+#bilivex-live-alert-manager{background:var(--blx-bg)!important;color:var(--blx-text)!important;}
+#bilivex-live-alert-manager input{background:var(--blx-input)!important;color:var(--blx-text)!important;border-color:var(--blx-border)!important;}
+#bilivex-panel input::placeholder,#bilivex-panel textarea::placeholder,#bilivex-wheel-window input::placeholder,#bilivex-wheel-window textarea::placeholder{color:var(--blx-muted);opacity:1;}
+        `;
+        (ownerDocument.head || ownerDocument.documentElement).appendChild(style);
+      }
+      ownerDocument.documentElement.style.setProperty('--blx-scheme', state.mode);
+      const key = JSON.stringify([state.mode, state.theme, state.colorMode, state.source]);
+      controller.state = state;
+      if (key !== previous) { previous = key; controller.onChange?.(state); }
+    }
+    function schedule() {
+      if (queued || !active) return;
+      queued = true;
+      Promise.resolve().then(() => { queued = false; refresh(); });
+    }
+    function pause() {
+      active = false; observer?.disconnect(); observer = null;
+      if (listenerId != null) { try { GM_removeValueChangeListener(listenerId); } catch (error) { /* 文档退出时清理。 */ } listenerId = null; }
+    }
+    function resume() {
+      if (active) return;
+      active = true;
+      observer = new ownerWindow.MutationObserver(schedule);
+      for (const doc of new Set([ownerDocument, authorityDocument])) {
+        if (doc?.documentElement) observer.observe(doc.documentElement, { attributes: true, attributeFilter: ['lab-style'] });
+      }
+      try { listenerId = GM_addValueChangeListener('bilivex_cfg', schedule); } catch (error) { /* 设置保存和页面恢复时仍会刷新。 */ }
+      refresh();
+    }
+    function onHide(event) { if (event.persisted) pause(); else dispose(); }
+    function onReady() { if (active) { pause(); resume(); } }
+    function dispose() {
+      pause(); ownerWindow.removeEventListener('pagehide', onHide); ownerWindow.removeEventListener('pageshow', resume);
+      ownerDocument.removeEventListener('DOMContentLoaded', onReady);
+    }
+    ownerWindow.addEventListener('pagehide', onHide); ownerWindow.addEventListener('pageshow', resume);
+    ownerDocument.addEventListener('DOMContentLoaded', onReady, { once: true });
+    resume();
+    return controller;
+  }
 
   function liveAlertUid(value) {
     const number = Number(value);
@@ -503,7 +617,7 @@
       }
       const root = host.attachShadow({ mode: 'open' });
       const style = document.createElement('style');
-      style.textContent = ':host{all:initial} .card{box-sizing:border-box;width:min(320px,calc(100vw - 24px));padding:14px;border-radius:12px;background:#fff;color:#222;box-shadow:0 6px 24px #0003;font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;pointer-events:auto}.head{display:flex;gap:10px;align-items:center}.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#00aeec}.name{font-weight:700}.title{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.actions{display:flex;gap:8px;margin-top:12px}button{flex:1;padding:7px;border:0;border-radius:7px;cursor:pointer;background:#e9f7fd;color:#006b94}button.go{background:#00aeec;color:white}button:focus-visible{outline:2px solid #fb7299;outline-offset:2px}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}';
+      style.textContent = ':host{all:initial} .card{box-sizing:border-box;width:min(320px,calc(100vw - 24px));padding:14px;border-radius:12px;background:var(--blx-bg);color:var(--blx-text);box-shadow:0 6px 24px #0003;font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;pointer-events:auto}.head{display:flex;gap:10px;align-items:center}.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#00aeec}.name{font-weight:700}.title{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.actions{display:flex;gap:8px;margin-top:12px}button{flex:1;padding:7px;border:0;border-radius:7px;cursor:pointer;background:var(--blx-tint);color:var(--blx-accent)}button.go{background:var(--blx-solid);color:white}button:focus-visible{outline:2px solid var(--blx-accent);outline-offset:2px}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}';
       const box = document.createElement('div'); box.className = 'card'; box.setAttribute('aria-label', '主播开播提醒');
       const head = document.createElement('div'); head.className = 'head';
       const avatar = document.createElement('div'); avatar.style.cssText = 'position:relative;width:42px;height:42px;flex:none;border-radius:50%;background:#00aeec;color:#fff;display:grid;place-items:center;font-weight:700;';
@@ -723,7 +837,7 @@
       accentEnd: '#ff9ab2',
       accentGradient: 'linear-gradient(90deg,#fb7299 0%,#ff9ab2 100%)',
       titleGradient: 'linear-gradient(90deg,#00AEEC 0%,#5cc8ff 100%)',
-      feedbackGradient: 'linear-gradient(135deg,#00AEEC,#5cc8ff)',
+      feedbackGradient: 'var(--blx-solid)',
     },
     pink: {
       name: '粉色',
@@ -737,7 +851,7 @@
       accentEnd: '#5cc8ff',
       accentGradient: 'linear-gradient(90deg,#1E88E5 0%,#5cc8ff 100%)',
       titleGradient: 'linear-gradient(90deg,#FB7299 0%,#FFA3BC 100%)',
-      feedbackGradient: 'linear-gradient(135deg,#FB7299,#FFA3BC)',
+      feedbackGradient: 'var(--blx-solid)',
     },
   };
 
@@ -928,6 +1042,8 @@
     panelPos: null,            // 拖拽后的面板位置 {left,top}，null 表示未拖拽过，使用默认+避让
     panelAnchor: null,         // 面板沿 left/right 一侧锚定，尺寸变化时保持同侧
     theme: 'blue',             // 主题 'blue' | 'pink'
+    colorMode: 'auto',         // 自动跟随直播间实验室的深色开关
+    showWheelEntry: true,      // 显示发送栏旁的独轮车入口
     favoritesSchemaVersion: 1,
     favorites: [],
   };
@@ -986,7 +1102,7 @@
       const raw = GM_getValue('bilivex_cfg');
       const parsed = raw ? JSON.parse(raw) : {};
       const obj = normalizeBooleanSettings(parsed);
-      if (!obj.theme || (obj.theme !== 'blue' && obj.theme !== 'pink')) obj.theme = 'blue';
+      Object.assign(obj, normalizeAppearancePreference(obj));
       if (obj.panelAnchor !== 'left' && obj.panelAnchor !== 'right') obj.panelAnchor = null;
       // 兼容旧版本嵌在 cfg 内的收藏；首次读到旧列表时迁移到独立存储，
       // 后续顶层菜单与 iframe 实例只会读取同一份收藏数据。
@@ -1001,15 +1117,41 @@
     }
   }
 
+  async function commitStoredConfig(key, merge) {
+    const abort = new panelWindow.AbortController();
+    const expire = panelWindow.setTimeout(() => abort.abort(), 3000);
+    const leave = () => abort.abort();
+    window.addEventListener('pagehide', leave, { once: true });
+    try {
+      if (!panelWindow.navigator.locks?.request) throw new Error('当前浏览器无法安全保存设置');
+      return await panelWindow.navigator.locks.request(key, { signal: abort.signal }, () => {
+        if (abort.signal.aborted) throw new Error('设置保存已取消');
+        const raw = GM_getValue(key);
+        const next = merge(raw);
+        const serialized = JSON.stringify(next);
+        GM_setValue(key, serialized);
+        if (GM_getValue(key) !== serialized) throw new Error('设置保存结果未确认，请重新核对');
+        return next;
+      });
+    } finally { panelWindow.clearTimeout(expire); window.removeEventListener('pagehide', leave); }
+  }
+
+  function commitPanelConfig(patch) {
+    return commitStoredConfig('bilivex_cfg', raw => {
+      const stored = raw ? JSON.parse(raw) : {};
+      if (!stored || typeof stored !== 'object' || Array.isArray(stored)) throw new Error('设置结构无法读取，原值已保留');
+      return { ...stored, ...patch };
+    });
+  }
+
   function updateCfg(patch) {
-    // 每次从持久化存储合并，避免顶层页和 iframe 的旧快照相互覆盖。
-    const latest = loadCfg();
-    const next = { ...latest, ...patch, favorites: getFavorites() };
-    try { GM_setValue('bilivex_cfg', JSON.stringify(next)); } catch (e) {
-      console.warn('[BiLivex] 保存配置失败：' + String(e && e.message || e).slice(0, 160));
-    }
-    cfg = next;
-    return next;
+    cfg = { ...cfg, ...patch };
+    return commitPanelConfig(patch).catch(error => {
+      panelConfigUncertain = true;
+      console.warn('[BiLivex] 保存配置失败：' + error.message);
+      panelMessage('保存失败：' + error.message);
+      return null;
+    });
   }
 
   function getFavorites() {
@@ -1151,6 +1293,7 @@
   }
 
   let cfg = loadCfg();
+  let panelConfigUncertain = false;
   applyEarlyP2PSetting(cfg.blockP2PUpload);
   // 当前主题色板
   let currentTheme = THEMES[cfg.theme] || THEMES.blue;
@@ -1782,7 +1925,18 @@
     currentTheme = THEMES[cfg.theme] || THEMES.blue;
     syncWheelTheme();
     const themedPanel = getPanelRoot();
-    if (themedPanel) { themedPanel.classList.toggle('blx-pink', cfg.theme === 'pink'); themedPanel.style.setProperty('--panel-tint', 'rgba(' + currentTheme.primaryRgb + ',.12)'); }
+    if (themedPanel) {
+      themedPanel.classList.toggle('blx-pink', cfg.theme === 'pink');
+      const state = appearanceController.state;
+      if (state) applyAppearanceColors(themedPanel, state.colors, state.mode);
+      themedPanel.style.setProperty('--panel-tint', 'var(--blx-tint)');
+    }
+    getPanelDocument().querySelectorAll('[data-bilivex-color-choice]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.bilivexColorChoice === cfg.colorMode)));
+    const appearanceStatus = getPanelDocument().querySelector('[data-bilivex-color-status]');
+    if (appearanceStatus && appearanceController.state) {
+      const state = appearanceController.state;
+      appearanceStatus.textContent = '当前为' + (state.mode === 'dark' ? '深色' : '浅色') + '，跟随' + state.source;
+    }
 
     // 1. 面板标题渐变 + 阴影（折叠态固定 logo 圆形按钮，不随主题切换）
     const panel = getPanelRoot();
@@ -1810,9 +1964,9 @@
     // 3. 主题选择按钮组的高亮
     Array.from(getPanelDocument().querySelectorAll('[data-bilivex-theme]')).forEach((b) => {
       const isActive = b.dataset.bilivexTheme === cfg.theme; b.setAttribute('aria-pressed', String(isActive));
-      b.style.background = isActive ? currentTheme.primary : '#fff';
-      b.style.color = isActive ? '#fff' : '#666';
-      b.style.borderColor = isActive ? currentTheme.primary : '#e0e6ed';
+      b.style.background = isActive ? 'var(--blx-tint)' : 'var(--blx-bg)';
+      b.style.color = isActive ? 'var(--blx-accent)' : 'var(--blx-text)';
+      b.style.borderColor = isActive ? 'var(--blx-accent)' : 'var(--blx-border)';
     });
 
     // 4. 30连击按钮（accent 互补色）
@@ -2110,7 +2264,8 @@
   function applyConfigChange(previous, next, local = false) {
     cfg = next;
     if (previous.floatDmPlus !== next.floatDmPlus) toggleFloatingDmEnabled();
-    if (previous.theme !== next.theme) applyTheme();
+    if (previous.theme !== next.theme || previous.colorMode !== next.colorMode) { appearanceController.refresh(next); applyTheme(); }
+    if (previous.showWheelEntry !== next.showWheelEntry) bindWheelEntry();
     syncMoreSettingsInputs();
     if (previous.autoHighestQuality !== next.autoHighestQuality) {
       resetPlayerEnhancementSchedule('quality');
@@ -2155,6 +2310,7 @@
   let wheelToken = 0, wheelTimer = null, wheelDeadlineTimer = null, wheelHeartbeatTimer = null, wheelRoomStatusTimer = null, wheelRelease = null;
   let wheelSendController = null;
   let wheelEntry = null, wheelControl = null, wheelControlObserver = null;
+  let wheelOpener = null;
   let wheelResumeTimer = null, wheelResumeRoom = '', favoriteRoomOnly = false;
   let wheelChatDocument = null;
   const wheelEmotionCatalog = new Map();
@@ -2522,12 +2678,24 @@
       }
       if (token !== wheelToken || wheelRelease || wheelResumeRoom !== room || currentWheelRoom() !== room) return;
       wheelSnapshot();
-      openWheelPanel(); wheelState.reason = '3 秒后恢复，可点击暂停取消'; renderWheelStatus();
+      openWheelPanel(); wheelState.reason = '3 秒后恢复，可点击暂停取消';
       wheelResumeTimer = setTimeout(() => { wheelResumeTimer = null; startWheel(); }, 3000);
+      renderWheelStatus();
     } catch (error) {
       if (token !== wheelToken || wheelResumeRoom !== room || currentWheelRoom() !== room) return;
       openWheelPanel(); wheelState.reason = '无法自动恢复：' + error.message; renderWheelStatus();
     }
+  }
+
+  function clearWheelEntry() {
+    const entry = wheelEntry;
+    if (entry?.ownerDocument.activeElement === entry && entry.ownerDocument.hasFocus()) {
+      const fallback = getPanelDocument().querySelector('[data-bilivex-entry], [data-panel-toggle]') || entry.ownerDocument.querySelector('.chat-input');
+      if (fallback?.getClientRects().length) fallback.focus({ preventScroll: true });
+    }
+    wheelControlObserver?.disconnect();
+    entry?.remove();
+    wheelControlObserver = wheelControl = wheelEntry = null;
   }
 
   function bindWheelEntry() {
@@ -2538,10 +2706,18 @@
       return;
     }
     const controls = strictWheelControls();
-    if (wheelEntry && (!controls || wheelEntry.parentElement !== controls.button.parentElement)) { wheelEntry.remove(); wheelEntry = null; }
+    if (wheelRelease && currentWheelRoom() !== wheelState.room) stopWheelForRoomChange();
+    if (!cfg.showWheelEntry || !controls) clearWheelEntry();
     if (!controls) return;
+    if (document === panelDocument && !wheelRelease && wheelConfig.resume.enabled && controls.room && wheelResumeRoom !== controls.room) {
+      wheelResumeRoom = controls.room;
+      const mode = wheelConfig.resume.byRoom[controls.room];
+      if (mode && wheelConfig.riskAccepted) prepareWheelResume(controls.room, mode);
+    }
+    if (!cfg.showWheelEntry) return;
+    if (wheelEntry && wheelEntry.parentElement !== controls.button.parentElement) clearWheelEntry();
     const { button, control } = controls;
-    if (control !== wheelControl) {
+    if (control !== wheelControl || !wheelControlObserver) {
       if (wheelControlObserver) wheelControlObserver.disconnect();
       wheelControl = control;
       wheelControlObserver = new MutationObserver(() => bindWheelEntry());
@@ -2559,12 +2735,6 @@
       button.before(wheelEntry);
     }
     if (wheelEntry.nextElementSibling !== button) button.before(wheelEntry);
-    if (wheelRelease && currentWheelRoom() !== wheelState.room) stopWheelForRoomChange();
-    if (document === panelDocument && !wheelRelease && wheelConfig.resume.enabled && controls.room && wheelResumeRoom !== controls.room) {
-      wheelResumeRoom = controls.room;
-      const mode = wheelConfig.resume.byRoom[controls.room];
-      if (mode && wheelConfig.riskAccepted) prepareWheelResume(controls.room, mode);
-    }
   }
 
   function disposeWheel() {
@@ -2572,9 +2742,7 @@
     wheelRoomStatusTimer = null;
     if (document === panelDocument) { const view = panelDocument.getElementById('bilivex-wheel-window'); if (view) view.remove(); const style = panelDocument.getElementById('bilivex-wheel-window-style'); if (style) style.remove(); }
     stopWheel('页面已离开', true);
-    if (wheelControlObserver) wheelControlObserver.disconnect();
-    if (wheelEntry) wheelEntry.remove();
-    wheelControlObserver = wheelControl = wheelEntry = null;
+    clearWheelEntry(); wheelOpener = null;
   }
 
   function getFrameTransform() {
@@ -4060,7 +4228,7 @@
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
     const heading = panelDocument.createElement('strong'); heading.textContent = '特别关注主播';
     const back = panelDocument.createElement('button'); back.type = 'button'; back.textContent = '返回';
-    const status = panelDocument.createElement('div'); status.setAttribute('aria-live', 'polite'); status.style.cssText = 'font-size:11px;color:#667;';
+    const status = panelDocument.createElement('div'); status.setAttribute('aria-live', 'polite'); status.style.cssText = 'font-size:11px;color:var(--blx-muted);';
     const search = panelDocument.createElement('input'); search.type = 'search'; search.placeholder = '搜索昵称或 UID'; search.setAttribute('aria-label', '搜索主播昵称或 UID');
     search.style.cssText = 'box-sizing:border-box;width:100%;padding:6px;border:1px solid #ccd;border-radius:6px;';
     const actions = panelDocument.createElement('div'); actions.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
@@ -5191,8 +5359,8 @@
     ['p2p', '防止 P2P 上传', '观看', '网络设置'],
     ['pip', '带弹幕画中画', '观看', '小窗 悬停 +1'], ['audio', '仅音频模式', '观看', '声音 恢复视频'],
     ['alerts', '开播提醒', '关注', '提醒'], ['following', '管理特别关注', '关注', '关注名单'],
-    ['like', '一键点赞', '弹幕', '30连击'], ['theme', '外观主题', '设置', '蓝色 粉色'],
-    ['quick', '常用入口配置', '设置', '排序'], ['entry', '插件入口', '设置', '固定插件入口到评论区 logo 悬浮按钮'], ['position', '恢复窗口位置', '设置', '拖动 锚点'],
+    ['like', '一键点赞', '弹幕', '30连击'], ['theme', '外观主题', '设置', '蓝色 粉色 深色 浅色 自动 明暗'],
+    ['quick', '常用入口配置', '设置', '排序'], ['entry', '插件入口', '设置', '固定插件入口到评论区 logo 悬浮按钮 独轮车入口 隐藏轮椅 发送栏入口'], ['position', '恢复窗口位置', '设置', '拖动 锚点'],
     ['about', '版本与更新', '设置', '版本号']
   ];
   const PANEL_PRESENTATION = {
@@ -5204,7 +5372,7 @@
     p2p: ['网络与播放调节', '切换此项将重载播放器', '⇄'],
     pip: ['画面与声音', '置顶小窗，悬停弹幕操作', '▣'], audio: ['画面与声音', '独立音频流，随时恢复视频', '♫'],
     alerts: ['特别关注', '在打开的 B 站页面提醒', '♧'], following: ['特别关注', '选择需要提醒的主播', '◎'],
-    like: ['互动', '明确点击后执行 30 连击', '♡'], theme: ['界面', '蓝／粉主题配色', '◐'],
+    like: ['互动', '明确点击后执行 30 连击', '♡'], theme: ['界面', '强调色与明暗外观', '◐'],
     quick: ['界面', '最多四项，自由替换', '⊞'], entry: ['界面', '固定到评论区，或保持悬浮入口', '⌂'], position: ['界面', '恢复悬浮窗的默认停放位置', '⌖'],
     about: ['偏好与版本', '查看版本与更新入口', 'ⓘ']
   };
@@ -5331,20 +5499,24 @@
     const node = getPanelDocument().querySelector('[data-panel-notice]');
     if (node) { node.textContent = message; const panel = getPanelRoot(); if (panel) ensurePanelVisible(panel, getUiHost()); }
   }
-  function savePanelConfig(patch) {
-    const previous = cfg;
+  async function savePanelConfig(patch) {
     try {
-      const next = { ...loadCfg(), ...patch, favorites: getFavorites() };
-      GM_setValue('bilivex_cfg', JSON.stringify(next));
-      const actual = loadCfg();
+      const stored = await commitPanelConfig(patch);
+      const actual = { ...DEFAULT_CFG, ...normalizeBooleanSettings(stored), ...normalizeAppearancePreference(stored), favorites: getFavorites() };
       if (Object.keys(patch).some(key => JSON.stringify(actual[key]) !== JSON.stringify(patch[key]))) throw new Error('设置被其他页面修改');
-      applyConfigChange(previous, actual, true); panelMessage('已保存'); return true;
-    } catch (error) { cfg = previous; panelMessage('保存失败：' + error.message); return false; }
+      panelConfigUncertain = false;
+      applyConfigChange(cfg, actual, true); panelMessage('已保存'); return true;
+    } catch (error) { panelConfigUncertain = true; panelMessage('保存失败：' + error.message + '，待重新核对'); return false; }
   }
   function panelViewKey() { return panelUi.search ? 'search:' + panelUi.query : panelUi.category + ':' + panelUi.detail; }
   function capturePanelView() {
     const content = getPanelDocument().querySelector('[data-panel-content]');
     if (content) panelUi.positions.set(panelViewKey(), content.scrollTop);
+    const target = content?.querySelector('[data-catchup-target]');
+    if (target && panelUi.catchupDraft) {
+      panelUi.catchupDraft.selection = [target.selectionStart, target.selectionEnd];
+      panelUi.catchupDraft.focused = target.ownerDocument.activeElement === target;
+    }
     if (panelUi.captureFollowing) panelUi.captureFollowing();
   }
   function openPanelView(category, detail = '', fromBack = false) {
@@ -5410,7 +5582,7 @@
     const favoriteDirty = favoriteDraft && (favoriteDraft.deleted.size || favoriteDraft.added.trim() || [...favoriteDraft.patches].some(([id, value]) => favoriteDraft.base.items.find(item => item.id === id)?.text !== value));
     const following = panelUi.followingDraft;
     const followingDirty = following && (following.selected.length !== following.original.length || following.original.some(id => !following.selected.includes(id)));
-    if (draftNote) { draftNote.textContent = [favoriteDirty ? '收藏未保存' : '', followingDirty ? '关注未保存' : '', panelUi.quickDraft ? '常用正在编辑' : '', panelUi.dmDraft?.dirty ? '字体未保存' : ''].filter(Boolean).join(' · '); draftNote.hidden = !draftNote.textContent; }
+    if (draftNote) { draftNote.textContent = [favoriteDirty ? '收藏未保存' : '', followingDirty ? '关注未保存' : '', panelUi.quickDraft ? '常用正在编辑' : '', panelUi.dmDraft?.dirty ? '字体未保存' : '', panelUi.catchupDraft?.dirty ? '追帧目标未保存' : ''].filter(Boolean).join(' · '); draftNote.hidden = !draftNote.textContent; }
     panel.querySelectorAll('[data-dm-status]').forEach(node => { node.textContent = dmPreferenceStatus(); });
     const task = panel.querySelector('[data-panel-task]');
     const running = !!wheelRelease || wheelState.status === 'starting' || !!wheelResumeTimer;
@@ -5530,7 +5702,7 @@
     } else if (panelUi.detail === 'purify-room') {
       content.appendChild(panelElement('p', '关闭后恢复原样。只改变显示，不阻止网络请求；未知内容保持可见。', 'blx-notice'));
       [['页面区域', PURIFY_KEYS.slice(0, 3)], ['聊天提示', PURIFY_KEYS.slice(3)]].forEach(([name, keys], index) => {
-        const group = panelElement('section'); const heading = panelElement('h4', name, 'blx-group-label'); heading.id = 'bilivex-purify-group-' + index;
+        const group = panelElement('section', null, 'blx-setting-group'); const heading = panelElement('h4', name, 'blx-group-label'); heading.id = 'bilivex-purify-group-' + index;
         group.setAttribute('aria-labelledby', heading.id); group.appendChild(heading); content.appendChild(group);
         if (index === 1) group.appendChild(panelElement('p', '进场提示包含上方进场动画；礼物提示包含粉丝团灯牌气泡。', 'blx-notice'));
         keys.forEach(key => { const input = panelToggle(group, PURIFY_LABELS[key], !purifyShared.stopped.has(key) && readPurify(key), value => setPurifyPreference(key, value)); input.dataset.purifyInput = key;
@@ -5559,9 +5731,26 @@
       }); input.dataset.bilivexLiveAlertToggle = '1';
       addLink(PANEL_FEATURES.find(f => f[0] === 'following'));
     } else if (panelUi.detail === 'theme') {
-      ['blue', 'pink'].forEach(theme => { const button = panelButton(THEMES[theme].name, () => savePanelConfig({ theme })); button.dataset.bilivexTheme = theme; content.appendChild(button); });
+      const accentGroup = panelElement('section', null, 'blx-setting-group');
+      const accentOptions = panelElement('div', null, 'blx-actions');
+      accentGroup.append(panelElement('h4', '强调色', 'blx-group-label'), accentOptions);
+      ['blue', 'pink'].forEach(theme => {
+        const button = panelButton(THEMES[theme].name, () => savePanelConfig({ theme }));
+        button.dataset.bilivexTheme = theme;
+        accentOptions.appendChild(button);
+      });
+      content.appendChild(accentGroup);
+      const modeGroup = panelElement('section', null, 'blx-setting-group');
+      const modeOptions = panelElement('div', null, 'blx-actions');
+      modeGroup.append(panelElement('h4', '明暗外观', 'blx-group-label'), modeOptions);
+      [['auto', '跟随直播间'], ['light', '浅色'], ['dark', '深色']].forEach(([colorMode, label]) => {
+        const button = panelButton(label, () => savePanelConfig({ colorMode })); button.dataset.bilivexColorChoice = colorMode; modeOptions.appendChild(button);
+      });
+      const status = panelElement('p', '', 'bilivex-status'); status.dataset.bilivexColorStatus = '1'; modeGroup.appendChild(status); content.appendChild(modeGroup);
     } else if (panelUi.detail === 'entry') {
       const preference = entryPreference();
+      panelToggle(content, '显示弹幕输入框旁的独轮车入口', cfg.showWheelEntry, value => savePanelConfig({ showWheelEntry: value }), 'showWheelEntry');
+      content.appendChild(panelElement('p', '可从主菜单“弹幕 → 独轮车”打开任务窗口并暂停运行。', 'blx-notice'));
       content.appendChild(panelElement('p', '入口位于评论输入框上方，菜单固定展开；全屏隐藏评论区时，入口随播放器控制栏显示。', 'blx-notice'));
       const toggle = panelToggle(content, '固定插件入口到评论区', preference.fixed, value => {
         if (!entryPreference().writable) { panelMessage(entryPreference().error); return false; }
@@ -5579,7 +5768,7 @@
         } catch (error) { panelMessage('仍未确认：' + error.message); }
       }));
     } else if (panelUi.detail === 'position') {
-      const reset = panelButton('恢复窗口位置', () => { if (!fixedEntry() && savePanelConfig({ panelPos: null, panelAnchor: 'right' })) { panel.style.left = 'auto'; panel.style.right = '18px'; panel.style.top = '96px'; ensurePanelVisible(panel, getUiHost()); } }); reset.disabled = fixedEntry(); content.appendChild(reset);
+      const reset = panelButton('恢复窗口位置', async () => { if (!fixedEntry() && await savePanelConfig({ panelPos: null, panelAnchor: 'right' })) { panel.style.left = 'auto'; panel.style.right = '18px'; panel.style.top = '96px'; ensurePanelVisible(panel, getUiHost()); } }); reset.disabled = fixedEntry(); content.appendChild(reset);
       if (fixedEntry()) content.appendChild(panelElement('p', '恢复窗口位置仅适用于悬浮入口。', 'blx-notice'));
     } else if (panelUi.detail === 'about') {
       content.appendChild(panelElement('p', 'BiLivex ' + getScriptVersion() + (/[-]rc[.]/.test(getScriptVersion()) ? ' · 候选版' : '')));
@@ -5624,28 +5813,28 @@
     if (cfg.panelPos) { panel.style.left = cfg.panelPos.left + 'px'; panel.style.top = cfg.panelPos.top + 'px'; panel.style.right = 'auto'; }
     // 沿用已确认原型的尺寸、色板及组件样式，所有规则限定在脚本面板内。
     const style = panelElement('style'); style.textContent = `
-#bilivex-panel[data-ui-version="3"]{--accent:#007da7;--bright:#00aeec;--tint:#eaf7fc;--edge:#d5eaf3;max-height:min(600px,calc(100vh - 24px));background:#fff;border:1px solid #d8e3eb;border-radius:14px;box-shadow:0 16px 48px #243e5420,0 2px 8px #243e5408;overflow:hidden!important;display:flex;flex-direction:column;isolation:isolate;color:#283746;font:14px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
-#bilivex-panel.blx-pink{--accent:#b73d6d;--bright:#ef77a0;--tint:#fff0f5;--edge:#f5d8e4}
+#bilivex-panel[data-ui-version="3"]{--accent:var(--blx-accent);--bright:var(--blx-bright);--tint:var(--blx-tint);--edge:var(--blx-edge);max-height:min(600px,calc(100vh - 24px));background:var(--blx-bg);border:1px solid var(--blx-edge);border-radius:14px;box-shadow:0 16px 48px #243e5420,0 2px 8px #243e5408;overflow:hidden!important;display:flex;flex-direction:column;isolation:isolate;color:var(--blx-text);font:14px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+
 #bilivex-panel *,#bilivex-panel *::before,#bilivex-panel *::after{box-sizing:border-box}
 #bilivex-panel button,#bilivex-panel input,#bilivex-panel select,#bilivex-panel textarea{font:inherit;max-width:100%;color:inherit}
 #bilivex-panel button{cursor:pointer;border:0;background:transparent;box-shadow:none;transition:background-color .16s ease,border-color .16s ease,color .16s ease}
 #bilivex-panel button:disabled,#bilivex-panel input:disabled{cursor:not-allowed;opacity:.55}
-#bilivex-panel :focus-visible{outline:3px solid #0084ba;outline-offset:3px}
+#bilivex-panel :focus-visible{outline:3px solid var(--blx-accent);outline-offset:3px}
 #bilivex-panel [hidden]{display:none!important}
-#bilivex-panel .blx-panel-head{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;background:linear-gradient(105deg,var(--tint),#fff);border-bottom:1px solid #edf1f4;flex-shrink:0;cursor:grab;touch-action:none;user-select:none}
-#bilivex-panel .blx-brand-icon{width:32px;height:32px;border-radius:8px;object-fit:contain;background:#fff;display:block;flex-shrink:0;pointer-events:none;transform-origin:0 0}
+#bilivex-panel .blx-panel-head{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;background:linear-gradient(105deg,var(--tint),var(--blx-bg));border-bottom:1px solid var(--blx-edge);flex-shrink:0;cursor:grab;touch-action:none;user-select:none}
+#bilivex-panel .blx-brand-icon{width:32px;height:32px;border-radius:8px;object-fit:contain;background:var(--blx-bg);display:block;flex-shrink:0;pointer-events:none;transform-origin:0 0}
 #bilivex-panel .blx-brand{font-size:15px;font-weight:700;letter-spacing:.2px;flex:1}
-#bilivex-panel .blx-icon-button{min-width:32px;min-height:32px;padding:4px 7px;border-radius:7px;font-size:18px;color:#283746;background:transparent}
+#bilivex-panel .blx-icon-button{min-width:32px;min-height:32px;padding:4px 7px;border-radius:7px;font-size:18px;color:var(--blx-text);background:transparent}
 #bilivex-panel .blx-icon-button:hover{background:var(--tint)}
 #bilivex-panel .bilivex-panel-body{min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0}
-#bilivex-panel [role=tablist]{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;padding:0 8px;border-bottom:1px solid #e9eef2;flex-shrink:0}
+#bilivex-panel [role=tablist]{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;padding:0 8px;border-bottom:1px solid var(--blx-edge);flex-shrink:0}
 #bilivex-panel [role=tablist]::after{content:'';position:absolute;left:8px;bottom:0;width:calc((100% - 16px)/6);height:2px;border-radius:2px;background:var(--bright);pointer-events:none;transform:translateX(calc(var(--blx-tab-index,0)*100%));transition:transform .28s cubic-bezier(.22,1,.36,1),background-color .16s ease}
-#bilivex-panel [role=tab]{padding:12px 0 10px;color:#637684;font-size:13px;position:relative;border-bottom:2px solid transparent;white-space:nowrap;border-radius:0;min-width:0}
+#bilivex-panel [role=tab]{padding:12px 0 10px;color:var(--blx-muted);font-size:13px;position:relative;border-bottom:2px solid transparent;white-space:nowrap;border-radius:0;min-width:0}
 #bilivex-panel [role=tab][aria-selected=true]{color:var(--accent);font-weight:650}
 #bilivex-panel [role=tab].blx-dirty::after{content:'';position:absolute;right:3px;top:9px;width:5px;height:5px;border-radius:50%;background:#ba7427}
-#bilivex-panel [data-panel-category-select]{margin:0;padding:10px 12px;border:0;border-bottom:1px solid #e9eef2;background:white;color:var(--accent);font-size:13px;width:100%;flex-shrink:0;min-height:44px}
+#bilivex-panel [data-panel-category-select]{margin:0;padding:10px 12px;border:0;border-bottom:1px solid var(--blx-edge);background:white;color:var(--accent);font-size:13px;width:100%;flex-shrink:0;min-height:44px}
 #bilivex-panel [data-panel-content]{overflow:auto;min-height:0;max-height:490px;padding:18px 16px 20px;overscroll-behavior:contain;scrollbar-width:thin}
-#bilivex-panel[data-presentation="fixed"] [role=tablist],#bilivex-panel[data-presentation="fixed"] [data-panel-category-select]{border-top:1px solid #e9eef2;border-bottom:0}
+#bilivex-panel[data-presentation="fixed"] [role=tablist],#bilivex-panel[data-presentation="fixed"] [data-panel-category-select]{border-top:1px solid var(--blx-edge);border-bottom:0}
 #bilivex-panel[data-presentation="fixed"][data-panel-motion="true"] .bilivex-panel-body{flex-grow:1}
 #bilivex-panel[data-presentation="fixed"][data-panel-motion="true"] [role=tablist],#bilivex-panel[data-presentation="fixed"][data-panel-motion="true"] [data-panel-category-select]{margin-top:auto}
 #bilivex-panel [data-panel-view]{display:flow-root;min-width:0}
@@ -5655,65 +5844,69 @@
 #bilivex-panel .blx-back{font-size:20px;padding:0 5px!important;min-height:32px;min-width:32px;border:0;background:transparent}
 #bilivex-panel .blx-link{color:var(--accent)!important;font-size:12px;padding:5px 0!important;min-height:32px;border:0!important;background:transparent!important}
 #bilivex-panel .blx-quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-#bilivex-panel .blx-quick{display:flex;flex-direction:column;align-items:flex-start;gap:12px;text-align:left;border:1px solid #e3ebf0!important;border-radius:10px;padding:14px!important;min-height:103px;background:transparent!important;color:#283746!important;min-width:0}
+#bilivex-panel .blx-quick{display:flex;flex-direction:column;align-items:flex-start;gap:12px;text-align:left;border:1px solid var(--blx-edge)!important;border-radius:10px;padding:14px!important;min-height:103px;background:transparent!important;color:var(--blx-text)!important;min-width:0}
 #bilivex-panel .blx-quick:hover{background:var(--tint)!important;border-color:var(--edge)!important}
 #bilivex-panel .blx-quick-symbol{color:var(--accent);font-size:21px;line-height:1}
 #bilivex-panel .blx-quick strong{font-size:13px;font-weight:550}
-#bilivex-panel .blx-quick small{display:block;color:#6b7f8e;font-size:12px;font-weight:400;margin-top:2px}
-#bilivex-panel .blx-home-guide{font-size:12px;color:#697d8b;margin:18px 0 0;line-height:1.8}
-#bilivex-panel .blx-group-label{font-size:12px;color:#6a8090;letter-spacing:.6px;margin:20px 0 5px;font-weight:400}
+#bilivex-panel .blx-quick small{display:block;color:var(--blx-muted);font-size:12px;font-weight:400;margin-top:2px}
+#bilivex-panel .blx-home-guide{font-size:12px;color:var(--blx-muted);margin:18px 0 0;line-height:1.8}
+#bilivex-panel .blx-group-label{font-size:12px;color:var(--blx-muted);letter-spacing:.6px;margin:20px 0 5px;font-weight:400}
 #bilivex-panel .blx-group-label:first-of-type{margin-top:0}
-#bilivex-panel .blx-row,#bilivex-panel .bilivex-row{display:flex;align-items:center;gap:9px;padding:12px 0;min-height:52px;border-bottom:1px solid #edf2f5;flex-wrap:nowrap}
+#bilivex-panel .blx-setting-group{margin:20px 0 0}
+#bilivex-panel .blx-setting-group:first-of-type{margin-top:0}
+#bilivex-panel .blx-setting-group>.blx-group-label{margin:0 0 8px}
+#bilivex-panel .blx-setting-group>.blx-actions{margin-top:0}
+#bilivex-panel .blx-row,#bilivex-panel .bilivex-row{display:flex;align-items:center;gap:9px;padding:12px 0;min-height:52px;border-bottom:1px solid var(--blx-edge);flex-wrap:nowrap}
 #bilivex-panel .blx-row:last-child{border-bottom:0}
-#bilivex-panel .blx-row-main{flex:1;min-width:0;text-align:left;padding:0!important;background:transparent!important;color:#283746!important;border:0!important;line-height:1.55}
+#bilivex-panel .blx-row-main{flex:1;min-width:0;text-align:left;padding:0!important;background:transparent!important;color:var(--blx-text)!important;border:0!important;line-height:1.55}
 #bilivex-panel .blx-row strong,#bilivex-panel .bilivex-row>span{font-weight:500;font-size:13px;display:block;overflow-wrap:anywhere;flex:1}
-#bilivex-panel .blx-row small{display:block;color:#6b7c89;font-size:12px;margin-top:3px;overflow-wrap:anywhere}
-#bilivex-panel .blx-chevron{font-size:20px;color:#8a9aa7;flex-shrink:0}
+#bilivex-panel .blx-row small{display:block;color:var(--blx-muted);font-size:12px;margin-top:3px;overflow-wrap:anywhere}
+#bilivex-panel .blx-chevron{font-size:20px;color:var(--blx-muted);flex-shrink:0}
 #bilivex-panel .blx-switch{appearance:none;-webkit-appearance:none;display:block;width:34px!important;height:20px!important;min-width:34px!important;min-height:20px!important;border:0!important;border-radius:20px!important;background:#b9c8d2!important;padding:3px!important;margin:0!important;flex-shrink:0;position:relative;cursor:pointer}
 #bilivex-panel .blx-switch::before{content:'';display:block;width:14px;height:14px;background:white;border-radius:50%;box-shadow:0 1px 2px #0002;transition:transform .12s}
 #bilivex-panel .blx-switch:checked{background:var(--bright)!important}
 #bilivex-panel .blx-switch:checked::before{transform:translateX(14px)}
-#bilivex-panel .blx-btn{border:1px solid #d7e2e9!important;background:white!important;border-radius:7px;padding:6px 11px!important;min-height:34px;font-size:12px;white-space:normal;line-height:1.55;color:#283746}
-#bilivex-panel .blx-btn.blx-primary{background:var(--accent)!important;color:white!important;border-color:var(--accent)!important}
-#bilivex-panel .blx-btn.blx-soft,#bilivex-panel [data-bilivex-theme][aria-pressed=true]{background:var(--tint)!important;color:var(--accent)!important;border-color:var(--edge)!important}
-#bilivex-panel .blx-notice{font-size:12px;line-height:1.7;padding:10px 12px;border-radius:8px;background:var(--tint);color:#456675;margin:12px 0}
-#bilivex-panel .bilivex-status{font-size:12px;color:#6a8090;line-height:1.7;margin:8px 0;overflow-wrap:anywhere}
+#bilivex-panel .blx-btn{border:1px solid var(--blx-border)!important;background:var(--blx-bg)!important;border-radius:7px;padding:6px 11px!important;min-height:34px;font-size:12px;white-space:normal;line-height:1.55;color:var(--blx-text)}
+#bilivex-panel .blx-btn.blx-primary{background:var(--blx-solid)!important;color:white!important;border-color:var(--accent)!important}
+#bilivex-panel .blx-btn.blx-soft,#bilivex-panel [data-bilivex-theme][aria-pressed=true],#bilivex-panel [data-bilivex-color-choice][aria-pressed=true]{background:var(--tint)!important;color:var(--accent)!important;border-color:var(--edge)!important}
+#bilivex-panel .blx-notice{font-size:12px;line-height:1.7;padding:10px 12px;border-radius:8px;background:var(--tint);color:var(--blx-text);margin:12px 0}
+#bilivex-panel .bilivex-status{font-size:12px;color:var(--blx-muted);line-height:1.7;margin:8px 0;overflow-wrap:anywhere}
 #bilivex-panel .bilivex-status:empty{display:none}
-#bilivex-panel [data-panel-notice]:not(:empty){padding:10px 12px;border-radius:8px;background:var(--tint);color:#456675}
+#bilivex-panel [data-panel-notice]:not(:empty){padding:10px 12px;border-radius:8px;background:var(--tint);color:var(--blx-text)}
 #bilivex-panel [data-purify-status]{margin:3px 0 0}
 #bilivex-panel .blx-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-#bilivex-panel [data-panel-content] input:not([type=checkbox]):not([type=file]),#bilivex-panel [data-panel-content] textarea,#bilivex-panel [data-panel-content] select{display:block;width:100%;margin:6px 0 12px;border:1px solid #d5e1e8;border-radius:7px;padding:9px 10px;font-size:13px;color:#334b59;background:#fff;min-width:0}
+#bilivex-panel [data-panel-content] input:not([type=checkbox]):not([type=file]),#bilivex-panel [data-panel-content] textarea,#bilivex-panel [data-panel-content] select{display:block;width:100%;margin:6px 0 12px;border:1px solid var(--blx-border);border-radius:7px;padding:9px 10px;font-size:13px;color:var(--blx-text);background:var(--blx-bg);min-width:0}
 #bilivex-panel [data-panel-content] textarea{resize:vertical;min-height:72px}
 #bilivex-panel [data-panel-content] input[type=checkbox]:not(.blx-switch){accent-color:var(--accent);width:16px;height:16px;flex-shrink:0}
-#bilivex-panel [data-panel-task]{border-top:1px solid #e3edf3;padding:10px 12px;background:#f7fbfd;flex-shrink:0;display:flex;align-items:center;gap:8px}
-#bilivex-panel [data-panel-task]>span{flex:1;min-width:0;font-size:12px;color:#45626f}
+#bilivex-panel [data-panel-task]{border-top:1px solid var(--blx-edge);padding:10px 12px;background:var(--blx-surface);flex-shrink:0;display:flex;align-items:center;gap:8px}
+#bilivex-panel [data-panel-task]>span{flex:1;min-width:0;font-size:12px;color:var(--blx-text)}
 #bilivex-panel [data-panel-task]>span::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#c18830;margin-right:6px}
-#bilivex-panel [data-panel-drafts]{font-size:11px;color:#916027;padding:0 4px}
+#bilivex-panel [data-panel-drafts]{font-size:11px;color:var(--blx-warning);padding:0 4px}
 #bilivex-panel #bilivex-live-alert-manager{max-height:none!important;padding:0!important;background:transparent!important}
 #bilivex-panel #bilivex-live-alert-manager>div:first-child{display:none!important}
-#bilivex-panel #bilivex-live-alert-manager label{border-bottom:1px solid #edf2f5!important;padding:13px 0!important;font-size:13px;gap:10px!important}
-#bilivex-panel #bilivex-live-alert-manager button{border:1px solid #d7e2e9!important;background:white!important;border-radius:7px!important;padding:6px 11px!important;min-height:34px;font-size:12px!important;color:#283746}
+#bilivex-panel #bilivex-live-alert-manager label{border-bottom:1px solid var(--blx-edge)!important;padding:13px 0!important;font-size:13px;gap:10px!important}
+#bilivex-panel #bilivex-live-alert-manager button{border:1px solid var(--blx-border)!important;background:var(--blx-bg)!important;border-radius:7px!important;padding:6px 11px!important;min-height:34px;font-size:12px!important;color:var(--blx-text)}
 #bilivex-panel .bilivex-favorites-view{min-height:0}
 #bilivex-panel .blx-favorite-header{display:none!important}
 #bilivex-panel .blx-filters{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px!important}
-#bilivex-panel .blx-filters button{border:0!important;padding:4px 9px!important;font-size:12px!important;border-radius:6px!important;min-height:32px;background:transparent!important;color:#667d8b!important}
+#bilivex-panel .blx-filters button{border:0!important;padding:4px 9px!important;font-size:12px!important;border-radius:6px!important;min-height:32px;background:transparent!important;color:var(--blx-muted)!important}
 #bilivex-panel .blx-filters button[aria-pressed=true]{background:var(--tint)!important;color:var(--accent)!important}
 #bilivex-panel .blx-favorite-list{gap:0!important;scrollbar-width:thin;border:0!important;padding:0!important}
-#bilivex-panel .blx-favorite{display:block!important;border:0!important;border-bottom:1px solid #edf2f5!important;padding:12px 0;border-radius:0!important;background:transparent!important;flex-shrink:0}
+#bilivex-panel .blx-favorite{display:block!important;border:0!important;border-bottom:1px solid var(--blx-edge)!important;padding:12px 0;border-radius:0!important;background:transparent!important;flex-shrink:0}
 #bilivex-panel .blx-favorite-top{display:flex;align-items:center;gap:8px}
-#bilivex-panel .blx-favorite-top>button{border:0!important;padding:0!important;flex:1;font-size:13px!important;font-weight:400;white-space:normal!important;overflow-wrap:anywhere;color:#283746!important;line-height:1.55!important;background:transparent!important;min-height:0}
-#bilivex-panel .blx-tag{font-size:11px;color:#596f7d;padding:2px 6px;background:#f1f5f7;border-radius:4px;white-space:nowrap}
+#bilivex-panel .blx-favorite-top>button{border:0!important;padding:0!important;flex:1;font-size:13px!important;font-weight:400;white-space:normal!important;overflow-wrap:anywhere;color:var(--blx-text)!important;line-height:1.55!important;background:transparent!important;min-height:0}
+#bilivex-panel .blx-tag{font-size:11px;color:var(--blx-muted);padding:2px 6px;background:var(--blx-surface);border-radius:4px;white-space:nowrap}
 #bilivex-panel .blx-favorite-actions{display:flex;gap:12px;margin-top:7px;align-items:center}
-#bilivex-panel .blx-favorite-actions small{font-size:11px;color:#738693;flex:1}
+#bilivex-panel .blx-favorite-actions small{font-size:11px;color:var(--blx-muted);flex:1}
 #bilivex-panel .blx-favorite-actions button{font-size:12px!important;color:var(--accent)!important;min-height:28px;min-width:0!important;padding:0 2px!important;border:0!important;border-radius:0!important;background:transparent!important}
-#bilivex-panel .bilivex-favorites-view[data-mode=edit] button{border:1px solid #d7e2e9!important;background:white!important;border-radius:7px!important;padding:6px 11px!important;min-height:34px;font-size:12px!important;color:#283746!important}
-#bilivex-panel [data-favorite-save],#bilivex-panel #bilivex-live-alert-manager [data-follow-save]{background:var(--accent)!important;border-color:var(--accent)!important;color:white!important}
-#bilivex-panel .blx-library-actions button{border:1px solid #d7e2e9!important;background:white!important;border-radius:7px!important;padding:6px 11px!important;min-height:34px;font-size:12px!important;color:#283746!important}
+#bilivex-panel .bilivex-favorites-view[data-mode=edit] button{border:1px solid var(--blx-border)!important;background:var(--blx-bg)!important;border-radius:7px!important;padding:6px 11px!important;min-height:34px;font-size:12px!important;color:var(--blx-text)!important}
+#bilivex-panel [data-favorite-save],#bilivex-panel #bilivex-live-alert-manager [data-follow-save]{background:var(--blx-solid)!important;border-color:var(--accent)!important;color:white!important}
+#bilivex-panel .blx-library-actions button{border:1px solid var(--blx-border)!important;background:var(--blx-bg)!important;border-radius:7px!important;padding:6px 11px!important;min-height:34px;font-size:12px!important;color:var(--blx-text)!important}
 #bilivex-panel .blx-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-#bilivex-panel[data-collapsed=true]{border:0!important;border-radius:50%;background:#fff!important;box-shadow:0 6px 18px #007ca533!important}
+#bilivex-panel[data-collapsed=true]{border:0!important;border-radius:50%;background:var(--blx-bg)!important;box-shadow:0 6px 18px #007ca533!important}
 #bilivex-panel[data-collapsed=true] .blx-panel-head{padding:0;min-height:56px;height:56px;border:0;background:transparent;justify-content:center;border-radius:50%}
 #bilivex-panel[data-collapsed=true] .blx-brand-icon{width:56px;height:56px;border-radius:50%}
-#bilivex-panel[data-collapsed=true][data-task-running=true]::after{content:'';position:absolute;right:3px;bottom:3px;width:11px;height:11px;border:2px solid #fff;border-radius:50%;background:#bf7d28;pointer-events:none}
+#bilivex-panel[data-collapsed=true][data-task-running=true]::after{content:'';position:absolute;right:3px;bottom:3px;width:11px;height:11px;border:2px solid var(--blx-bg);border-radius:50%;background:#bf7d28;pointer-events:none}
 @media(max-height:360px){#bilivex-panel[data-ui-version="3"]:not([data-presentation="fixed"]){overflow:auto!important}#bilivex-panel:not([data-presentation="fixed"]) .bilivex-panel-body{overflow:visible;flex-shrink:0}#bilivex-panel:not([data-presentation="fixed"]) [data-panel-content]{max-height:none;overflow:visible}}
 @media(pointer:coarse){#bilivex-panel button{min-height:44px}#bilivex-panel .blx-switch{width:44px!important;height:28px!important;min-width:44px!important}#bilivex-panel .blx-switch::before{width:22px;height:22px}#bilivex-panel .blx-switch:checked::before{transform:translateX(16px)}}
 @media(prefers-reduced-motion:reduce){#bilivex-panel,#bilivex-panel *,#bilivex-panel *::before,#bilivex-panel *::after{transition:none!important;animation:none!important}}
@@ -6393,95 +6586,82 @@
     const style = panelDocument.createElement('style');
     style.id = 'bilivex-wheel-window-style';
     style.textContent = `
-      #bilivex-wheel-window{--wheel-accent:#00aeec;--wheel-tint:rgba(0,174,236,.10);--wheel-gradient:linear-gradient(90deg,#00aeec,#5cc8ff);--wheel-shadow:rgba(0,174,236,.25);position:fixed;z-index:2147483647!important;right:24px;top:80px;width:360px;max-width:calc(100vw - 24px);max-height:calc(100vh - 32px);display:flex;flex-direction:column;box-sizing:border-box;color:#283543;background:rgba(255,255,255,.9);border:1px solid rgba(224,230,237,.9);border-radius:12px;box-shadow:0 4px 16px var(--wheel-shadow);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);font:13px/1.5 -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;overflow:hidden;isolation:isolate;outline:none}
+      #bilivex-wheel-window{--wheel-accent:#00aeec;--wheel-tint:rgba(0,174,236,.10);--wheel-gradient:linear-gradient(90deg,#00aeec,#5cc8ff);--wheel-shadow:rgba(0,174,236,.25);position:fixed;z-index:2147483647!important;right:24px;top:80px;width:360px;max-width:calc(100vw - 24px);max-height:calc(100vh - 32px);display:flex;flex-direction:column;box-sizing:border-box;color:var(--blx-text);background:var(--blx-bg);border:1px solid var(--blx-border);border-radius:12px;box-shadow:0 4px 16px var(--wheel-shadow);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);font:13px/1.5 -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;overflow:hidden;isolation:isolate;outline:none}
       #bilivex-wheel-window[hidden]{display:none!important}
       #bilivex-wheel-window *{box-sizing:border-box}
       #bilivex-wheel-window .wheel-head{display:flex;align-items:center;gap:9px;padding:10px 12px;color:#fff;background:var(--wheel-gradient);border-bottom:1px solid rgba(255,255,255,.22);cursor:grab;touch-action:none;user-select:none;flex-shrink:0}
-      #bilivex-wheel-window .wheel-symbol{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.88);display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+      #bilivex-wheel-window .wheel-symbol{width:32px;height:32px;border-radius:50%;background:var(--blx-surface);display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.1)}
       #bilivex-wheel-window .wheel-heading{flex:1;min-width:0}
       #bilivex-wheel-window .wheel-heading strong{display:block;font-size:16px;font-weight:650;letter-spacing:.3px}
-      #bilivex-wheel-window .wheel-heading small{font-size:11px;color:rgba(255,255,255,.82)}
+      #bilivex-wheel-window .wheel-heading small{font-size:11px;color:#fff}
       #bilivex-wheel-window button{font:inherit!important;border-radius:9px!important;box-shadow:none;transition:background .15s,color .15s,opacity .15s!important;max-width:100%}
       #bilivex-wheel-window button:focus-visible,#bilivex-wheel-window summary:focus-visible{outline:2px solid var(--wheel-accent);outline-offset:2px}
-      #bilivex-wheel-window .wheel-close{border:0!important;background:rgba(255,255,255,.13)!important;color:#fff!important;width:28px;height:28px;padding:0!important;font-size:20px!important;cursor:pointer}
-      #bilivex-wheel-window .wheel-close:hover{background:rgba(255,255,255,.24)!important}
-      #bilivex-wheel-window .wheel-scroll{overflow:auto;min-height:0;padding:14px 14px 12px;scrollbar-width:thin;scrollbar-color:#cbd5df transparent}
+      #bilivex-wheel-window .wheel-head .wheel-close{border:0!important;background:transparent!important;color:#fff!important;width:28px;height:28px;padding:0!important;font-size:20px!important;cursor:pointer}
+      #bilivex-wheel-window .wheel-head .wheel-close:hover{background:rgba(0,0,0,.12)!important}
+      #bilivex-wheel-window .wheel-scroll{overflow:auto;min-height:0;padding:14px 14px 12px;scrollbar-width:thin;scrollbar-color:var(--blx-border) transparent}
       #bilivex-wheel-window fieldset{border:0;margin:0;padding:0;min-width:0}
       #bilivex-wheel-window .wheel-sources{display:flex;gap:3px;padding:4px;background:var(--wheel-tint);border-radius:9px;margin-bottom:12px}
-      #bilivex-wheel-window .wheel-sources button{flex:1;border:0!important;background:transparent!important;color:#83909d!important;padding:7px 0!important;font-size:12px!important}
-      #bilivex-wheel-window .wheel-sources button[aria-pressed=true]{color:#fff!important;background:var(--wheel-accent)!important;box-shadow:0 2px 6px var(--wheel-shadow)}
-      #bilivex-wheel-window .wheel-field{display:block;margin:10px 0!important;color:#5f6c7b;font-size:12px}
+      #bilivex-wheel-window .wheel-sources button{flex:1;border:0!important;background:transparent!important;color:var(--blx-muted)!important;padding:7px 0!important;font-size:12px!important}
+      #bilivex-wheel-window .wheel-sources button[aria-pressed=true]{color:#fff!important;background:var(--blx-solid)!important;box-shadow:0 2px 6px var(--wheel-shadow)}
+      #bilivex-wheel-window .wheel-field{display:block;margin:10px 0!important;color:var(--blx-muted);font-size:12px}
       #bilivex-wheel-window .wheel-field>span{display:block;margin-bottom:7px}
-      #bilivex-wheel-window input:not([type=checkbox]),#bilivex-wheel-window textarea{display:block;width:100%;min-width:0;border:1px solid rgba(154,177,196,.22)!important;background:rgba(255,255,255,.58)!important;border-radius:11px!important;padding:9px 11px!important;font-family:inherit;font-size:13px;line-height:1.65;color:#283543!important;outline:0}
+      #bilivex-wheel-window input:not([type=checkbox]),#bilivex-wheel-window textarea{display:block;width:100%;min-width:0;border:1px solid var(--blx-border)!important;background:var(--blx-input)!important;border-radius:11px!important;padding:9px 11px!important;font-family:inherit;font-size:13px;line-height:1.65;color:var(--blx-text)!important;outline:0}
       #bilivex-wheel-window input:focus,#bilivex-wheel-window textarea:focus{border-color:var(--wheel-accent)!important;box-shadow:0 0 0 3px var(--wheel-tint)}
       #bilivex-wheel-window textarea{min-height:112px;max-height:220px;resize:vertical;line-height:1.7!important}
-      #bilivex-wheel-window textarea::placeholder,#bilivex-wheel-window input::placeholder{color:#a0aab5}
-      #bilivex-wheel-window .wheel-section-heading{font-weight:600;color:#334354;margin-bottom:3px}
-      #bilivex-wheel-window .wheel-section-note{margin:0 0 8px;color:#718091;font-size:11px;line-height:1.6}
+      #bilivex-wheel-window textarea::placeholder,#bilivex-wheel-window input::placeholder{color:var(--blx-muted)}
+      #bilivex-wheel-window .wheel-section-heading{font-weight:600;color:var(--blx-text);margin-bottom:3px}
+      #bilivex-wheel-window .wheel-section-note{margin:0 0 8px;color:var(--blx-text);font-size:11px;line-height:1.6}
       #bilivex-wheel-window .wheel-text-list{display:flex;flex-direction:column;gap:7px}
       #bilivex-wheel-window .wheel-text-row{display:flex;align-items:center;gap:7px}
       #bilivex-wheel-window .wheel-text-row input{white-space:nowrap;overflow-x:auto}
       #bilivex-wheel-window .wheel-text-remove{flex:0 0 34px;width:34px;height:34px;padding:0!important;font-size:17px!important}
       #bilivex-wheel-window .wheel-text-add{margin-top:8px;padding:6px 12px!important}
-      #bilivex-wheel-window .wheel-favorites-picker{border:1px solid rgba(154,177,196,.20);border-radius:9px;padding:7px 9px;margin:12px 0!important}
-      #bilivex-wheel-window .wheel-favorites-picker>summary{color:#536778;font-weight:500}
+      #bilivex-wheel-window .wheel-favorites-picker{border:1px solid var(--blx-border);border-radius:9px;padding:7px 9px;margin:12px 0!important}
+      #bilivex-wheel-window .wheel-favorites-picker>summary{color:var(--blx-text);font-weight:500}
       #bilivex-wheel-window .wheel-favorite-filters{display:flex;gap:6px;margin:8px 0}
       #bilivex-wheel-window .wheel-favorite-filters button{padding:5px 9px!important}
       #bilivex-wheel-window .wheel-favorite-list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;scrollbar-width:thin}
-      #bilivex-wheel-window .wheel-favorite-row{display:flex;align-items:center;gap:7px;min-height:34px;padding:4px 4px 4px 9px;border:1px solid rgba(154,177,196,.16);border-radius:8px;background:rgba(255,255,255,.35)}
+      #bilivex-wheel-window .wheel-favorite-row{display:flex;align-items:center;gap:7px;min-height:34px;padding:4px 4px 4px 9px;border:1px solid var(--blx-border);border-radius:8px;background:var(--blx-surface)}
       #bilivex-wheel-window .wheel-favorite-row>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #bilivex-wheel-window .wheel-favorite-row>button{flex-shrink:0;padding:4px 9px!important}
-      #bilivex-wheel-window .wheel-favorite-empty{margin:8px 0;color:#8793a0;text-align:center}
+      #bilivex-wheel-window .wheel-favorite-empty{margin:8px 0;color:var(--blx-muted);text-align:center}
       #bilivex-wheel-window .wheel-rhythm{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
       #bilivex-wheel-window .wheel-rhythm .wheel-field{margin:0!important}
-      #bilivex-wheel-window .wheel-help{display:flex;flex-direction:column;gap:3px;margin:0 0 11px;padding:10px 11px;border:1px solid rgba(154,177,196,.18);border-left:3px solid var(--wheel-accent);border-radius:8px;background:rgba(255,255,255,.42)}
-      #bilivex-wheel-window .wheel-help strong{font-size:13px;color:#334354}
-      #bilivex-wheel-window .wheel-help span{font-size:11px;line-height:1.6;color:#718091}
+      #bilivex-wheel-window .wheel-help{display:flex;flex-direction:column;gap:3px;margin:0 0 11px;padding:10px 11px;border:1px solid var(--blx-border);border-left:3px solid var(--wheel-accent);border-radius:8px;background:var(--blx-surface)}
+      #bilivex-wheel-window .wheel-help strong{font-size:13px;color:var(--blx-text)}
+      #bilivex-wheel-window .wheel-help span{font-size:11px;line-height:1.6;color:var(--blx-text)}
       #bilivex-wheel-window .wheel-emotion-tools{display:flex;align-items:center;gap:8px;margin-bottom:9px}
-      #bilivex-wheel-window .wheel-emotion-tools span{flex:1;color:#718091;font-size:11px}
+      #bilivex-wheel-window .wheel-emotion-tools span{flex:1;color:var(--blx-text);font-size:11px}
       #bilivex-wheel-window .wheel-emotion-list{max-height:300px;overflow:auto;padding:2px;margin-bottom:8px}
       #bilivex-wheel-window .wheel-emotion-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;padding:8px}
-      #bilivex-wheel-window .wheel-emotion-pack{border:1px solid rgba(154,177,196,.20);border-radius:9px;margin:0 0 7px;overflow:hidden}
+      #bilivex-wheel-window .wheel-emotion-pack{border:1px solid var(--blx-border);border-radius:9px;margin:0 0 7px;overflow:hidden}
       #bilivex-wheel-window .wheel-emotion-pack>summary{padding:8px;background:var(--wheel-tint);gap:8px}
       #bilivex-wheel-window .wheel-emotion-pack>summary img{width:28px;height:28px;object-fit:contain;flex-shrink:0}
       #bilivex-wheel-window .wheel-emotion-pack>summary strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
       #bilivex-wheel-window .wheel-emotion-pack>summary small{font-size:10px;flex-shrink:0}
       #bilivex-wheel-window [data-bilivex-favorite-button=secondary]{background:var(--wheel-tint)!important;border-color:transparent!important;color:inherit!important}
-      #bilivex-wheel-window [data-bilivex-favorite-button=primary]{background:var(--wheel-accent)!important;border-color:transparent!important;color:#fff!important}
-      #bilivex-wheel-window [data-wheel-start][data-running=true]{background:#d89b36!important}
-      #bilivex-wheel-window .wheel-emotion{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:7px 3px!important;border:1px solid rgba(154,177,196,.22)!important;background:rgba(255,255,255,.48)!important;color:#627181!important;cursor:pointer}
+      #bilivex-wheel-window [data-bilivex-favorite-button=primary]{background:var(--blx-solid)!important;border-color:transparent!important;color:#fff!important}
+      #bilivex-wheel-window [data-wheel-start][data-running=true]{background:var(--blx-warningSolid)!important;color:#fff!important}
+      #bilivex-wheel-window .wheel-emotion{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:7px 3px!important;border:1px solid var(--blx-border)!important;background:var(--blx-surface)!important;color:var(--blx-text)!important;cursor:pointer}
       #bilivex-wheel-window .wheel-emotion img{width:30px;height:30px;object-fit:contain}
       #bilivex-wheel-window .wheel-emotion span{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-align:center}
       #bilivex-wheel-window .wheel-emotion[aria-pressed=true]{border-color:var(--wheel-accent)!important;background:var(--wheel-tint)!important;color:var(--wheel-accent)!important;box-shadow:inset 0 0 0 1px var(--wheel-accent)}
-      #bilivex-wheel-window details{margin:10px 0;color:#7b8795;font-size:12px}
+      #bilivex-wheel-window details{margin:10px 0;color:var(--blx-text);font-size:12px}
       #bilivex-wheel-window summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:3px 0}
       #bilivex-wheel-window summary:before{content:'›';font-size:16px;line-height:1;transition:transform .15s}
       #bilivex-wheel-window details[open]>summary:before{transform:rotate(90deg)}
-      #bilivex-wheel-window .wheel-preview{margin-top:14px;padding:11px 12px;background:var(--wheel-tint);border-radius:12px;color:#536778;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:125px;overflow:auto}
-      #bilivex-wheel-window .wheel-preview:before{content:'发送预览';display:block;font-size:10px;letter-spacing:.8px;color:#90a0ad;margin-bottom:5px}
-      #bilivex-wheel-window .wheel-footer{flex-shrink:0;padding:11px 14px 13px;border-top:1px solid rgba(153,173,190,.16);background:rgba(255,255,255,.46)}
-      #bilivex-wheel-window [data-wheel-summary]{font-size:11px;line-height:1.7;color:#8793a0;white-space:pre-line;margin-bottom:10px}
+      #bilivex-wheel-window .wheel-preview{margin-top:14px;padding:11px 12px;background:var(--wheel-tint);border-radius:12px;color:var(--blx-text);white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:125px;overflow:auto}
+      #bilivex-wheel-window .wheel-preview:before{content:'发送预览';display:block;font-size:10px;letter-spacing:.8px;color:var(--blx-muted);margin-bottom:5px}
+      #bilivex-wheel-window .wheel-footer{flex-shrink:0;padding:11px 14px 13px;border-top:1px solid rgba(153,173,190,.16);background:var(--blx-surface)}
+      #bilivex-wheel-window [data-wheel-summary]{font-size:11px;line-height:1.7;color:var(--blx-muted);white-space:pre-line;margin-bottom:10px}
       #bilivex-wheel-window .wheel-actions{display:flex;gap:9px}
       #bilivex-wheel-window .wheel-actions button{height:38px;border:0!important;padding:0 16px!important}
-      #bilivex-wheel-window [data-wheel-start]{flex:1;color:white!important;background:var(--wheel-accent)!important;font-weight:600!important}
+      #bilivex-wheel-window [data-wheel-start]{flex:1;color:white!important;background:var(--blx-solid)!important;font-weight:600!important}
       #bilivex-wheel-window button:disabled{opacity:.43;cursor:not-allowed!important}
-      #bilivex-wheel-window [data-wheel-confirm]{margin:10px 20px;padding:12px!important;background:rgba(255,249,226,.9);max-height:190px;overflow:auto;flex-shrink:0}
+      #bilivex-wheel-window [data-wheel-confirm]{margin:10px 20px;padding:12px!important;background:var(--blx-tint);max-height:190px;overflow:auto;flex-shrink:0}
       #bilivex-wheel-window [data-wheel-confirm] p{margin:0 0 10px}
-      @supports not (backdrop-filter:blur(1px)){#bilivex-wheel-window{background:#f6f9fc}}
+      @supports not (backdrop-filter:blur(1px)){#bilivex-wheel-window{background:var(--blx-bg)}}
       @media(prefers-reduced-motion:reduce){#bilivex-wheel-window *{transition:none!important;animation:none!important}}
-      :root[lab-style*=dark] #bilivex-wheel-window{background:rgba(30,38,50,.88);color:#e2eaf1;border-color:rgba(255,255,255,.13)}
-      :root[lab-style*=dark] #bilivex-wheel-window input:not([type=checkbox]),:root[lab-style*=dark] #bilivex-wheel-window textarea{background:rgba(255,255,255,.07)!important;color:#e2eaf1!important}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-field{color:#bcc8d2}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-help,:root[lab-style*=dark] #bilivex-wheel-window .wheel-emotion{background:rgba(255,255,255,.05)!important}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-help strong{color:#e2eaf1}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-help span,:root[lab-style*=dark] #bilivex-wheel-window .wheel-emotion-tools span{color:#b7c5d0}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-section-heading,:root[lab-style*=dark] #bilivex-wheel-window .wheel-favorites-picker>summary{color:#e2eaf1}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-section-note{color:#b7c5d0}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-favorite-row{background:rgba(255,255,255,.04)}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-footer{background:rgba(255,255,255,.02)}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-preview{color:#c4d5e3}
-      :root[lab-style*=dark] #bilivex-wheel-window .wheel-preview:before,:root[lab-style*=dark] #bilivex-wheel-window [data-wheel-summary],:root[lab-style*=dark] #bilivex-wheel-window details{color:#aebdca}
-      :root[lab-style*=dark] #bilivex-wheel-window [data-wheel-confirm]{background:#3c3525;color:#f4e5bd}
     `;
     panelDocument.head.appendChild(style);
     view = panelDocument.createElement('section'); view.id = 'bilivex-wheel-window'; view.className = 'bilivex-wheel-view';
@@ -6504,8 +6684,15 @@
     if (wheelRoomStatusTimer) clearTimeout(wheelRoomStatusTimer);
     wheelRoomStatusTimer = null;
     const view = panelDocument.getElementById('bilivex-wheel-window'); if (view) view.hidden = true;
-    const entry = panelDocument.getElementById('bilivex-wheel-entry'); if (entry && restoreFocus) entry.focus();
-    if (wheelRelease) wheelNotify('独轮车仍在运行，可从轮椅图标打开并停止');
+    const candidates = [wheelOpener, wheelEntry, getPanelDocument().querySelector('[data-panel-feature="wheel"]'), getPanelDocument().querySelector('[data-bilivex-entry], [data-panel-toggle]')];
+    const entry = candidates.find(node => {
+      if (!node?.isConnected || !node.getClientRects().length || node.disabled || node.closest('[hidden], [inert]')) return false;
+      const full = node.ownerDocument.fullscreenElement;
+      return !full || full.contains(node);
+    });
+    if (entry && restoreFocus) entry.focus({ preventScroll: true });
+    wheelOpener = null;
+    if (wheelRelease) wheelNotify('独轮车仍在运行，可从主菜单“弹幕 → 独轮车”打开并暂停');
   }
 
   function renderOtherWheelRooms(details) {
@@ -6540,15 +6727,23 @@
 
   function syncWheelTheme() {
     const view = panelDocument.getElementById('bilivex-wheel-window'); if (!view) return;
-    view.style.setProperty('--wheel-accent', currentTheme.primary);
-    view.style.setProperty('--wheel-tint', 'rgba(' + currentTheme.primaryRgb + ',.09)');
-    view.style.setProperty('--wheel-gradient', currentTheme.titleGradient);
-    view.style.setProperty('--wheel-shadow', currentTheme.primaryShadow);
+    const state = appearanceController.state;
+    if (state) applyAppearanceColors(view, state.colors, state.mode);
+    view.style.setProperty('--wheel-accent', 'var(--blx-accent)');
+    view.style.setProperty('--wheel-tint', 'var(--blx-tint)');
+    view.style.setProperty('--wheel-gradient', 'var(--blx-solid)');
+    view.style.setProperty('--wheel-shadow', 'var(--blx-shadow)');
   }
 
   function openWheelPanel(source, sourceDocument) {
     if (sourceDocument && !wheelRelease) wheelChatDocument = sourceDocument;
     if (document !== panelDocument) { if (sharedRuntime.openWheelPanel) sharedRuntime.openWheelPanel(source, sourceDocument); return; }
+    const previousView = panelDocument.getElementById('bilivex-wheel-window');
+    if (!previousView || previousView.hidden) {
+      let active = (sourceDocument || getPanelDocument()).activeElement;
+      try { while (active?.tagName === 'IFRAME' && active.contentDocument) active = active.contentDocument.activeElement; } catch (error) { /* 只记录可访问的实际焦点。 */ }
+      wheelOpener = active;
+    }
     if (source && !wheelRelease) { wheelConfig.activeSource = source; saveWheelConfig(); }
     if (wheelRoomStatusTimer) clearTimeout(wheelRoomStatusTimer);
     wheelRoomStatusTimer = null;
@@ -6618,9 +6813,9 @@
     b.type = 'button';
     b.textContent = text;
     b.dataset.bilivexFavoriteButton = kind || 'secondary';
-    b.style.cssText = 'border:1px solid ' + (kind === 'primary' ? currentTheme.primary : '#dbe2ea') + ';' +
-      'background:' + (kind === 'primary' ? currentTheme.primary : '#fff') + ';' +
-      'color:' + (kind === 'primary' ? '#fff' : '#4d5966') + ';border-radius:6px;padding:5px 10px;' +
+    b.style.cssText = 'border:1px solid ' + (kind === 'primary' ? 'var(--blx-solid)' : 'var(--blx-border)') + ';' +
+      'background:' + (kind === 'primary' ? 'var(--blx-solid)' : 'var(--blx-bg)') + ';' +
+      'color:' + (kind === 'primary' ? '#fff' : 'var(--blx-text)') + ';border-radius:6px;padding:5px 10px;' +
       'font-size:12px;line-height:18px;cursor:pointer;white-space:nowrap;transition:opacity .15s,transform .1s;';
     listenPanelNode(b, 'mousedown', () => { b.style.transform = 'scale(.96)'; });
     listenPanelNode(b, 'mouseup', () => { b.style.transform = ''; });
@@ -6633,22 +6828,22 @@
 
   function closeFavoritesPanel() { panelBack(); }
 
+  function downloadJsonFile(content, filename) {
+    const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = panelDocument.createElement('a');
+    a.href = url; a.download = filename; a.style.display = 'none';
+    panelDocument.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
   function saveFavoritesExport() {
     const favorites = getFavorites();
     if (!favorites.length) { showToast('暂无可导出的收藏'); return; }
     const content = JSON.stringify({ format: 'bilivex-favorites', ...readFavoriteLibrary(), exportedAt: new Date().toISOString() }, null, 2);
-    const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = panelDocument.createElement('a');
     const date = new Date();
     const pad = (n) => String(n).padStart(2, '0');
-    a.href = url;
-    a.download = 'BiLivex-弹幕收藏夹-' + date.getFullYear() + pad(date.getMonth() + 1) + pad(date.getDate()) + '-' + pad(date.getHours()) + pad(date.getMinutes()) + '.json';
-    a.style.display = 'none';
-    panelDocument.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+    downloadJsonFile(content, 'BiLivex-弹幕收藏夹-' + date.getFullYear() + pad(date.getMonth() + 1) + pad(date.getDate()) + '-' + pad(date.getHours()) + pad(date.getMinutes()) + '.json');
     showToast('已导出收藏夹');
   }
 
@@ -6752,9 +6947,9 @@
     search.type = 'search';
     search.value = currentQuery;
     search.placeholder = '搜索收藏弹幕';
-    search.style.cssText = 'width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #e0e6ed;border-radius:6px;font-size:12px;line-height:18px;color:#222;outline:none;';
-    listenPanelNode(search, 'focus', () => { search.style.borderColor = currentTheme.primary; });
-    listenPanelNode(search, 'blur', () => { search.style.borderColor = '#e0e6ed'; });
+    search.style.cssText = 'width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--blx-border);border-radius:6px;font-size:12px;line-height:18px;color:var(--blx-text);background:var(--blx-input);';
+    listenPanelNode(search, 'focus', () => { search.style.borderColor = 'var(--blx-accent)'; });
+    listenPanelNode(search, 'blur', () => { search.style.borderColor = 'var(--blx-border)'; });
     listenPanelNode(search, 'input', event => { if (!event.isComposing) renderFavoritesView('browse', search.value); });
     listenPanelNode(search, 'compositionend', () => renderFavoritesView('browse', search.value));
     view.appendChild(search); view.appendChild(filter);
@@ -6834,7 +7029,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '3.3.2';
+    return '3.3.3';
   }
 
   function compareVersions(a, b) {
@@ -7454,14 +7649,14 @@
       const style = doc.createElement('style');
       // 搬移视频可能自带原生层级；仅在小窗中约束其叠放，归还时保留原样式。
       style.textContent = `html,body{margin:0;height:100%;background:#111;color:#fff;font:14px system-ui}
-        body{position:relative;overflow:hidden}button,select{font:inherit;border:0;border-radius:8px;padding:5px 9px;cursor:pointer;background:#34404c;color:#fff}
-        button:disabled{opacity:.5;cursor:default}button:focus-visible,input:focus-visible{outline:2px solid #ff86b0}
+        body{position:relative;overflow:hidden}button,select{font:inherit;border:0;border-radius:8px;padding:5px 9px;cursor:pointer;background:var(--blx-surface);color:var(--blx-text)}
+        button:disabled{opacity:.5;cursor:default}button:focus-visible,input:focus-visible{outline:2px solid var(--blx-accent)}
         #stage{position:relative;height:100%;overflow:hidden}video{width:100%;height:100%;object-fit:contain}
         #stage>video{z-index:0!important}#dm,#resident{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}.dm{position:absolute;white-space:nowrap;font-size:20px;font-weight:600;text-shadow:1px 1px 3px #000;pointer-events:none}.dm img{height:32px;vertical-align:middle}
-        #actions{position:fixed;display:flex;gap:4px;padding:4px;border-radius:10px;background:#253240ee;z-index:4}#actions button{min-height:30px}#plus{background:#c44174}
-        #bar{position:absolute;bottom:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:7px;background:#20242bee;z-index:6;opacity:0;visibility:hidden;transform:translateY(100%);pointer-events:none;transition:opacity .2s ease,transform .2s ease,visibility 0s linear .2s}
+        #actions{position:fixed;display:flex;gap:4px;padding:4px;border-radius:10px;background:var(--blx-bg);color:var(--blx-text);z-index:4}#actions button{min-height:30px}#plus{background:var(--blx-solid);color:#fff}
+        #bar{position:absolute;bottom:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:7px;background:var(--blx-bg);color:var(--blx-text);z-index:6;opacity:0;visibility:hidden;transform:translateY(100%);pointer-events:none;transition:opacity .2s ease,transform .2s ease,visibility 0s linear .2s}
         #bar[data-visible="1"]{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto;transition-delay:0s}#volume{width:80px}
-        #notice{position:absolute;bottom:8px;left:8px;right:8px;display:flex;align-items:center;gap:8px;pointer-events:none;background:#172231da;border-radius:6px;padding:6px;z-index:5;font-size:12px}
+        #notice{position:absolute;bottom:8px;left:8px;right:8px;display:flex;align-items:center;gap:8px;pointer-events:none;background:var(--blx-bg);color:var(--blx-text);border-radius:6px;padding:6px;z-index:5;font-size:12px}
         #notice[hidden]{display:none}#notice-text{flex:1;min-width:0;overflow-wrap:anywhere}#notice-close{flex:none;min-width:28px;min-height:28px;padding:2px 6px;pointer-events:auto}
         @media(prefers-reduced-motion:reduce){#bar{transition:none}}`;
       doc.head.appendChild(style);
@@ -7547,7 +7742,7 @@
         resident.appendChild(copy); record.node.style.visibility = 'hidden';
         const actions = doc.createElement('div'); actions.id = 'actions'; actions.setAttribute('aria-label', '弹幕操作栏');
         const plus = doc.createElement('button'); plus.id = 'plus'; plus.textContent = '+1'; plus.setAttribute('aria-label', '发送这条弹幕 +1');
-        plus.style.background = THEMES[s.source.config().theme]?.primary || currentTheme.primary;
+        plus.style.background = 'var(--blx-solid)';
         const favorite = doc.createElement('button'); favorite.textContent = '收藏';
         plus.disabled = record.busy || !record.payload.text;
         if (!record.payload.text) plus.title = '该内容暂不支持原生 +1';
@@ -7655,7 +7850,7 @@
       const label = doc.createElement('p'); label.dataset.bilivexPipSourceLabel = '1';
       label.textContent = s.source.video.paused ? '增强画中画已暂停' : '正在增强画中画中播放'; label.style.margin = '0';
       const back = doc.createElement('button'); back.type = 'button'; back.textContent = '返回直播间';
-      back.style.cssText = 'min-height:36px;padding:6px 16px;border:0;border-radius:8px;background:' + (THEMES[s.source.config().theme]?.primary || currentTheme.primary) + ';color:white;font:14px system-ui;cursor:pointer';
+      back.style.cssText = 'min-height:36px;padding:6px 16px;border:0;border-radius:8px;background:var(--blx-solid);color:white;font:14px system-ui;cursor:pointer';
       mask.append(label, back);
       let anchor = control; while (anchor?.parentElement && anchor.parentElement !== root) anchor = anchor.parentElement;
       root.insertBefore(mask, anchor?.parentElement === root ? anchor : null);
@@ -7682,6 +7877,8 @@
           if (!live(s)) return false;
           const currentSession = s;
           s.pip = pip; watch(s, pip, 'pagehide', () => { if (state.session === currentSession) stop(); });
+          const pipAppearance = createAppearanceController(pip.document, panelDocument);
+          s.cleanups.push(() => pipAppearance.dispose());
           buildPip(s);
           if (s.route === 'move') {
             s.moveStyle = { width: source.video.style.width, height: source.video.style.height };
@@ -8546,44 +8743,60 @@
   const PLAYBACK_ACTION = 'bilivex-playback-action';
   let playbackController = null;
   const playbackControllers = sharedRuntime.playbackControllers || (sharedRuntime.playbackControllers = new Set());
-  let catchupLocalOff = false, catchupSaving = false, catchupSaveError = '';
+  let catchupLocalOff = false, catchupSaving = false, catchupSaveError = '', catchupSaveCount = 0;
 
   function normalizeCatchUpPreference(raw) {
-    if (raw == null || raw === '') return { enabled: false, writable: true, error: '' };
+    const defaults = { enabled: false, targetBufferSec: 1.5, writable: true, error: '' };
+    if (raw == null || raw === '') return defaults;
     try {
       const value = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      if (!value || value.schemaVersion !== 1) return { enabled: false, writable: false, error: '自动追帧设置版本不受支持，原值已保留' };
+      if (!value || ![1, 2].includes(value.schemaVersion)) return { ...defaults, writable: false, error: '自动追帧设置版本不受支持，原值已保留' };
       if (typeof value.enabled !== 'boolean') throw new Error('格式错误');
-      return { enabled: value.enabled, writable: true, error: '' };
-    } catch (error) { return { enabled: false, writable: false, error: '自动追帧设置无法读取，原值已保留' }; }
+      if (value.schemaVersion === 1) return { ...defaults, enabled: value.enabled };
+      if (typeof value.targetBufferSec !== 'number' || !Number.isFinite(value.targetBufferSec) || value.targetBufferSec < 1 || value.targetBufferSec > 5 ||
+          Math.abs(value.targetBufferSec * 10 - Math.round(value.targetBufferSec * 10)) > .000001) throw new Error('参数无效');
+      return { ...defaults, enabled: value.enabled, targetBufferSec: value.targetBufferSec };
+    } catch (error) { return { ...defaults, writable: false, error: '自动追帧设置无法读取，原值已保留' }; }
   }
   function catchupPreference() {
     try {
       const value = normalizeCatchUpPreference(GM_getValue(CATCHUP_KEY));
       return { ...value, enabled: value.enabled && !catchupLocalOff && !catchupSaveError, error: catchupSaveError || value.error };
-    } catch (error) { return { enabled: false, writable: false, error: '无法读取自动追帧设置，本页已关闭' }; }
+    } catch (error) { return { ...normalizeCatchUpPreference(''), writable: false, error: '无法读取自动追帧设置，本页已关闭' }; }
   }
-  function saveCatchupPreference(enabled) {
-    if (!enabled) {
+  async function saveCatchupPreference(change, expectedTarget) {
+    const patch = typeof change === 'boolean' ? { enabled: change } : change;
+    if (patch.enabled === false) {
       catchupLocalOff = true;
       playbackControllers.forEach(item => item.interrupt('自动追帧已关闭'));
       sendPlaybackAction('close');
     }
     const saved = catchupPreference();
     if (!saved.writable) { panelMessage(saved.error); refreshPanelStatus(); return false; }
-    catchupSaving = true;
+    catchupSaveCount += 1; catchupSaving = true;
+    let actual, failure = '';
     try {
-      const raw = JSON.stringify({ schemaVersion: 1, enabled });
-      GM_setValue(CATCHUP_KEY, raw);
-      if (GM_getValue(CATCHUP_KEY) !== raw) throw new Error('保存结果未确认');
+      const prepared = await Promise.all([...playbackControllers].map(item => item.prepareConfig()));
+      if (prepared.some(result => !result)) throw new Error('正常速度尚未确认，请先核对原生倍速');
+      actual = await commitStoredConfig(CATCHUP_KEY, raw => {
+        const latest = normalizeCatchUpPreference(raw);
+        if (!latest.writable) throw new Error(latest.error);
+        if (expectedTarget !== undefined && latest.targetBufferSec !== expectedTarget) throw new Error('目标缓冲已被其他页面修改，核对后可再次保存');
+        const next = { schemaVersion: 2,
+          enabled: Object.hasOwn(patch, 'enabled') ? patch.enabled : latest.enabled,
+          targetBufferSec: Object.hasOwn(patch, 'targetBufferSec') ? patch.targetBufferSec : latest.targetBufferSec };
+        const normalized = normalizeCatchUpPreference(next);
+        if (!normalized.writable) throw new Error('目标缓冲需为 1.0 至 5.0 秒，步进为 0.1 秒');
+        return next;
+      });
       catchupSaveError = ''; catchupLocalOff = false;
     } catch (error) {
-      catchupLocalOff = true; catchupSaveError = enabled ? '开启未保存，本页保持关闭' : '关闭未保存，本页已停止，重新进入后可能恢复';
+      catchupLocalOff = true; failure = patch.enabled === false ? '关闭未保存，本页已停止，重新进入后可能恢复' : '设置未保存，本页已停止：' + error.message;
+      catchupSaveError = failure;
       playbackControllers.forEach(item => item.interrupt(catchupSaveError)); panelMessage(catchupSaveError);
-    } finally { catchupSaving = false; }
-    playbackControllers.forEach(item => item.refresh());
-    sendPlaybackAction(enabled && !catchupSaveError ? 'enable' : 'close');
-    refreshPanelStatus(); return !catchupSaveError;
+    } finally { catchupSaveCount -= 1; catchupSaving = catchupSaveCount > 0; if (!catchupSaving) playbackControllers.forEach(item => item.finishConfig()); }
+    sendPlaybackAction(actual?.enabled && !failure ? 'enable' : 'close');
+    refreshPanelStatus(); return !failure;
   }
 
   function readVideoBufferState(video) {
@@ -8654,8 +8867,19 @@
     panel.querySelectorAll('[data-playback-buffer]').forEach(node => { if (node.textContent !== text) node.textContent = text; });
     panel.querySelectorAll('[data-playback-sync-result]').forEach(node => { const message = state?.syncMessage || ''; if (node.textContent !== message) node.textContent = message; });
     panel.querySelectorAll('[data-playback-sync]').forEach(node => { node.disabled = !state?.canSync || state.syncStatus === 'pending'; });
-    panel.querySelectorAll('[data-catchup-toggle]').forEach(node => { node.checked = saved.enabled; node.disabled = !saved.writable; });
-    panel.querySelectorAll('[data-catchup-status]').forEach(node => { const message = saved.error || state?.message || (saved.enabled ? '已开启，等待当前直播播放器' : '自动追帧已关闭'); if (node.textContent !== message) node.textContent = message; });
+    panel.querySelectorAll('[data-catchup-toggle]').forEach(node => { node.checked = saved.enabled; node.disabled = catchupSaving || !saved.writable; });
+    panel.querySelectorAll('[data-catchup-status]').forEach(node => {
+      const message = saved.error || (state?.message || (saved.enabled ? '已开启，等待当前直播播放器' : '自动追帧已关闭')) + (Number.isFinite(state?.rate) ? ' · 当前 ' + state.rate.toFixed(2) + ' 倍' : '');
+      if (node.textContent !== message) node.textContent = message;
+    });
+    const draft = panelUi.catchupDraft;
+    panel.querySelectorAll('[data-catchup-target-error]').forEach(node => {
+      node.textContent = draft?.error || (draft?.dirty && draft.base !== saved.targetBufferSec ? '目标已被其他页面修改，当前编辑已保留，核对后可再次保存。' : '');
+    });
+    const target = panel.querySelector('[data-catchup-target]');
+    if (target && draft && !draft.dirty && target.ownerDocument.activeElement !== target) {
+      draft.base = saved.targetBufferSec; draft.value = saved.targetBufferSec.toFixed(1); target.value = draft.value;
+    }
     panel.querySelectorAll('[data-catchup-retry]').forEach(node => { node.hidden = !state || !['yielded', 'attention', 'failed'].includes(state.status); node.textContent = state?.status === 'yielded' ? '重新接管' : state?.status === 'failed' && !saved.enabled ? '核对当前倍速' : '重试'; node.disabled = !saved.enabled && state?.status !== 'failed'; });
     let task = panel.querySelector('[data-panel-catchup-task]');
     if (!task) {
@@ -8674,6 +8898,21 @@
       try { doc.dispatchEvent(new doc.defaultView.Event(PLAYBACK_ACTION)); } catch (error) { /* 来源卸载后由生命周期回收。 */ }
     }
   }
+  function exportPlaybackLog() {
+    try {
+      const state = playbackPageState();
+      if (!state?.document) throw new Error('当前播放来源尚未确认，稍后重试');
+      const raw = state.document.documentElement.getAttribute('data-bilivex-playback-log') || '[]';
+      if (raw.length > 256000) throw new Error('调速记录过大');
+      const records = JSON.parse(raw);
+      if (!Array.isArray(records) || records.length > 240) throw new Error('调速记录格式无效');
+      const content = JSON.stringify({ 版本: getScriptVersion(), 房间: state.room, 导出时间: new Date().toISOString(),
+        当前状态: { 状态: state.status, 原因: state.message, 实际速率: state.rate, 目标秒数: state.targetBufferSec }, 轨迹: records }, null, 2);
+      downloadJsonFile(content, 'BiLivex-播放调节-' + Date.now() + '.json');
+      panelMessage('已导出调速记录');
+    } catch (error) { panelMessage('导出失败：' + error.message); }
+  }
+
   function renderPlaybackDetail(content) {
     const manual = panelElement('section'); content.appendChild(manual);
     manual.appendChild(panelElement('h4', '同步时间', 'blx-group-label'));
@@ -8682,12 +8921,53 @@
     const result = panelElement('p', '', 'bilivex-status'); result.dataset.playbackSyncResult = '1'; result.setAttribute('role', 'status'); manual.appendChild(result);
     manual.appendChild(panelElement('p', '这里显示本地已缓冲画面的距离，不代表直播总延迟。同步只调整播放位置，保留你的播放或暂停状态。', 'blx-notice'));
     content.appendChild(panelElement('h4', '自动追帧', 'blx-group-label'));
-    if (getScriptVersion().includes('-rc.')) content.appendChild(panelElement('p', '当前为候选版，播放效果与音乐听感仍在验证。', 'blx-notice'));
+    if (getScriptVersion().includes('-rc.')) {
+      content.appendChild(panelElement('p', '当前为候选版，播放效果与音乐听感仍在验证。', 'blx-notice'));
+      const diagnostics = panelElement('div', null, 'blx-actions');
+      diagnostics.appendChild(panelButton('导出调速记录', exportPlaybackLog)); content.appendChild(diagnostics);
+    }
     const input = panelToggle(content, '温和自动追帧', catchupPreference().enabled, saveCatchupPreference); input.dataset.catchupToggle = '1';
+    const saved = catchupPreference();
+    if (!panelUi.catchupDraft) panelUi.catchupDraft = { value: saved.targetBufferSec.toFixed(1), base: saved.targetBufferSec, dirty: false, revision: 0, error: '', selection: null };
+    const draft = panelUi.catchupDraft;
+    const label = panelElement('label', '目标本地缓冲（秒）');
+    const target = panelElement('input'); target.type = 'text'; target.inputMode = 'decimal'; target.value = draft.value;
+    target.setAttribute('aria-label', '目标本地缓冲（秒）'); target.dataset.catchupTarget = '1'; label.appendChild(target); content.appendChild(label);
+    listenPanelNode(target, 'input', () => { draft.value = target.value; draft.dirty = true; draft.revision += 1; draft.error = ''; refreshPanelStatus(); });
+    listenPanelNode(target, 'select', () => { draft.selection = [target.selectionStart, target.selectionEnd]; });
+    listenPanelNode(target, 'compositionstart', () => { draft.composing = true; });
+    listenPanelNode(target, 'compositionend', () => { draft.composing = false; });
+    if (draft.selection?.every(Number.isInteger)) target.setSelectionRange(...draft.selection);
+    const error = panelElement('p', draft.error, 'bilivex-status'); error.dataset.catchupTargetError = '1'; error.setAttribute('role', 'status'); content.appendChild(error);
+    content.appendChild(panelButton('保存追帧目标', async event => {
+      if (draft.composing) return;
+      const value = Number(draft.value), revision = draft.revision;
+      if (!/^\d+(?:\.\d)?$/.test(draft.value) || value < 1 || value > 5) { draft.error = '请输入 1.0 至 5.0 秒，步进为 0.1 秒'; refreshPanelStatus(); return; }
+      const button = event.currentTarget; button.disabled = true;
+      try {
+        const success = await saveCatchupPreference({ targetBufferSec: value }, draft.base);
+        const actual = catchupPreference(); draft.base = actual.targetBufferSec;
+        if (success && draft.revision === revision) { draft.dirty = false; draft.value = value.toFixed(1); draft.error = ''; target.value = draft.value; panelMessage('已保存追帧目标'); }
+        else if (!success) draft.error = actual.error || '保存结果未确认，请核对后再次保存';
+      } finally { button.disabled = false; refreshPanelStatus(); }
+    }));
+    content.appendChild(panelButton('取消目标编辑', () => { panelUi.catchupDraft = null; renderPanelView(); }));
+    content.appendChild(panelButton('恢复追帧默认参数', async () => {
+      if (await saveCatchupPreference({ targetBufferSec: 1.5 })) { panelUi.catchupDraft = null; renderPanelView(); panelMessage('已恢复追帧默认参数'); }
+    }));
     const status = panelElement('p', '', 'bilivex-status'); status.dataset.catchupStatus = '1'; status.setAttribute('role', 'status'); content.appendChild(status);
-    content.appendChild(panelElement('p', '默认关闭。开启后，在后续直播间满足条件时自动工作。缓冲连续且至少 5 秒时观察后以 1.05 倍追帧，追到 1 秒后恢复；单轮最多 120 秒，不自动跳转。', 'blx-notice'));
+    content.appendChild(panelElement('p', '默认关闭。按目标缓冲以 1.05 或 1.10 倍温和追帧，接近目标后恢复正常速度。单轮最多 120 秒。加速完成后冷却 10 秒，再重新取样。自动调节只改变播放速率。', 'blx-notice'));
+    content.appendChild(panelElement('p', '缓冲不足时保持正常速度，等待来流恢复。', 'blx-notice'));
     content.appendChild(panelElement('p', '暂停、后台、画中画及仅音频期间暂缓；手动改速或回看后，本次观看保持让权。音乐听感和改善幅度因直播来源而异。', 'blx-notice'));
     const retry = panelButton('重试', () => sendPlaybackAction('reclaim')); retry.dataset.catchupRetry = '1'; content.appendChild(retry);
+  }
+
+  function selectCatchupRate(samples, preference) {
+    const high = samples.slice(-3), epsilon = .000001;
+    if (high.length === 3 && high[2].at - high[0].at >= 1000 && high.every(item => item.value > preference.targetBufferSec + .3 + epsilon && item.value < 20)) {
+      return high.every(item => item.value + epsilon >= preference.targetBufferSec + 1.5) ? 1.1 : 1.05;
+    }
+    return 1;
   }
 
   function createPlaybackController() {
@@ -8696,6 +8976,8 @@
     let binding = null, generation = 0, timer = null, rateTimer = null, pending = null, held = null, rateWrite = null;
     let cleanups = [], visit = null, lastRead = -Infinity, lastDecision = null, samples = [], effect = [], effectDone = false;
     let cooldown = 0, stableAfter = 0, suspended = false, watched = false, tip = null, tipButton = null, tipTimer = null;
+    let lastSample = null, parameterKey = '', parameterGeneration = 0, lastRateChange = -Infinity, settingsWait = false, syncPreparation = null;
+    const decisionLog = [];
     let syncStatus = 'idle', syncMessage = '', syncAt = 0, syncSequence = 0, status = 'off', message = '自动追帧已关闭';
     const controller = { source: null, refresh, sync, interrupt, suspend, resume, dispose, reclaim };
     const owns = () => root.getAttribute(PLAYBACK_OWNER) === owner;
@@ -8744,8 +9026,18 @@
       const liveAllowed = liveStatus === undefined || liveStatus === 1;
       const feedback = syncStatus === 'pending' || now() - syncAt <= 8000 ? syncMessage : '';
       const buffer = valid && modeAllowed ? data.message : (modeAllowed ? '当前播放器来源已变化，等待重新确认' : '当前媒体模式下视频同步暂不可用');
+      const preference = catchupPreference();
+      const rate = Number(binding.video.playbackRate);
       const value = JSON.stringify({ owner, room: binding.room, urlRoom: binding.source.urlRoom, panelUrlRoom: binding.source.panelUrlRoom,
-        buffer, status, message, syncStatus, syncMessage: feedback, canSync: valid && modeAllowed && liveAllowed && data.target !== null && binding.video.readyState > 0 });
+        buffer, remaining: data.remaining, targetBufferSec: preference.targetBufferSec, rate, status, message, syncStatus, syncMessage: feedback,
+        canSync: valid && modeAllowed && liveAllowed && data.target !== null && binding.video.readyState > 0 });
+      const last = decisionLog[decisionLog.length - 1], at = now();
+      if (!last || at - last.at >= 1000 || last.status !== status || last.rate !== rate) {
+        decisionLog.push({ at, room: binding.room, generation, parameterGeneration, readyState: binding.video.readyState,
+          buffer: data.remaining, target: preference.targetBufferSec, rate, requested: rateWrite?.target ?? held?.target ?? null, status, message });
+        if (decisionLog.length > 240) decisionLog.shift();
+        root.setAttribute('data-bilivex-playback-log', JSON.stringify(decisionLog));
+      }
       if (root.getAttribute(PLAYBACK_STATE) !== value) {
         root.setAttribute(PLAYBACK_STATE, value);
         panelDocument.dispatchEvent(new panelWindow.Event(PLAYBACK_EVENT));
@@ -8782,40 +9074,63 @@
       } else if (catchupPreference().enabled && !blocked()) protect('attention', '手动同步尚未确认，自动追帧等待处理');
       publish(); refresh();
     }
-    function cancelSync(reason) { if (pending) finishSync('cancelled', reason); }
+    function cancelSync(reason) {
+      if (syncPreparation) {
+        syncPreparation = null;
+        syncStatus = 'cancelled'; syncMessage = reason; syncAt = now();
+      }
+      if (pending) finishSync('cancelled', reason);
+    }
     function rateChanged() {
       if (!binding) return;
       if (!catchupPreference().enabled && !held && !rateWrite) return;
-      const video = binding.video, expected = rateWrite?.target ?? (held ? 1.05 : 1);
+      const video = binding.video, expected = rateWrite?.target ?? held?.target ?? 1;
       if (!closeEnough(video.playbackRate, expected) || !closeEnough(video.defaultPlaybackRate, 1)) {
-        held = null; rateWrite = null;
-        if (rateTimer !== null) window.clearTimeout(rateTimer); rateTimer = null;
+        held = null; clearRateWrite(false);
         cancelSync('播放控制已变化，本次同步已取消');
         if (visit) protect('yielded', '本次观看已让权给其他播放控制');
         publish();
       }
     }
+    function clearRateWrite(confirmed) {
+      const record = rateWrite;
+      rateWrite = null;
+      if (rateTimer !== null) window.clearTimeout(rateTimer); rateTimer = null;
+      record?.waiters.forEach(resolve => resolve(confirmed));
+    }
     function confirmRate(record) {
       if (rateWrite !== record) return;
-      rateTimer = null; rateWrite = null;
-      if (record.generation !== generation || !sourceCurrent(record.binding, record.release)) return;
+      if (record.generation !== generation || !sourceCurrent(record.binding, record.release)) { clearRateWrite(false); return; }
       const video = record.binding.video;
-      if (!closeEnough(video.playbackRate, record.target) || !closeEnough(video.defaultPlaybackRate, 1)) { held = null; protect('yielded', '本次观看已让权给其他播放控制'); }
-      else if (now() > record.deadline) protect('failed', '未确认倍速恢复，已停止自动控制，请检查原生倍速');
-      else if (record.release && status === 'cooldown') setStatus('cooldown', '已恢复正常速度，稍后继续观察');
+      if (!closeEnough(video.playbackRate, record.target) || !closeEnough(video.defaultPlaybackRate, 1)) {
+        held = null; clearRateWrite(false); protect('yielded', '本次观看已让权给其他播放控制');
+      } else if (now() > record.deadline) {
+        clearRateWrite(false); protect('failed', '未确认倍速恢复，已停止自动控制，请检查原生倍速');
+      } else {
+        if (record.roundCooldownMs && visit) { visit.deadline = 0; cooldown = now() + record.roundCooldownMs; remember(); setStatus('cooldown', '已恢复正常速度，稍后继续观察'); }
+        clearRateWrite(true);
+      }
       publish(); refresh();
     }
-    function writeRate(b, target, release = false) {
-      if (!sourceCurrent(b, release)) return false;
-      if (rateTimer !== null) window.clearTimeout(rateTimer);
-      const record = { binding: b, target, release, generation, deadline: now() + 1000 };
+    function writeRate(b, target, restoring = false) {
+      if (!sourceCurrent(b, restoring)) return false;
+      if (rateWrite && !restoring) return false;
+      clearRateWrite(false);
+      const record = { binding: b, target, release: restoring, generation, deadline: now() + 1000, waiters: [], roundCooldownMs: 0 };
       rateWrite = record;
       try {
         b.video.playbackRate = target;
         if (!closeEnough(b.video.playbackRate, target)) throw new Error('速率回读不符');
+        if (held && !restoring) held.target = target;
+        lastRateChange = now();
       } catch (error) {
-        rateWrite = null;
-        protect('failed', release ? '正常速度恢复未确认，已停止自动控制，请检查原生倍速' : '自动追帧写入失败，已停止自动控制');
+        clearRateWrite(false);
+        if (!restoring && held) {
+          const actual = Number(b.video.playbackRate);
+          if (!Number.isFinite(actual) || closeEnough(actual, held.baseline)) held = null;
+          else { if (closeEnough(actual, target)) held.target = target; release(); }
+        }
+        protect('failed', restoring ? '正常速度恢复未确认，已停止自动控制，请检查原生倍速' : '自动追帧写入失败，已停止自动控制');
         return false;
       }
       rateTimer = window.setTimeout(() => confirmRate(record), 0); return true;
@@ -8824,14 +9139,33 @@
       const previous = held; if (!previous) return true;
       held = null;
       if (!sourceCurrent(previous.binding, true)) { protect('failed', '播放来源已变化，未确认原倍速恢复，请检查原生倍速'); return false; }
-      if (!closeEnough(previous.binding.video.playbackRate, 1.05) || !closeEnough(previous.binding.video.defaultPlaybackRate, 1)) {
-        rateWrite = null;
-        if (rateTimer !== null) window.clearTimeout(rateTimer); rateTimer = null;
+      if (!closeEnough(previous.binding.video.playbackRate, previous.target) || !closeEnough(previous.binding.video.defaultPlaybackRate, 1)) {
+        clearRateWrite(false);
         if (visit) protect('yielded', '本次观看已让权给其他播放控制');
         return true;
       }
       return writeRate(previous.binding, previous.baseline, true);
     }
+    function waitForRelease() {
+      if (!release()) return Promise.resolve(false);
+      if (!rateWrite?.release) return Promise.resolve(!blocked() || visit?.block !== 'failed');
+      return new Promise(resolve => {
+        const record = rateWrite;
+        const timeout = panelWindow.setTimeout(() => {
+          if (rateWrite === record) { clearRateWrite(false); protect('failed', '正常速度恢复未确认，请检查原生倍速'); publish(); }
+          resolve(false);
+        }, 1000);
+        record.waiters.push(confirmed => { panelWindow.clearTimeout(timeout); resolve(confirmed); });
+      });
+    }
+    function completeRound(time) {
+      const roundCooldownMs = 10000;
+      if (release() && rateWrite?.release) { rateWrite.roundCooldownMs = roundCooldownMs; setStatus('cooldown', '正在核对正常速度，稍后继续观察'); }
+      else if (!blocked() && visit) { visit.deadline = 0; cooldown = time + roundCooldownMs; remember(); }
+      samples = []; lastSample = null;
+    }
+    controller.prepareConfig = () => { settingsWait = true; if (rateWrite) rateWrite.roundCooldownMs = 0; cancelTimer(); samples = []; return waitForRelease(); };
+    controller.finishConfig = () => { settingsWait = false; refresh(); };
     function interrupt(reason = '播放状态变化，自动追帧暂缓') {
       cancelTimer(); cancelSync(reason); samples = [];
       const released = release();
@@ -8840,7 +9174,24 @@
     }
     function sync() {
       refresh();
-      if (pending) return { status: 'pending' };
+      if (pending || syncPreparation) return { status: 'pending' };
+      if (held || rateWrite) {
+        const preparation = { binding, generation };
+        syncPreparation = preparation; cancelTimer();
+        syncStatus = 'pending'; syncMessage = '正在恢复正常速度，再确认同步位置'; publish();
+        waitForRelease().then(confirmed => {
+          if (syncPreparation !== preparation) return;
+          syncPreparation = null;
+          if (!confirmed || preparation.generation !== generation || !sourceCurrent(preparation.binding)) {
+            syncStatus = 'unconfirmed'; syncMessage = '正常速度或播放来源尚未确认，请核对后重试'; syncAt = now(); publish(); return;
+          }
+          beginSync();
+        });
+        return { status: 'pending' };
+      }
+      return beginSync();
+    }
+    function beginSync() {
       const data = readVideoBufferState(binding?.video), mode = sharedRuntime.mediaController?.mode || 'idle';
       const liveStatus = getLivePlayerInfo(binding?.source.player)?.liveStatus;
       if (!sourceCurrent() || !['idle', 'pip-active'].includes(mode) || (liveStatus !== undefined && liveStatus !== 1) || data.target === null || binding.video.readyState === 0 || document.hidden) {
@@ -8850,7 +9201,7 @@
         syncStatus = 'already'; syncMessage = '当前已接近缓冲末端'; syncAt = now(); publish(); return { status: syncStatus };
       }
       if (data.target < data.position) { syncStatus = 'unavailable'; syncMessage = '缓冲数据正在更新，请稍后再试'; syncAt = now(); publish(); return { status: syncStatus }; }
-      release(); cancelTimer(); samples = [];
+      cancelTimer(); samples = [];
       const b = binding, video = b.video;
       const request = { id: ++syncSequence, binding: b, generation, target: data.target, started: now(), maxRate: Math.max(1, Number(video.playbackRate)), initialRate: Number(video.playbackRate), initialDefaultRate: Number(video.defaultPlaybackRate), cleanups: [], seekingCount: 0, timer: null };
       const listen = (name, callback) => { video.addEventListener(name, callback); request.cleanups.push(() => video.removeEventListener(name, callback)); };
@@ -8873,51 +9224,66 @@
     function median(values) { const sorted = [...values].sort((a, b) => a - b); return sorted.length ? sorted[Math.floor(sorted.length / 2)] : Infinity; }
     function drive(data) {
       const enabled = catchupPreference(), video = binding?.video, time = now();
-      if (!enabled.enabled) { release(); if (enabled.error) catchupLocalOff = true; if (!visit?.block || visit.block !== 'failed') setStatus('off', enabled.error || '自动追帧已关闭'); return; }
+      if (!enabled.enabled) { release(); if (enabled.error) catchupLocalOff = true; if (visit?.block !== 'failed') setStatus('off', enabled.error || '自动追帧已关闭'); return; }
       if (blocked()) { release(); setStatus(visit.yielded ? 'yielded' : visit.block, visit.reason); return; }
+      const nextParameters = JSON.stringify([enabled.targetBufferSec]);
+      if (parameterKey !== nextParameters) {
+        const changed = !!parameterKey;
+        parameterKey = nextParameters; parameterGeneration += 1; samples = []; lastSample = null;
+        if (changed) { if (rateWrite) rateWrite.roundCooldownMs = 0; release(); setStatus('observing', '参数已更新，正在重新观察'); }
+      }
       const selected = playbackPageState();
       if (!selected || selected.owner !== owner) { release(); samples = []; setStatus('suspended', '当前媒体来源不唯一或不属于当前直播间，自动追帧暂缓'); return; }
       if (visit.deadline && time >= visit.deadline) { release(); protect('attention', '本轮已达 120 秒上限，请明确重试'); return; }
-      if (!sourceCurrent() || suspended || document.hidden || sharedRuntime.mediaController?.mode && sharedRuntime.mediaController.mode !== 'idle' || document.pictureInPictureElement || panelDocument.pictureInPictureElement || panelWindow.documentPictureInPicture?.window) {
+      if (!sourceCurrent() || suspended || document.hidden || (sharedRuntime.mediaController?.mode || 'idle') !== 'idle' || document.pictureInPictureElement || panelDocument.pictureInPictureElement || panelWindow.documentPictureInPicture?.window) {
         release(); samples = []; setStatus('suspended', '后台、媒体模式或来源变化，自动追帧暂缓'); return;
       }
       const quality = qualityStatus(binding?.source.player);
       if (quality || cfg.autoWebMode && (playerEnhancementState.running || playerEnhancementState.timer !== null)) {
         release(); samples = []; setStatus('suspended', quality === 'uncertain' ? '画质切换结果未确认，自动追帧暂缓' : '等待自动画质和网页模式初始化完成'); return;
       }
+      if (settingsWait || catchupSaving || syncPreparation || pending || rateWrite) return;
       if (!video || video.paused || video.seeking || video.ended || video.error || video.readyState < 3 || getLivePlayerInfo(binding.source.player)?.liveStatus !== 1 || !canonicalRoom(document, false)) {
         release(); samples = []; setStatus('suspended', video?.paused ? '当前已暂停，自动追帧暂缓' : '等待当前直播视频稳定'); return;
       }
       if (!Number.isFinite(Number(video.playbackRate)) || Number(video.playbackRate) <= 0) { held = null; protect('failed', '当前播放速度无效，自动追帧已停止'); return; }
-      if (!closeEnough(video.playbackRate, held ? 1.05 : 1) || !closeEnough(video.defaultPlaybackRate, 1)) { held = null; protect('yielded', '当前使用其他倍速，本次观看已让权'); return; }
-      if (!data.continuous) { unstable('缓冲不连续，自动追帧暂缓'); return; }
+      if (!closeEnough(video.playbackRate, held?.target ?? 1) || !closeEnough(video.defaultPlaybackRate, 1)) { held = null; protect('yielded', '当前使用其他倍速，本次观看已让权'); return; }
+      if (!data.continuous || !(data.remaining > 0)) { unstable('缓冲不连续，自动追帧暂缓'); return; }
       if (data.remaining >= 20) { release(); protect('attention', '本地缓冲积累过大，可先手动同步'); return; }
-      if (held && data.remaining <= 1) {
-        if (release()) { cooldown = time + 20000; visit.deadline = 0; remember(); setStatus('cooldown', '正在核对正常速度，稍后继续观察'); }
-        samples = []; return;
+      if (held && lastSample !== null && time - lastSample > 3000) { unstable('样本已过期，自动追帧暂缓'); lastSample = null; return; }
+      if (lastSample === null || time - lastSample >= 500) {
+        if (lastSample !== null && time - lastSample > 3000) samples = [];
+        samples.push({ at: time, value: data.remaining }); if (samples.length > 3) samples.shift();
+        lastSample = time;
       }
-      if (lastDecision !== null && time - lastDecision < 2000) return;
-      if (held && time - lastDecision > 3000) { unstable('样本已过期，自动追帧暂缓'); lastDecision = time; return; }
-      lastDecision = time;
-      if (pending || rateWrite || time < stableAfter) { samples = []; return; }
-      if (time < cooldown) { setStatus('cooldown', '已恢复正常速度，稍后继续观察'); return; }
+      const lastTwo = samples.slice(-2);
+      if (held?.target > 1 && data.remaining <= enabled.targetBufferSec + .100001) { completeRound(time); return; }
+      if (time < stableAfter || time < cooldown) { samples = []; lastSample = null; setStatus('cooldown', '播放状态正在稳定，稍后继续观察'); return; }
       if (held) {
-        effect.push(data.remaining); if (effect.length > 3) effect.shift();
-        if (!effectDone && time - held.started >= 30000) {
-          if (held.initial - median(effect) < .5) { release(); protect('attention', '追帧效果不足，本次已停止，请按需重试'); return; }
+        if (lastSample === time) { effect.push(data.remaining); if (effect.length > 3) effect.shift(); }
+        const duration = time - held.started;
+        const sufficient = held.initial - median(effect) >= .5;
+        if (!effectDone && duration >= 30000) {
+          if (!sufficient) { release(); protect('attention', '追帧效果不足，本次已停止，请按需重试'); return; }
           effectDone = true;
         }
-        setStatus('catching', '温和追帧中 · 1.05 倍'); return;
+        let target = held.target;
+        if (held.target === 1.1 && lastTwo.length === 2 && lastTwo.every(item => item.value <= enabled.targetBufferSec + 1.200001)) target = 1.05;
+        const desired = selectCatchupRate(samples, enabled);
+        if (held.target === 1.05 && desired === 1.1 && time - lastRateChange >= 2000) target = 1.1;
+        if (target !== held.target) writeRate(binding, target);
+        setStatus('catching', '自适应追帧中 · ' + (held?.target ?? target).toFixed(2) + ' 倍');
+        return;
       }
-      if (data.remaining < 5) { samples = []; setStatus('observing', '已开启，正在观察缓冲'); return; }
-      samples.push({ at: time, value: data.remaining }); if (samples.length > 3) samples.shift();
-      setStatus('observing', '已开启，正在观察连续缓冲');
-      if (samples.length < 3 || time - samples[0].at < 4000) return;
-      held = { binding, baseline: Number(video.playbackRate), started: time, initial: median(samples.map(item => item.value)) };
+      if (lastDecision !== null && time - lastDecision < 2000) return;
+      lastDecision = time;
+      const target = selectCatchupRate(samples, enabled);
+      if (target === 1) { setStatus('observing', '已开启，正在观察本地缓冲 · 目标 ' + enabled.targetBufferSec.toFixed(1) + ' 秒'); return; }
+      held = { binding, baseline: Number(video.playbackRate), target, started: time, initial: median(samples.map(item => item.value)) };
       if (!visit.deadline) visit.deadline = time + 120000;
       remember(); effect = []; effectDone = false;
-      if (!writeRate(binding, 1.05)) { if (held && closeEnough(video.playbackRate, 1.05)) release(); else held = null; return; }
-      setStatus('catching', '温和追帧中 · 1.05 倍');
+      if (!writeRate(binding, target)) { if (held && closeEnough(video.playbackRate, target)) release(); else held = null; return; }
+      setStatus('catching', '自适应追帧中 · ' + target.toFixed(2) + ' 倍');
     }
     function unstable(reason) {
       const time = now(), wasHeld = !!held;
@@ -8936,8 +9302,8 @@
       if (['pause', 'ended', 'error', 'enterpictureinpicture'].includes(event.type)) interrupt(event.type === 'pause' ? '当前已暂停，自动追帧暂缓' : '播放状态变化，自动追帧暂缓');
       let urgent = !['timeupdate', 'progress'].includes(event.type);
       if (!urgent && held) {
-        // 低于1.5秒时优先复核，命中1秒目标即可退出；普通进度事件仍遵守采样节流。
-        try { const ranges = binding.video.buffered; urgent = !!ranges?.length && ranges.end(ranges.length - 1) - Number(binding.video.currentTime) <= 1.5; }
+        // 到达当前目标的加速退出线时优先复核，普通进度事件仍遵守采样节流。
+        try { const ranges = binding.video.buffered; urgent = !!ranges?.length && ranges.end(ranges.length - 1) - Number(binding.video.currentTime) <= catchupPreference().targetBufferSec + .100001; }
         catch (error) { urgent = true; }
       }
       if (urgent || now() - lastRead >= 500) refresh();
@@ -8979,7 +9345,7 @@
         clearState(); return;
       }
       const playerKey = getPlayerInstanceKey(getLivePlayerInfo(source.player));
-      if (visit && visit.room === source.room && visit.urlRoom !== source.panelUrlRoom && source.panelUrlRoom !== source.room && binding?.source.player === source.player && binding?.video === source.video && binding.playerKey === playerKey) {
+      if (visit && visit.room === source.room && visit.urlRoom !== source.panelUrlRoom && source.panelUrlRoom !== source.room) {
         interrupt('等待原生播放器确认当前房间'); clearState(); return;
       }
       const same = binding?.video === source.video && binding.source.player === source.player && binding.src === source.video.currentSrc && binding.srcObject === source.video.srcObject && binding.playerKey === playerKey && binding.room === source.room;
@@ -9007,14 +9373,14 @@
       const snapshot = readVideoBufferState(binding.video);
       lastRead = now(); publish(snapshot); drive(snapshot); publish(snapshot);
       if (visit) { visit.cooldown = cooldown; remember(); }
-      schedule(watched && !saved.enabled ? 1000 : 2000);
+      schedule(watched && !saved.enabled ? 1000 : 500);
     }
     function reclaim() {
       refresh();
       if (!visit || !binding || (!catchupPreference().enabled && visit.block !== 'failed') || !sourceCurrent()) return;
       if (!closeEnough(binding.video.playbackRate, 1) || !closeEnough(binding.video.defaultPlaybackRate, 1)) { panelMessage('请先在原生播放器恢复正常速度，再重新接管'); return; }
       visit.yielded = false; visit.block = ''; visit.reason = ''; visit.deadline = 0; visit.unstable = [];
-      samples = []; lastDecision = null; remember(); refresh();
+      samples = []; lastSample = null; lastDecision = null; remember(); refresh();
     }
     function closeTip() {
       if (tipTimer !== null) window.clearTimeout(tipTimer); tipTimer = null;
@@ -9058,9 +9424,11 @@
       } catch (error) { /* 动作只接受当前来源的有限命令。 */ }
     };
     controller.resetSource = () => { interrupt('视频来源正在重新加载'); generation += 1; bindEvents(false); binding = null; controller.source = null; clearState(); };
-    controller.manual = () => {
+    controller.cancelSync = () => { cancelSync('检测到原生倍速操作，本次同步已取消'); publish(); };
+    controller.manual = (rateIntent = false) => {
       if (!binding) return;
-      cancelSync('检测到原生播放操作，本次同步已取消'); release();
+      cancelSync('检测到原生播放操作，本次同步已取消');
+      if (rateIntent) { held = null; clearRateWrite(false); } else release();
       if (catchupPreference().enabled) protect('yielded', '检测到原生倍速或进度操作，本次观看已让权');
       publish();
     };
@@ -9259,6 +9627,14 @@
 
   function guardianCheck() {
     try {
+      if (panelConfigUncertain) {
+        try {
+          const raw = GM_getValue('bilivex_cfg'), stored = raw ? JSON.parse(raw) : {};
+          if (!stored || typeof stored !== 'object' || Array.isArray(stored)) throw new Error('配置结构无效');
+          const next = { ...DEFAULT_CFG, ...normalizeBooleanSettings(stored), ...normalizeAppearancePreference(stored), favorites: getFavorites() };
+          applyConfigChange(cfg, next); panelConfigUncertain = false; panelMessage('已按当前存储重新核对设置');
+        } catch (error) { /* 保留上次确认状态，下一次现有守卫再核对。 */ }
+      }
       registerMediaSource();
       playbackController?.refresh();
       refreshEntryPresentation();
@@ -9516,7 +9892,12 @@
     }, true));
     ['pointerdown', 'keydown', 'change'].forEach(type => listenLifecycle(document, type, event => {
       if (!event.isTrusted || !event.target?.closest?.('.live-web-player-controller, #web-player-controller-wrap-el')) return;
-      if (event.target.closest('.speed-wrap, .playback-rate, .rate-wrap, .progress-bar, input[type="range"][aria-label*="进度"]')) playbackController?.manual();
+      if (type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
+      if (event.target.closest('.progress-bar, input[type="range"][aria-label*="进度"]')) { playbackController?.manual(); return; }
+      const speed = event.target.closest('.speed-wrap, .playback-rate, .rate-wrap');
+      if (speed) playbackController?.cancelSync();
+      const option = event.target.closest('[role="menuitem"], [role="option"], [data-value], [data-rate], li, .item, .list-it, .select-item');
+      if (speed && (type === 'change' && event.target.matches('select') || option && option !== speed && /^(?:\d+(?:\.\d+)?\s*[xX倍]?|正常|默认)$/.test(option.textContent.trim()))) playbackController?.manual(true);
     }, true));
     try {
       const id = GM_addValueChangeListener(CATCHUP_KEY, () => {
@@ -9612,6 +9993,7 @@
   }
 
   // ---------- 启动 ----------
+  appearanceController.onChange = applyTheme;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start);
   } else {
