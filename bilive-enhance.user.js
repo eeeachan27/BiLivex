@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BiLivex - 哔哩哔哩直播增强
 // @namespace    https://github.com/eeeachan27/BiLivex
-// @version      3.3.3
+// @version      3.3.4
 // @license      MIT
 // @description  B站直播间增强工具：同步时间状态、温和自动追帧、原生弹幕字体记忆、评论区固定入口、六分类悬浮窗、带弹幕画中画、仅音频模式、直播间净化、特别关注开播提醒、独轮车、弹幕 +1、收藏夹、小尾巴、一键点赞及可选观看设置。开源地址：https://github.com/eeeachan27/BiLivex
 // @author       eeeachan27
@@ -39,7 +39,7 @@
  *   9) 仅音频：独立音轨、停止视频加载、暂停卸载及原生视频恢复。
  */
 
-(function initBiLivex() {
+(function initBiLivex(roomServices) {
   'use strict';
 
   // 开播提醒仅在 B 站 HTTPS 顶层页运行；直播 iframe 保留现有房间功能。
@@ -57,13 +57,108 @@
   if (!liveAlertTopPage && liveAlertRoomPage && !liveAlertEmbeddedRoom) {
     try { if (window.top.location.origin !== location.origin) return; } catch (e) {
       // 活动页可能尚未完成父子文档的域设置；就绪后仅重试一次，持续跨源仍停止。
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBiLivex, { once: true });
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => initBiLivex(roomServices), { once: true });
       return;
     }
   }
-  const appearanceController = createAppearanceController(document);
-  const liveAlertController = liveAlertTopPage ? createLiveAlertController(liveAlertRoomPage) : null;
+  const appearanceController = roomServices?.appearanceController || createAppearanceController(document);
+  const liveAlertController = roomServices ? roomServices.liveAlertController : liveAlertTopPage ? createLiveAlertController(liveAlertRoomPage) : null;
   if (!liveAlertRoomPage) return;
+  // 页面服务按文档创建一次；每次进入房间使用独立的运行状态和清理句柄。
+  if (!roomServices) {
+    const pageState = { panelUi: null };
+    watchRoomContext(() => {
+      const services = { appearanceController, liveAlertController, pageState, dispose: null };
+      initBiLivex(services);
+      return services.dispose;
+    });
+    return;
+  }
+  let roomRuntimeDisposed = false;
+  let roomCleanup = null;
+  function roomRuntimeCurrent() { return !roomRuntimeDisposed && isLiveRoomContext(window); }
+
+  function liveRoomPathId(href) {
+    try {
+      const url = new URL(href);
+      if (url.protocol !== 'https:' || url.hostname !== 'live.bilibili.com') return '';
+      const match = url.pathname.match(/^\/(?:blanc\/)?(\d+)\/?$/);
+      return match && /[1-9]/.test(match[1]) ? match[1] : '';
+    } catch (error) { return ''; }
+  }
+
+  function isLiveRoomContext(view) {
+    try {
+      const top = view.top;
+      if (!liveRoomPathId(top.location.href)) return false;
+      if (top === view) return true;
+      if (view.frameElement?.isConnected === false) return false;
+      // 访问父文档确认同源，空白播放器文档继承已确认的顶层房间。
+      if (!top.document) return false;
+      return view.location.href === 'about:blank' ||
+        view.location.origin === top.location.origin && !!liveRoomPathId(view.location.href);
+    } catch (error) { return false; }
+  }
+
+  function watchRoomContext(enterRoom) {
+    const pageWindow = typeof unsafeWindow !== 'undefined' && unsafeWindow ? unsafeWindow : window;
+    const topWindow = window.top;
+    const contextEvent = 'bilivex-room-context-change';
+    const cleanups = [];
+    let leaveRoom = null, disposed = false, suspended = false, entering = false;
+    function refresh() {
+      if (disposed || suspended) return;
+      if (isLiveRoomContext(window)) {
+        if (!leaveRoom && !entering) {
+          entering = true;
+          try { leaveRoom = enterRoom(); } finally { entering = false; }
+        }
+      } else {
+        const leave = leaveRoom;
+        leaveRoom = null;
+        leave?.();
+      }
+    }
+    function changed() {
+      refresh();
+      // 子页直接监听顶层通知，顶层返回主页时同步终止旧 iframe 的任务。
+      if (window === topWindow) topWindow.dispatchEvent(new topWindow.Event(contextEvent));
+    }
+    function listen(target, type, callback) {
+      target.addEventListener(type, callback);
+      cleanups.push(() => target.removeEventListener(type, callback));
+    }
+    if (!pageWindow.navigation) {
+      for (const name of ['pushState', 'replaceState']) {
+        const original = pageWindow.history[name];
+        const wrapped = function (...args) {
+          const result = original.apply(this, args);
+          changed();
+          return result;
+        };
+        try {
+          pageWindow.history[name] = wrapped;
+          cleanups.push(() => { if (pageWindow.history[name] === wrapped) pageWindow.history[name] = original; });
+        } catch (error) { /* 原生前进后退和页面恢复仍会重新检查上下文。 */ }
+      }
+    }
+    listen(window, 'popstate', changed);
+    listen(window, 'hashchange', changed);
+    // 原生导航事件跨页面与油猴沙箱共享，覆盖页面上下文自行调用 History 的情况。
+    if (pageWindow.navigation) listen(pageWindow.navigation, 'currententrychange', changed);
+    listen(topWindow, contextEvent, refresh);
+    listen(document, 'DOMContentLoaded', changed);
+    listen(window, 'pageshow', () => { suspended = false; changed(); });
+    listen(window, 'pagehide', event => {
+      if (event.persisted) { suspended = true; return; }
+      disposed = true;
+      const leave = leaveRoom;
+      leaveRoom = null;
+      leave?.();
+      cleanups.splice(0).forEach(cleanup => cleanup());
+    });
+    refresh();
+  }
 
   function normalizeAppearancePreference(value) {
     return {
@@ -1922,6 +2017,7 @@
 
   // ---------- 主题应用 ----------
   function applyTheme() {
+    if (!roomRuntimeCurrent()) return;
     currentTheme = THEMES[cfg.theme] || THEMES.blue;
     syncWheelTheme();
     const themedPanel = getPanelRoot();
@@ -2011,6 +2107,16 @@
   let commentMenuSequence = 0;
   let commentMenuWaitTimers = [];
   let mountedCommentMenuCleanup = null;
+  const actionFeedbackTimers = new Map();
+
+  function mountActionFeedback(host, feedback) {
+    host.appendChild(feedback);
+    const timer = setTimeout(() => {
+      feedback.remove();
+      actionFeedbackTimers.delete(feedback);
+    }, 1100);
+    actionFeedbackTimers.set(feedback, timer);
+  }
 
   function extractChatDanmakuText(item) {
     if (!item || typeof item.matches !== 'function' || !item.matches('.chat-item.danmaku-item')) return '';
@@ -2074,7 +2180,7 @@
   }
 
   function showCommentActionFeedback(ownerDocument, point, text) {
-    if (!ownerDocument || !point || !text) return;
+    if (!roomRuntimeCurrent() || !ownerDocument || !point || !text) return;
     const ownerWindow = ownerDocument.defaultView;
     const host = ownerDocument.fullscreenElement || ownerDocument.body || ownerDocument.documentElement;
     if (!ownerWindow || !host) return;
@@ -2092,8 +2198,7 @@
       `box-shadow:0 4px 12px ${currentTheme.feedbackShadow};` +
       'pointer-events:none;z-index:2147483647;' +
       'animation:bilivex-float-plus 1s ease-out forwards;';
-    host.appendChild(feedback);
-    setTimeout(() => feedback.remove(), 1100);
+    mountActionFeedback(host, feedback);
   }
 
   function createCommentMenuButton(ownerDocument, label, action, onActivate) {
@@ -2262,6 +2367,7 @@
   if (!Object.prototype.hasOwnProperty.call(sharedRuntime, 'hoverOwner')) sharedRuntime.hoverOwner = null;
 
   function applyConfigChange(previous, next, local = false) {
+    if (!roomRuntimeCurrent()) return;
     cfg = next;
     if (previous.floatDmPlus !== next.floatDmPlus) toggleFloatingDmEnabled();
     if (previous.theme !== next.theme || previous.colorMode !== next.colorMode) { appearanceController.refresh(next); applyTheme(); }
@@ -2699,6 +2805,7 @@
   }
 
   function bindWheelEntry() {
+    if (!roomRuntimeCurrent()) return;
     // 活动页的顶层和同源 iframe 都会运行脚本。轮椅入口必须只由顶层实例维护，
     // 否则两个控件观察器会在同一个发送栏中反复移动各自按钮，造成页面卡死。
     if (document !== panelDocument) {
@@ -2846,6 +2953,7 @@
     return el.ownerDocument === uiDocument ? toUiRect(rect) : rect;
   }
   function getUiHost() {
+    if (!roomRuntimeCurrent()) return null;
     if (!panelDocument.fullscreenElement) sharedRuntime.panelLeavingDocument = null;
     if (sharedRuntime.panelLeavingDocument === uiDocument) return panelDocument.body || panelDocument.documentElement;
     const localFullscreen = uiDocument.fullscreenElement;
@@ -3054,7 +3162,8 @@
 
   // 视觉反馈动画：点击 +1 后在弹幕位置弹出 "✓ 已 +1" 浮字动画
   function showFloatingPlusFeedback(item) {
-    if (!item) return;
+    const host = getUiHost();
+    if (!item || !host) return;
     const rect = item.ownerDocument === uiDocument
       ? item.getBoundingClientRect()
       : toUiRect(item.getBoundingClientRect());
@@ -3072,9 +3181,7 @@
       `box-shadow:0 4px 12px ${currentTheme.feedbackShadow};` +
       'pointer-events:none;z-index:2147483647;' +
       'animation:bilivex-float-plus 1s ease-out forwards;';
-    getUiHost().appendChild(fb);
-    // 动画结束后自动清理（避免页面堆积）
-    setTimeout(() => { if (fb.parentNode) fb.parentNode.removeChild(fb); }, 1100);
+    mountActionFeedback(host, fb);
   }
 
   // 增强单条弹幕：添加悬停 +1 按钮
@@ -3904,9 +4011,24 @@
   };
 
   let boundFloatContainer = null;
+  function unbindFloatingDmHover() {
+    const container = boundFloatContainer;
+    if (!container) return;
+    boundFloatContainer = null;
+    container._bilivexFloatMO?.disconnect();
+    delete container._bilivexFloatMO;
+    delete container.dataset.bilivexFloatBound;
+    $$('.bili-danmaku-x-dm[data-bilivex-float-inited]', container).forEach(item => {
+      item._bilivexFloatCleanup?.();
+      delete item.dataset.bilivexFloatInited;
+    });
+  }
+
   function attachFloatingDmHover(rotate) {
-    if (!rotate) return;
-    if (rotate.dataset.bilivexFloatBound) { boundFloatContainer = rotate; return; }
+    if (!roomRuntimeCurrent()) return;
+    if (!rotate || rotate === boundFloatContainer) return;
+    if (FloatingDmEngine.hovered) FloatingDmEngine.leave(FloatingDmEngine.hovered);
+    unbindFloatingDmHover();
     rotate.dataset.bilivexFloatBound = '1';
     boundFloatContainer = rotate;
     const refresh = () => $$(':scope .bili-danmaku-x-dm', rotate).forEach(ensureFloatingDmOverlay);
@@ -3917,6 +4039,7 @@
       refreshQueued = true;
       requestAnimationFrame(() => {
         refreshQueued = false;
+        if (!roomRuntimeCurrent() || rotate._bilivexFloatMO !== mo) return;
         records.forEach((record) => record.addedNodes.forEach((node) => {
           if (node.nodeType !== 1) return;
           if (node.matches('.bili-danmaku-x-dm')) ensureFloatingDmOverlay(node);
@@ -3940,34 +4063,12 @@
 
   // 弹幕 +1 开关切换：开关关闭时解除已绑定弹幕的监听器
   function toggleFloatingDmEnabled() {
-    const rotate = findFloatingDmContainer();
-    const containers = [];
-    [rotate, boundFloatContainer].forEach((container) => {
-      if (container && !containers.includes(container)) containers.push(container);
-    });
     if (cfg.floatDmPlus) {
-      if (!rotate) return;
-      if (rotate._bilivexFloatMO) {
-        try { rotate._bilivexFloatMO.disconnect(); } catch (e) {}
-      }
-      attachFloatingDmHover(rotate);
+      attachFloatingDmHover(findFloatingDmContainer());
     } else {
       // 关闭：移除所有已增强弹幕的监听器与按钮
       FloatingDmEngine.stop();
-      containers.forEach((container) => {
-        if (container._bilivexFloatMO) {
-          try { container._bilivexFloatMO.disconnect(); } catch (e) {}
-          container._bilivexFloatMO = null;
-        }
-        $$('.bili-danmaku-x-dm', container).forEach((item) => {
-          if (typeof item._bilivexFloatCleanup === 'function') {
-            try { item._bilivexFloatCleanup(); } catch (e) {}
-          }
-          delete item.dataset.bilivexFloatInited;
-        });
-        delete container.dataset.bilivexFloatBound;
-      });
-      boundFloatContainer = null;
+      unbindFloatingDmHover();
       // 关闭功能时同步清理悬停副本与操作栏，二者始终按引用成对删除。
       const residentHosts = [];
       const residentLayer = sharedRuntime.residentLayer;
@@ -4013,23 +4114,28 @@
     const apply = (ta) => {
       if (!ta || ta.dataset.bilivexTailBound) return;
       ta.dataset.bilivexTailBound = '1';
-      ta.addEventListener('keydown', (event) => {
+      const onKeyDown = (event) => {
         if (event.key !== 'Enter' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) {
           return;
         }
-        appendTailForManualSend(ta);
-      }, true);
+        if (roomRuntimeCurrent()) appendTailForManualSend(ta);
+      };
+      ta.addEventListener('keydown', onKeyDown, true);
+      lifecycleCleanups.push(() => { ta.removeEventListener('keydown', onKeyDown, true); delete ta.dataset.bilivexTailBound; });
     };
     const ctl = document.querySelector('.chat-control-panel');
     if (!ctl || ctl.dataset.bilivexTailCtlBound) return;
     ctl.dataset.bilivexTailCtlBound = '1';
     boundTailCtl = ctl;
     apply(ctl.querySelector('textarea.chat-input, textarea'));
-    ctl.addEventListener('click', (event) => {
+    const onClick = (event) => {
+      if (!roomRuntimeCurrent()) return;
       const ta = findChatInput();
       const target = event.target && event.target.closest ? event.target.closest('button, [role="button"]') : null;
       if (ta && isEnabledChatSendButton(target, ta)) appendTailForManualSend(ta);
-    }, true);
+    };
+    ctl.addEventListener('click', onClick, true);
+    lifecycleCleanups.push(() => { ctl.removeEventListener('click', onClick, true); delete ctl.dataset.bilivexTailCtlBound; });
     const mo = new MutationObserver(() => apply(ctl.querySelector('textarea')));
     mo.observe(ctl, { childList: true, subtree: true });
     ctl._bilivexTailMO = mo;
@@ -4165,12 +4271,14 @@
     style.id = 'bilivex-panel-guard-style';
     // 活动页进入网页模式时会给 body 的附加子节点写入 visibility:hidden。
     // 样式表中的 important 规则用于抵抗这次外部内联改写，面板自身没有隐藏状态。
-    style.textContent = '#bilivex-panel:not([data-presentation="fixed"]){display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483647!important}';
+    style.textContent = '#bilivex-panel:not([data-presentation="fixed"]){display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483647!important}' +
+      '[data-bilivex-entry][data-entry-kind="fallback"]{visibility:visible!important}';
     (panelDocument.head || panelDocument.documentElement).appendChild(style);
     return style;
   }
 
   function ensurePanelVisible(panel, host) {
+    if (!roomRuntimeCurrent()) return false;
     if (!panel || !host) return false;
     ensurePanelGuardStyle();
     const changingDocument = panel.ownerDocument !== host.ownerDocument;
@@ -4724,7 +4832,7 @@
     };
     const controller = {
       refresh,
-      active: () => !suspended && document.defaultView && !!room,
+      active: () => !suspended && roomRuntimeCurrent() && document.defaultView?.document === document && !!room,
       status: key => key === 'purifyGiftMessage' ? (document.hidden ? '后台暂停过滤' : marked.size || [...overlayMarked.values()].includes('gift') ? '生效中' : list || overlayRoot ? '已启用，等待目标出现' : null) : key === 'purifyEntryMessage' ? (document.hidden ? '后台暂停过滤' : entryMarked.size || [...overlayMarked.values()].includes('entry') ? '生效中' : entryRoot || overlayRoot ? '已启用，等待可识别的进场提示' : null) : areas.get(key)?.length ? '生效中' : '已启用，等待目标出现',
       suspend: () => { suspended = true; stopChat(); stopEntry(); stopOverlay(); stopAreas(); style.remove(); refreshPanelStatus(); },
       resume: () => { suspended = false; purifyShared.controllers.add(controller); refresh(); },
@@ -4779,8 +4887,9 @@
       return active;
     });
   }
-  function entryApplicable() { return panelWindow.location.hostname === 'live.bilibili.com' && !!(canonicalRoom(panelDocument) || roomIdFromUrl(panelWindow.location.href)); }
+  function entryApplicable() { return roomRuntimeCurrent(); }
   function refreshEntryPresentation(local = false) {
+    if (!roomRuntimeCurrent()) return;
     if (sharedRuntime.entryComposing?.size && !entryIsComposing() && document !== panelDocument) panelDocument.dispatchEvent(new panelWindow.Event('bilivex-entry-composition-change'));
     if (document !== panelDocument) { sharedRuntime.entryController?.refresh(local); return; }
     if (!sharedRuntime.entryController) sharedRuntime.entryController = createEntryController();
@@ -4904,7 +5013,7 @@
       if (kind !== target.kind || (target.kind === 'player' ? controlRoot !== nextControlRoot : anchor !== target.anchor)) lastRect = null;
       anchor = target.anchor; kind = target.kind;
       controlRoot = nextControlRoot;
-      if (kind !== 'fallback') ['position', 'top', 'right', 'z-index'].forEach(name => button.style.removeProperty(name));
+      if (kind !== 'fallback') ['position', 'top', 'right', 'z-index', 'visibility'].forEach(name => button.style.removeProperty(name));
       const view = target.area.ownerDocument.defaultView, style = view.getComputedStyle(target.area);
       const before = (style.flexDirection === 'row-reverse') === (style.direction === 'rtl');
       if (target.anchor) {
@@ -5388,7 +5497,8 @@
       return { ids: [...new Set(value.quickIds.map(id => id === 'purify-chat' ? 'purify-room' : id === 'sync' ? 'catchup' : id).filter(id => known.has(id)))].slice(0, 4), writable: true, error: '' };
     } catch (error) { return { ids: [...PANEL_DEFAULT_QUICK], writable: true, error: '常用配置损坏，当前显示默认值；保存前不覆盖原值' }; }
   }
-  const panelUi = { category: '常用', detail: '', query: '', search: false, back: [], positions: new Map(), quickDraft: null, quickBase: null, notice: '', favoriteDraft: null, favoriteMode: 'browse', favoriteQuery: '', followingDraft: null };
+  const panelUi = roomServices.pageState.panelUi || { category: '常用', detail: '', query: '', search: false, back: [], positions: new Map(), quickDraft: null, quickBase: null, notice: '', favoriteDraft: null, favoriteMode: 'browse', favoriteQuery: '', followingDraft: null };
+  roomServices.pageState.panelUi = null;
   const PANEL_MOTION_EASING = 'cubic-bezier(.22,1,.36,1)';
   function panelMotionSnapshot(panel) {
     const rect = panel.getBoundingClientRect(), logo = panel.querySelector('#bilivex-logo')?.getBoundingClientRect();
@@ -5495,6 +5605,7 @@
     listenPanelNode(node, 'click', action); return node;
   }
   function panelMessage(message) {
+    if (!roomRuntimeCurrent()) return;
     panelUi.notice = message;
     const node = getPanelDocument().querySelector('[data-panel-notice]');
     if (node) { node.textContent = message; const panel = getPanelRoot(); if (panel) ensurePanelVisible(panel, getUiHost()); }
@@ -5520,6 +5631,7 @@
     if (panelUi.captureFollowing) panelUi.captureFollowing();
   }
   function openPanelView(category, detail = '', fromBack = false) {
+    if (!roomRuntimeCurrent()) return;
     if (document !== panelDocument) { sharedRuntime.openPanelView?.(category, detail); return; }
     capturePanelView();
     if (!fromBack) {
@@ -5574,6 +5686,7 @@
     }); row.appendChild(input); parent.appendChild(row); return input;
   }
   function refreshPanelStatus() {
+    if (!roomRuntimeCurrent()) return;
     publishPurifyStatus();
     if (document !== panelDocument) { sharedRuntime.refreshPanelStatus?.(); return; }
     const panel = getPanelRoot(); if (!panel) return;
@@ -5633,6 +5746,7 @@
     nav.hidden = narrow; select.hidden = !narrow; select.value = panelUi.category;
   }
   function renderPanelView(focus = false) {
+    if (!roomRuntimeCurrent()) return;
     const panel = getPanelRoot();
     const viewport = panel?.querySelector('[data-panel-content]'); if (!viewport) return;
     const from = preparePanelMotion(panel);
@@ -5800,6 +5914,7 @@
     if (focus && !panelUi.search) title.focus({ preventScroll: true });
   }
   function buildPanel() {
+    if (!roomRuntimeCurrent()) return false;
     const existing = getPanelRoot();
     if (document !== panelDocument) return !!existing;
     if (!sharedRuntime.entryController) sharedRuntime.entryController = createEntryController();
@@ -6215,6 +6330,7 @@
       panelController.dragCleanup = null;
       clearTimeout(pressState.longTimer);
       pressState.down = false;
+      pressState.panelRef = null;
       dragState.dragging = false;
     };
   }
@@ -6291,6 +6407,7 @@
   // ---------- Toast ----------
   let toastTimer = null;
   function showToast(text) {
+    if (!roomRuntimeCurrent()) return;
     const host = getUiHost();
     const toastDocument = host && host.ownerDocument ? host.ownerDocument : panelDocument;
     let t = toastDocument.getElementById('bilivex-toast');
@@ -6736,6 +6853,7 @@
   }
 
   function openWheelPanel(source, sourceDocument) {
+    if (!roomRuntimeCurrent()) return;
     if (sourceDocument && !wheelRelease) wheelChatDocument = sourceDocument;
     if (document !== panelDocument) { if (sharedRuntime.openWheelPanel) sharedRuntime.openWheelPanel(source, sourceDocument); return; }
     const previousView = panelDocument.getElementById('bilivex-wheel-window');
@@ -6880,6 +6998,7 @@
   }
 
   function renderFavoritesView(mode, query) {
+    if (!roomRuntimeCurrent()) return;
     const panel = getPanelRoot();
     const body = panel && panel.querySelector('.bilivex-panel-body');
     const view = body && body.querySelector('.bilivex-favorites-view');
@@ -7012,16 +7131,10 @@
   const UPDATE_INSTALL_URL = 'https://update.greasyfork.org/scripts/590601/BiLivex%20-%20%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%E7%9B%B4%E6%92%AD%E5%A2%9E%E5%BC%BA.user.js';
   const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;   // 刷新页面最多每小时检测一次；新版本被发现的延迟最坏为 1 小时
   const UPDATE_STATE_KEY = 'bilivex_update_state';
-  let updateCheckInFlight = false;
+  let updateRequest = null;
   let lastUpdateRoomKey = '';
   let updateInitialTimer = null;
   let updateIntervalTimer = null;
-
-  function getUpdateRoomKey() {
-    return findRoomId(panelDocument, panelWindow) ||
-      roomIdFromUrl(panelWindow.location.href) ||
-      panelWindow.location.href.split('#')[0];
-  }
 
   function getScriptVersion() {
     try {
@@ -7029,7 +7142,7 @@
         return String(GM_info.script.version);
       }
     } catch (e) {}
-    return '3.3.3';
+    return '3.3.4';
   }
 
   function compareVersions(a, b) {
@@ -7086,7 +7199,7 @@
     };
     if (typeof GM_xmlhttpRequest === 'function') {
       try {
-        GM_xmlhttpRequest({
+        return GM_xmlhttpRequest({
           method: 'GET',
           url: UPDATE_CHECK_URL + '?t=' + Date.now(),
           timeout: 10000,
@@ -7094,16 +7207,18 @@
           onerror: () => done(null),
           ontimeout: () => done(null)
         });
-        return;
       } catch (e) {}
     }
-    fetch(UPDATE_CHECK_URL, { cache: 'no-store' })
+    const controller = new window.AbortController();
+    fetch(UPDATE_CHECK_URL, { cache: 'no-store', signal: controller.signal })
       .then((res) => res.text())
       .then(parse)
       .catch(() => done(null));
+    return controller;
   }
 
   function showUpdateNotice(remoteVersion) {
+    if (!roomRuntimeCurrent()) return;
     if (!panelDocument.body) return;
     if (panelDocument.getElementById('bilivex-update-notice')) return;
     const doc = panelDocument;
@@ -7202,19 +7317,28 @@
     });
   }
 
+  function cancelUpdateCheck() {
+    const request = updateRequest;
+    updateRequest = null;
+    try { request?.handle?.abort(); } catch (error) {}
+  }
+
   function checkForUpdate(force) {
+    if (!roomRuntimeCurrent() || document !== panelDocument) return;
+    const roomKey = liveRoomPathId(panelWindow.location.href);
+    if (updateRequest?.roomKey === roomKey) return;
+    cancelUpdateCheck();
     try {
-      // 只在顶层页面实例检查，避免 iframe 实例重复请求与重复弹窗。
-      if (document !== panelDocument) return;
-      if (updateCheckInFlight) return;
-      const roomKey = getUpdateRoomKey();
       const state = readUpdateState();
       const now = Date.now();
       const sameRoom = roomKey && roomKey === lastUpdateRoomKey;
       if (!force && sameRoom && state.lastCheckAt && now - state.lastCheckAt < UPDATE_CHECK_INTERVAL_MS) return;
-      updateCheckInFlight = true;
-      fetchRemoteVersion((remoteVersion) => {
-        updateCheckInFlight = false;
+      const request = { roomKey, handle: null };
+      updateRequest = request;
+      request.handle = fetchRemoteVersion((remoteVersion) => {
+        if (updateRequest !== request) return;
+        updateRequest = null;
+        if (!roomRuntimeCurrent() || liveRoomPathId(panelWindow.location.href) !== roomKey) return;
         // 网络失败：仅记录 lastFailAt 用于诊断，不锁住后续检查（避免请求瞬时失败导致 6 小时不再提醒）。
         if (!remoteVersion) {
           const failState = readUpdateState();
@@ -7231,7 +7355,7 @@
         if (compareVersions(remoteVersion, getScriptVersion()) > 0) showUpdateNotice(remoteVersion);
       });
     } catch (e) {
-      updateCheckInFlight = false;
+      cancelUpdateCheck();
     }
   }
 
@@ -7316,6 +7440,7 @@
   }
 
   function registerMediaSource() {
+    if (!roomRuntimeCurrent()) return;
     const sources = sharedRuntime.mediaSources || (sharedRuntime.mediaSources = new Map());
     const root = document.querySelector('#live-player, .live-player-mounter');
     const video = findActiveLiveVideo(root), player = getPageLivePlayer();
@@ -7343,7 +7468,7 @@
       urlRoom: roomIdFromUrl(location.href), panelUrlRoom: roomIdFromUrl(panelWindow.location.href),
       current: () => {
         try {
-          return nativeSendPageActive && root.isConnected && document.querySelector('#live-player, .live-player-mounter') === root && roomIdFromUrl(location.href) === source.urlRoom &&
+          return roomRuntimeCurrent() && nativeSendPageActive && root.isConnected && document.querySelector('#live-player, .live-player-mounter') === root && roomIdFromUrl(location.href) === source.urlRoom &&
             roomIdFromUrl(panelWindow.location.href) === source.panelUrlRoom && canonicalRoom(document) === source.room && getPageLivePlayer() === player;
         } catch (e) { return false; }
       },
@@ -9490,6 +9615,7 @@
   }
 
   function bindVideoSync() {
+    if (!roomRuntimeCurrent()) return;
     const mount = findVideoSyncMount();
     if (!mount) return null;
     let button = mount.leftArea.querySelector(VIDEO_SYNC_SELECTOR);
@@ -9600,6 +9726,7 @@
 
   // ---------- 初始化 ----------
   function initRoom() {
+    if (!roomRuntimeCurrent()) return;
     registerMediaSource();
     refreshQualityEnhancement();
     if (!playbackController) playbackController = createPlaybackController();
@@ -9626,6 +9753,7 @@
   }
 
   function guardianCheck() {
+    if (!roomRuntimeCurrent()) return;
     try {
       if (panelConfigUncertain) {
         try {
@@ -9650,13 +9778,8 @@
       }
       if (cfg.floatDmPlus) {
         const rotate = findFloatingDmContainer();
-        if (rotate && rotate !== boundFloatContainer && (!boundFloatContainer || !boundFloatContainer.isConnected)) {
-          if (FloatingDmEngine.hovered) FloatingDmEngine.leave(FloatingDmEngine.hovered);
-          rotate.dataset.bilivexFloatBound = '';
-          if (boundFloatContainer && boundFloatContainer._bilivexFloatMO) {
-            try { boundFloatContainer._bilivexFloatMO.disconnect(); } catch (e) {}
-            boundFloatContainer._bilivexFloatMO = null;
-          }
+        if (!boundFloatContainer?.isConnected) {
+          unbindFloatingDmHover();
           attachFloatingDmHover(rotate);
         }
       }
@@ -9731,6 +9854,7 @@
     lifecycleCleanups.push(cleanup); return cleanup;
   }
   function tryInit() {
+    if (!roomRuntimeCurrent()) return false;
     // 面板属于顶层页面，不应依赖聊天区是否已完成异步渲染。
     const panelReady = buildPanel() !== false;
     initRoom();
@@ -9738,6 +9862,7 @@
   }
 
   function start() {
+    if (!roomRuntimeCurrent()) return;
     try {
       let browserFullscreen = isBrowserFullscreen(getLivePlayerInfo(getPageLivePlayer()));
       const onFullscreenChange = () => {
@@ -9774,12 +9899,17 @@
       listenLifecycle(document, 'webkitfullscreenchange', onFullscreenChange);
       listenLifecycle(document, 'canplay', onPlayerReady, true);
       listenLifecycle(document, 'playing', onPlayerReady, true);
+      listenLifecycle(document, 'load', event => {
+        if (event.target?.tagName !== 'IFRAME' || !roomRuntimeCurrent()) return;
+        refreshPanelStatus();
+      }, true);
       if (panelDocument !== document) {
         listenLifecycle(panelDocument, 'fullscreenchange', onFullscreenChange);
         listenLifecycle(panelDocument, 'webkitfullscreenchange', onFullscreenChange);
       }
     } catch (e) {}
     const onPageShow = (event) => {
+      if (!roomRuntimeCurrent()) return;
       nativeSendPageActive = true;
       if (event.persisted) sharedRuntime.mediaController?.resumePage(document);
       if (sharedRuntime.panelLeavingDocument === document) { sharedRuntime.panelLeavingDocument = null; sharedRuntime.restorePanel?.(getUiHost()); }
@@ -9802,11 +9932,14 @@
       nativeSendPageActive = false; cancelNativeSends('页面已离开，任务已取消');
       sharedRuntime.cancelPanelMotion?.();
       // 子文档销毁前交还主面板，避免浏览器随 iframe 卸载移除面板原生事件监听。
-      if (document !== panelDocument && getPanelRoot()?.ownerDocument === document) { sharedRuntime.panelLeavingDocument = document; sharedRuntime.restorePanel?.(); }
+      if (document !== panelDocument && isLiveRoomContext(panelWindow) && getPanelRoot()?.ownerDocument === document) { sharedRuntime.panelLeavingDocument = document; sharedRuntime.restorePanel?.(); }
       if (purifyController) { if (event.persisted) purifyController.suspend(); else purifyController.dispose(); }
+      publishPurifyStatus();
       capturePanelView();
       stopActiveLike(true, '页面已离开');
       disposeWheel();
+      actionFeedbackTimers.forEach((timer, feedback) => { clearTimeout(timer); feedback.remove(); });
+      actionFeedbackTimers.clear();
       // BFCache 返回时复用原监听和观察器，恢复入口在 pageshow 重新检查页面。
       if (event.persisted) { resetPlayerEnhancementSchedule(); return; }
       if (document === panelDocument) {
@@ -9818,12 +9951,12 @@
         sharedRuntime.panelResizeCleanup?.(); sharedRuntime.panelResizeCleanup = null;
       }
       if (window._bilivexSpaMO) window._bilivexSpaMO.disconnect();
+      window._bilivexSpaMO = null;
       if (boundChatList && typeof boundChatList._bilivexCommentMenuCleanup === 'function') {
         boundChatList._bilivexCommentMenuCleanup();
       } else {
         resetCommentMenuState();
       }
-      if (boundFloatContainer && boundFloatContainer._bilivexFloatMO) boundFloatContainer._bilivexFloatMO.disconnect();
       if (boundTailCtl && boundTailCtl._bilivexTailMO) boundTailCtl._bilivexTailMO.disconnect();
       if (guardianTimer) clearInterval(guardianTimer);
       if (initTimer) clearTimeout(initTimer);
@@ -9835,8 +9968,10 @@
         clearInterval(updateIntervalTimer);
         updateIntervalTimer = null;
       }
+      cancelUpdateCheck();
       resetPlayerEnhancementSchedule();
       FloatingDmEngine.stop();
+      unbindFloatingDmHover();
       lifecycleCleanups.splice(0).forEach((cleanup) => {
         try { cleanup(); } catch (e) {}
       });
@@ -9852,6 +9987,7 @@
       window.removeEventListener('pagehide', onPageHide);
       window.removeEventListener('pageshow', onPageShow);
     };
+    roomCleanup = () => onPageHide({ persisted: false });
     window.addEventListener('pagehide', onPageHide);
     window.addEventListener('pageshow', onPageShow);
     // 注入 +1 反馈动画样式
@@ -9936,7 +10072,7 @@
     // 兼容 iframe 直播间：各页面实例独立运行，共享的悬浮面板不被 iframe 实例误删。
     if (spaWatching || !document.documentElement) return;
     spaWatching = true;
-    let lastUrl = location.href;
+    let lastUrl = liveRoomPathId(location.href);
     let queued = false;
     const lifecycleSelector = '#bilivex-panel, iframe, .chat-history-list, .chat-history-panel, .brush-prompt, .chat-overlay-layer, .chat-control-panel, button.send-btn, input.chat-input, textarea.chat-input,' +
       '.gift-control-section.gift-control-panel, .right-module-measure, .rank-entries, .activity-gather-entry.activity-entry,' +
@@ -9950,14 +10086,16 @@
       return nodes.some((node) => node.nodeType === 1 &&
         node.matches(lifecycleSelector));
     });
-    const mo = new MutationObserver((records) => {
-      const urlChanged = location.href !== lastUrl;
+    const refresh = (records = []) => {
+      if (!roomRuntimeCurrent()) return;
+      const urlChanged = liveRoomPathId(location.href) !== lastUrl;
       if (!urlChanged && !touchesLifecycle(records)) return;
       if (queued) return;
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
-        const currentUrlChanged = location.href !== lastUrl;
+        if (!roomRuntimeCurrent()) return;
+        const currentUrlChanged = liveRoomPathId(location.href) !== lastUrl;
         const panelMissing = !getPanelRoot();
         if (currentUrlChanged || panelMissing) {
           if (currentUrlChanged) {
@@ -9969,7 +10107,7 @@
             stopWheelForRoomChange();
             resetPlayerEnhancementSchedule();
             if (cfg.blockP2PUpload) applyEarlyP2PSetting(true);
-            lastUrl = location.href;
+            lastUrl = liveRoomPathId(location.href);
             if (document === panelDocument) panelDocument.dispatchEvent(new panelWindow.Event(DM_ROOM_EVENT));
           }
           clearTimeout(initTimer);
@@ -9987,15 +10125,60 @@
         }
         guardianCheck();
       });
-    });
+    };
+    const mo = new MutationObserver(refresh);
+    listenLifecycle(panelWindow, 'bilivex-room-context-change', () => refresh());
     mo.observe(document.documentElement, { childList: true, subtree: true });
     window._bilivexSpaMO = mo;
   }
 
   // ---------- 启动 ----------
+  roomServices.dispose = () => {
+    if (roomRuntimeDisposed) return;
+    const panel = document === panelDocument ? getPanelRoot() : null;
+    roomRuntimeDisposed = true;
+    roomCleanup?.();
+    // 文档就绪前也可能离开房间，此时回收已经登记的早期配置监听。
+    lifecycleCleanups.splice(0).forEach(cleanup => cleanup());
+    valueChangeListenerIds.splice(0).forEach(id => { try { GM_removeValueChangeListener(id); } catch (error) { /* 监听已随文档结束。 */ } });
+    clearTimeout(toastTimer);
+    if (appearanceController.onChange === applyTheme) appearanceController.onChange = null;
+    document.querySelectorAll(VIDEO_SYNC_SELECTOR + ', [data-bilivex-media-control], #bilivex-sync-tooltip, #bilivex-media-controls-style, #bilivex-float-dm-anim, #bilivex-floating-ui-guard-style').forEach(node => node.remove());
+    if (document === panelDocument || !isLiveRoomContext(panelWindow)) {
+      dmPreferences.visit = null;
+      panelDocument.documentElement?.removeAttribute(DM_VISIT_ATTRIBUTE);
+    }
+    if (document === panelDocument) {
+      // 当前文档内暂存界面与草稿数据，重新进入时创建全新的节点和事件绑定。
+      const snapshot = window.structuredClone({ ...panelUi, captureFollowing: null, followingSaving: false });
+      if (snapshot.favoriteDraft) snapshot.favoriteDraft.saving = false;
+      roomServices.pageState.panelUi = snapshot;
+      sharedRuntime.entryController?.dispose();
+      sharedRuntime.mediaController?.stop('已离开直播间', false);
+      panel?.remove();
+      panelDocument.querySelectorAll('#bilivex-panel-guard-style, #bilivex-panel-v3-style, #bilivex-update-notice, #bilivex-toast').forEach(node => node.remove());
+      panelController.currentPanel = null;
+      sharedRuntime.panelStyle?.remove();
+      sharedRuntime.panelResizeObserver = null;
+      sharedRuntime.panelViewResizeObserver = null;
+      sharedRuntime.entryController = null;
+      sharedRuntime.mediaController = null;
+      sharedRuntime.panelStyle = null;
+      sharedRuntime.panelMotion = null;
+      sharedRuntime.panelLeavingDocument = null;
+      sharedRuntime.openWheelPanel = null;
+      sharedRuntime.favoriteLibraryChanged = null;
+      sharedRuntime.bindWheelEntry = null;
+      sharedRuntime.openPanelView = null;
+      sharedRuntime.refreshPanelStatus = null;
+      sharedRuntime.syncDmPreferenceView = null;
+      sharedRuntime.restorePanel = null;
+      sharedRuntime.cancelPanelMotion = null;
+    }
+  };
   appearanceController.onChange = applyTheme;
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
+    listenLifecycle(document, 'DOMContentLoaded', start, { once: true });
   } else {
     start();
   }
